@@ -12,14 +12,14 @@ class PasswordResetTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_reset_password_link_screen_can_be_rendered()
+    public function test_tela_link_redefinir_senha_pode_ser_renderizada()
     {
         $response = $this->get(route('password.request'));
 
         $response->assertStatus(200);
     }
 
-    public function test_reset_password_link_can_be_requested()
+    public function test_link_para_redefinir_senha_pode_ser_solicitado()
     {
         Notification::fake();
 
@@ -30,7 +30,7 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, ResetPassword::class);
     }
 
-    public function test_reset_password_screen_can_be_rendered()
+    public function test_tela_redefinir_senha_pode_ser_renderizada()
     {
         Notification::fake();
 
@@ -47,7 +47,7 @@ class PasswordResetTest extends TestCase
         });
     }
 
-    public function test_password_can_be_reset_with_valid_token()
+    public function test_senha_pode_ser_redefinida_com_token_valido()
     {
         Notification::fake();
 
@@ -71,7 +71,7 @@ class PasswordResetTest extends TestCase
         });
     }
 
-    public function test_password_cannot_be_reset_with_invalid_token(): void
+    public function test_senha_nao_pode_ser_redefinida_com_token_invalido(): void
     {
         $user = User::factory()->create();
 

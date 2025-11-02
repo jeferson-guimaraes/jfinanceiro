@@ -19,7 +19,7 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_users_can_authenticate_using_the_login_screen()
+    public function test_usuarios_podem_autenticar_usando_a_tela_de_login()
     {
         $user = User::factory()->withoutTwoFactor()->create();
 
@@ -32,7 +32,7 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 
-    public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge()
+    public function test_usuarios_com_autenticacao_2fa_sao_redirecionados_para_desafio_de_autenticacao()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -61,7 +61,7 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_users_can_not_authenticate_with_invalid_password()
+        public function test_usuarios_nao_podem_autenticar_com_senha_invalida()
     {
         $user = User::factory()->create();
 
@@ -73,7 +73,7 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_users_can_logout()
+    public function test_usuarios_podem_fazer_logout()
     {
         $user = User::factory()->create();
 
@@ -83,7 +83,7 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('home'));
     }
 
-    public function test_users_are_rate_limited()
+    public function test_usuarios_tem_tentativas_de_login_limitadas()
     {
         $user = User::factory()->create();
 

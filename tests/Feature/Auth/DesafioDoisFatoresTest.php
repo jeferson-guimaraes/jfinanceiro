@@ -12,7 +12,7 @@ class TwoFactorChallengeTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_two_factor_challenge_redirects_to_login_when_not_authenticated(): void
+    public function test_desafio_dois_fatores_redireciona_para_login_se_nao_autenticado(): void
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -23,7 +23,7 @@ class TwoFactorChallengeTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
-    public function test_two_factor_challenge_can_be_rendered(): void
+    public function test_tela_desafio_dois_fatores_pode_ser_renderizada(): void
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
