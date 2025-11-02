@@ -12,7 +12,7 @@ class TwoFactorAuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_two_factor_settings_page_can_be_rendered()
+    public function test_pagina_de_configuracoes_de_dois_fatores_pode_ser_renderizada()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -34,7 +34,7 @@ class TwoFactorAuthenticationTest extends TestCase
             );
     }
 
-    public function test_two_factor_settings_page_requires_password_confirmation_when_enabled()
+    public function test_pagina_de_configuracoes_de_dois_fatores_exige_confirmacao_de_senha_quando_ativada()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -53,7 +53,7 @@ class TwoFactorAuthenticationTest extends TestCase
         $response->assertRedirect(route('password.confirm'));
     }
 
-    public function test_two_factor_settings_page_does_not_requires_password_confirmation_when_disabled()
+    public function test_página_de_configuracoes_de_dois_fatores_nao_exige_confirmacao_de_senha_quando_desativada()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -74,7 +74,7 @@ class TwoFactorAuthenticationTest extends TestCase
             );
     }
 
-    public function test_two_factor_settings_page_returns_forbidden_response_when_two_factor_is_disabled()
+    public function test_pagina_de_configuracoes_de_dois_fatores_retorna_uma_resposta_proibida_quando_os_dois_fatores_estão_desativados()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
