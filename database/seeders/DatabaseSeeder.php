@@ -20,7 +20,9 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
             'role' => 'admin',
             'status' => 'ativo',
-            'password' => 'Nov@1234'
+            'password' => 'Nov@1234',
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
         ]);
     }
 }

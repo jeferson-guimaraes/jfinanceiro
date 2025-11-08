@@ -29,10 +29,10 @@ const authConfigContent = computed<AuthConfigContent>(() => {
     }
 
     return {
-        title: 'Authentication Code',
+        title: 'Código de Autenticação',
         description:
-            'Enter the authentication code provided by your authenticator application.',
-        toggleText: 'login using a recovery code',
+            'Entre com o código de autenticação fornecido pelo seu aplicativo de autenticação.',
+        toggleText: 'fazer login usando um código de recuperação',
     };
 });
 
@@ -90,10 +90,10 @@ const codeValue = computed<string>(() => code.value.join(''));
                         <InputError :message="errors.code" />
                     </div>
                     <Button type="submit" class="w-full" :disabled="processing"
-                        >Continue</Button
+                        >Continuar</Button
                     >
                     <div class="text-center text-sm text-muted-foreground">
-                        <span>Or you can </span>
+                        <span>ou você pode </span>
                         <button
                             type="button"
                             class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
