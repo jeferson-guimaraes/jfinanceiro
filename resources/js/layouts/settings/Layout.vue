@@ -16,7 +16,7 @@ const sidebarNavItems: NavItem[] = [
         href: editProfile(),
     },
     {
-        title: 'Password',
+        title: 'Senha',
         href: editPassword(),
     },
     {
