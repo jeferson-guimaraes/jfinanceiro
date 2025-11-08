@@ -12,11 +12,11 @@ import { Link } from '@inertiajs/vue3';
 
 const sidebarNavItems: NavItem[] = [
     {
-        title: 'Profile',
+        title: 'Perfil',
         href: editProfile(),
     },
     {
-        title: 'Password',
+        title: 'Senha',
         href: editPassword(),
     },
     {
