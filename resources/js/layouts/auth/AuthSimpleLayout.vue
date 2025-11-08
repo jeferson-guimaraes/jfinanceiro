@@ -15,7 +15,7 @@ defineProps<{
             style="background-image: url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=2511&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');">
             <div class="absolute inset-0 bg-black/30"></div>
 
-            <div className="relative z-20 flex items-center text-lg font-medium">
+            <div className="relative z-20 flex items-center text-lg font-medium w-9 h-9 bg-gray-100 rounded">
                 <AppLogoIcon class="size-9 fill-current text-[var(--foreground)] dark:text-white" />
             </div>
 
@@ -37,7 +37,7 @@ defineProps<{
                 <div class="flex flex-col gap-8">
                     <div class="flex flex-col items-center gap-4">
                         <Link :href="home()" class="flex flex-col items-center gap-2 font-medium">
-                        <div class="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
+                        <div class="mb-1 flex w-[75px] items-center justify-center rounded-md dark:bg-gray-100 p-0.5">
                             <AppLogoIcon class="size-9 fill-current text-[var(--foreground)] dark:text-white" />
                         </div>
                         <span class="sr-only">{{ title }}</span>

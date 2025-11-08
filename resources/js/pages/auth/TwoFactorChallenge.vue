@@ -24,7 +24,7 @@ const authConfigContent = computed<AuthConfigContent>(() => {
             title: 'Código de Recuperação',
             description:
                 'Por favor, confirme o acesso à sua conta inserindo um dos seus códigos de recuperação de emergência.',
-            toggleText: 'login usando um código de autenticação',
+            toggleText: 'fazer login usando um código de autenticação',
         };
     }
 
