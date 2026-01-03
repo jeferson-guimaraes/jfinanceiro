@@ -46,26 +46,26 @@ const modalConfig = computed<{
 }>(() => {
     if (props.twoFactorEnabled) {
         return {
-            title: 'Two-Factor Authentication Enabled',
+            title: 'Autenticação de dois fatores ativada',
             description:
-                'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
+                'A autenticação de dois fatores agora está ativada. Escaneie o código QR ou insira a chave de configuração no seu aplicativo autenticador.',
             buttonText: 'Close',
         };
     }
 
     if (showVerificationStep.value) {
         return {
-            title: 'Verify Authentication Code',
-            description: 'Enter the 6-digit code from your authenticator app',
-            buttonText: 'Continue',
+            title: 'Verificar código de autenticação',
+            description: 'Insira o código de 6 dígitos do seu aplicativo autenticador.',
+            buttonText: 'Continuar',
         };
     }
 
     return {
-        title: 'Enable Two-Factor Authentication',
+        title: 'Ativar autenticação de dois fatores',
         description:
-            'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
-        buttonText: 'Continue',
+            'Para concluir a ativação da autenticação de dois fatores, digitalize o código QR ou insira a chave de configuração no seu aplicativo autenticador.',
+        buttonText: 'Continuar',
     };
 });
 
@@ -190,7 +190,7 @@ watch(
                                 class="absolute inset-0 top-1/2 h-px w-full bg-border"
                             />
                             <span class="relative bg-card px-2 py-1"
-                                >or, enter the code manually</span
+                                >Ou, insira o código manualmente.</span
                             >
                         </div>
 
@@ -261,12 +261,9 @@ watch(
                                             :disabled="processing"
                                         />
                                     </PinInputGroup>
-                                </PinInput>
+                                </PinInput> 
                                 <InputError
-                                    :message="
-                                        errors?.confirmTwoFactorAuthentication
-                                            ?.code
-                                    "
+                                    :message="(errors as any)?.confirmTwoFactorAuthentication?.code"
                                 />
                             </div>
 
@@ -278,7 +275,7 @@ watch(
                                     @click="showVerificationStep = false"
                                     :disabled="processing"
                                 >
-                                    Back
+                                    Volta
                                 </Button>
                                 <Button
                                     type="submit"
@@ -287,7 +284,7 @@ watch(
                                         processing || codeValue.length < 6
                                     "
                                 >
-                                    Confirm
+                                    Confirmar
                                 </Button>
                             </div>
                         </div>
