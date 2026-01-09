@@ -120,7 +120,7 @@ const codeValue = computed<string>(() => code.value.join(''));
                         required
                     />
                     <InputError :message="errors.recovery_code" />
-                    <Button type="submit" class="w-full" :disabled="processing"
+                    <Button type="submit" class="w-full btn-primary" :disabled="processing"
                         >Continuar</Button
                     >
 

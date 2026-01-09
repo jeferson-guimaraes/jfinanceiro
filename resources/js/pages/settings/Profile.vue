@@ -101,6 +101,7 @@ const user = page.props.auth.user;
                         <Button
                             :disabled="processing"
                             data-test="update-profile-button"
+                            class="btn-primary"
                             >Salvar</Button
                         >
 

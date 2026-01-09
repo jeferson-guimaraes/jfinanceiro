@@ -96,6 +96,7 @@ const currentPasswordInput = ref<HTMLInputElement | null>(null);
                         <Button
                             :disabled="processing"
                             data-test="update-password-button"
+                            class="btn-primary"
                             >Salvar senha</Button
                         >
 

@@ -30,7 +30,7 @@ export default defineConfig({
         strictPort: true,
         cors: true,
         hmr: {
-            host: '192.168.18.103',
+            host: '192.168.18.126',
         },
     },
 });
