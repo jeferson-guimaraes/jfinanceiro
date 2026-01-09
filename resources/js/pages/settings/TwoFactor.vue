@@ -63,6 +63,7 @@ onUnmounted(() => {
 
                     <div>
                         <Button
+                            class="btn-primary"
                             v-if="hasSetupData"
                             @click="showSetupModal = true"
                         >
@@ -74,7 +75,7 @@ onUnmounted(() => {
                             @success="showSetupModal = true"
                             #default="{ processing }"
                         >
-                            <Button type="submit" :disabled="processing">
+                            <Button type="submit" :disabled="processing" class="btn-primary">
                                 <ShieldCheck />Ativar 2FA</Button
                             ></Form
                         >

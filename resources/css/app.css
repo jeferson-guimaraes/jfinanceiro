@@ -162,6 +162,16 @@
     --sidebar: hsl(240 5.9% 10%);
 }
 
+.dark .btn-primary {
+    background-color: #2b7fff;
+    color: #fff;
+
+    &:hover {
+        background-color: #155dfc;
+    }
+}
+
+
 @layer base {
     * {
         @apply border-border outline-ring/50;

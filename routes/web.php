@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\MovimentacaoController;
+use App\Http\Controllers\CategoriaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -22,7 +23,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [MovimentacaoController::class, 'store'])
             ->name('store');
     });
-});
 
+    Route::prefix('movimentacoes/categorias')->name('movimentacoes.categorias.')->group(function () {
+        Route::get('/', function () {
+            return Inertia::render('movimentacoes/categorias/Index');
+        })->name('index');
+
+        Route::get('create', [CategoriaController::class, 'create'])
+            ->name('create');
+
+        Route::post('/', [CategoriaController::class, 'store'])
+            ->name('store');
+    });
+});
 
 require __DIR__.'/settings.php';

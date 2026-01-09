@@ -39,7 +39,7 @@ import { LoaderCircle } from 'lucide-vue-next';
 
                 <div class="flex items-center">
                     <Button
-                        class="w-full"
+                        class="w-full btn-primary"
                         :disabled="processing"
                         data-test="confirm-password-button"
                     >
