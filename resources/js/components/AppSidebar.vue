@@ -13,9 +13,10 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index } from '@/routes/movimentacoes/categorias'
+import { create } from '@/routes/movimentacoes/index';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { LayoutDashboard, LayoutGrid } from 'lucide-vue-next';
+import { ArrowUpDown, LayoutDashboard, LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -23,6 +24,11 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutDashboard,
+    },
+    {
+        title: 'Movimentações',
+        href: create(),
+        icon: ArrowUpDown,
     },
     {
         title: 'Categorias',

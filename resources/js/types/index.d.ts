@@ -40,4 +40,12 @@ export interface User {
     updated_at: string;
 }
 
-export type BreadcrumbItemType = BreadcrumbItem;
+export interface Categoria {
+    id: number;
+    nome: string;
+    tipo: 'ganho' | 'gasto' | 'gasto futuro';
+    user_id: number;
+    created_at: string;
+    updated_at: string;
+}
+

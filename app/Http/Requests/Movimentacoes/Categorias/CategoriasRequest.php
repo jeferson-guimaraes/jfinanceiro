@@ -26,6 +26,7 @@ class CategoriasRequest extends FormRequest
         return [
             'nome' => 'required',
             'tipo' => ['required', new Enum(TipoMovimentacaoEnum::class)],
+            'origem' => 'nullable',
         ];
     }
 }

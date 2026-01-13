@@ -87,6 +87,10 @@
             'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
             'Noto Color Emoji';
     }
+
+    .dark input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+    }
 }
 
 :root {

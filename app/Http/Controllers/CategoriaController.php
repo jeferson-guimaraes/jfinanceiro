@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Movimentacoes\Categorias\CategoriasRequest;
 use App\Models\Categoria;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,9 +25,9 @@ class CategoriaController extends Controller
      * Armazena uma nova categoria no banco de dados.
      *
      * @param CategoriasRequest $request
-     * @return RedirectResponse
+     * @return RedirectResponse|JsonResponse
      */
-    public function store(CategoriasRequest $request): RedirectResponse
+    public function store(CategoriasRequest $request): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
 
@@ -34,6 +35,10 @@ class CategoriaController extends Controller
         $data['user_id'] = $user->id;
 
         Categoria::create($data);
+
+        if (isset($data['origem']) && $data['origem'] === 'modal') {
+            return redirect()->back();
+        }
 
         return redirect()->route('movimentacoes.categorias.create')->with('success', 'Categoria criada com sucesso!');
     }

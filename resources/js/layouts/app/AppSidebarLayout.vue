@@ -5,12 +5,12 @@ import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
 import ToastNotification from '@/components/ToastNotification.vue';
 import { useToast } from '@/composables/useToast';
-import type { BreadcrumbItemType } from '@/types';
+import type { BreadcrumbItem } from '@/types';
 import { usePage } from '@inertiajs/vue3';
 import { watch } from 'vue';
 
 interface Props {
-    breadcrumbs?: BreadcrumbItemType[];
+    breadcrumbs?: BreadcrumbItem[];
 }
 
 withDefaults(defineProps<Props>(), {
@@ -23,12 +23,14 @@ const { success, error } = useToast();
 watch(() => page.props.flash?.success, (message) => {
     if (message) {
         success(String(message));
+        page.props.flash.success = undefined;
     }
 }, { immediate: true });
 
 watch(() => page.props.flash?.error, (message) => {
     if (message) {
         error(String(message));
+        page.props.flash.error = undefined;
     }
 }, { immediate: true });
 </script>
