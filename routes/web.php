@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MovimentacaoController;
 use App\Http\Controllers\CategoriaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -11,13 +12,17 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', fn () => Inertia::render('Dashboard'))
         ->name('dashboard');
+
+    Route::prefix('movimentacoes')->name('movimentacoes.')->group(function () {
+        Route::get('create', [MovimentacaoController::class, 'create'])
+            ->name('create');
+
+        Route::post('/', [MovimentacaoController::class, 'store'])
+            ->name('store');
+    });
 
     Route::prefix('movimentacoes/categorias')->name('movimentacoes.categorias.')->group(function () {
         Route::get('/', function () {

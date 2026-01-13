@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
@@ -30,7 +31,7 @@ function submit() {
 	form.post('/movimentacoes/categorias', {
 		onSuccess: () => {
 			form.reset('nome', 'tipo');
-			form.tipo = 'ganho'; // Resetting to the default 'ganho' type
+			form.tipo = 'ganho';
 		},
 	});
 }
@@ -49,17 +50,17 @@ function submit() {
 						<p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">Crie uma nova categoria para suas
 							movimentações.</p>
 
-						<div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-4">
+						<div class="mt-10 grid grid-cols-1 gap-6">
+							
 							<div>
-								<label for="nome"
-									class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Nome</label>
-								<div class="mt-2">
-									<Input id="nome" v-model="form.nome" name="nome" type="text" autocomplete="off" />
-								</div>
+								<Label for="nome">Nome</Label>
+								<Input id="nome" v-model="form.nome" name="nome" type="text" autocomplete="off" />
 							</div>
 							<div>
-								<label for="tipo"
-									class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">Tipo</label>
+								<Label for="tipo">
+									Tipo
+								</Label>
+								
 								<div class="mt-2">
 									<Select v-model="form.tipo">
 										<SelectTrigger>
@@ -71,6 +72,7 @@ function submit() {
 									</Select>
 								</div>
 							</div>
+
 						</div>
 					</div>
 				</div>

@@ -21,6 +21,7 @@ class CategoriaTest extends TestCase
 
     public function test_usuario_logado_pode_cria_categoria_de_ganho_com_sucesso(): void
     {
+        $this->withoutExceptionHandling();
         $response = $this->actingAs($this->user)->post(route('movimentacoes.categorias.store'), [
             'nome' => 'Salário',
             'tipo' => TipoMovimentacaoEnum::GANHO->value,

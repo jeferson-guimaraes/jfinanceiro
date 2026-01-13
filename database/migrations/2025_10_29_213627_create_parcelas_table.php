@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('valor', 10, 2);
             $table->date('data_vencimento')->nullable();
             $table->date('data_pagamento')->nullable();
-            $table->boolean('pago')->nullable();
+            $table->boolean('pago')->default(false);
             $table->timestamps();
         });
     }

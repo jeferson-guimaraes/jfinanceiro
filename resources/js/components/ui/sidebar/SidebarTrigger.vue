@@ -2,14 +2,13 @@
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { PanelLeft } from 'lucide-vue-next'
+import { Menu, X } from 'lucide-vue-next'
 import { useSidebar } from './utils'
-
 const props = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
-const { toggleSidebar } = useSidebar()
+const { toggleSidebar, open, isMobile } = useSidebar()
 </script>
 
 <template>
@@ -21,7 +20,7 @@ const { toggleSidebar } = useSidebar()
     :class="cn('h-7 w-7', props.class)"
     @click="toggleSidebar"
   >
-    <PanelLeft />
+    <component :is="open || isMobile ? Menu : X" />
     <span class="sr-only">Toggle Sidebar</span>
   </Button>
 </template>
