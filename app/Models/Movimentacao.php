@@ -16,7 +16,7 @@ class Movimentacao extends Model
 
     protected $fillable = [
         'categoria_id',
-        'cliente_id',
+        'user_id',
         'data',
         'descricao',
         'valor',
@@ -34,9 +34,9 @@ class Movimentacao extends Model
         return $this->belongsTo(Categoria::class);
     }
 
-    public function cliente(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'cliente_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function parcelas(): HasMany

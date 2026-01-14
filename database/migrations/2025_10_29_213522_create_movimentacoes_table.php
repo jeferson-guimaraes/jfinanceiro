@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('movimentacoes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('categoria_id')->constrained('categorias')->onDelete('cascade');
-            $table->foreignId('cliente_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->date('data');
             $table->string('descricao');
             $table->decimal('valor', 10, 2);

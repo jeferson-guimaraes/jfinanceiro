@@ -56,7 +56,7 @@ class User extends Authenticatable
 
     public function movimentacoes(): HasMany
     {
-        return $this->hasMany(Movimentacao::class, 'cliente_id');
+        return $this->hasMany(Movimentacao::class, 'user_id');
     }
 
     public function categorias(): HasMany
