@@ -25,9 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::prefix('movimentacoes/categorias')->name('movimentacoes.categorias.')->group(function () {
-        Route::get('/', function () {
-            return Inertia::render('movimentacoes/categorias/Index');
-        })->name('index');
+        Route::get('/', [CategoriaController::class, 'index'])   
+            ->name('index');
 
         Route::get('create', [CategoriaController::class, 'create'])
             ->name('create');

@@ -43,7 +43,7 @@ function submit() {
 
 	<AppLayout :breadcrumbs="breadcrumbs">
 		<div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-			<form @submit.prevent="submit" class="max-w-5xl">
+			<form @submit.prevent="submit" class="md:max-w-5xl">
 				<div class="space-y-12">
 					<div class="border-b border-gray-900/10 dark:border-gray-700 pb-12">
 						<h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">Nova Categoria</h2>
