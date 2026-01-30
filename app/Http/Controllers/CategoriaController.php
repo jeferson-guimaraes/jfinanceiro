@@ -20,6 +20,7 @@ class CategoriaController extends Controller
 
         $search = $request->input('search');
         $tipo = $request->input('tipo', 'ganho');
+        $per_page = $request->input('per_page', 10);
 
         $categorias = Categoria::query()
             ->where('user_id', $user->id)
@@ -28,12 +29,12 @@ class CategoriaController extends Controller
             })
             ->where('tipo', $tipo)
             ->orderBy('nome')
-            ->paginate(10)
+            ->paginate($per_page)
             ->withQueryString();
 
         return Inertia::render('movimentacoes/categorias/Index', [
             'listaCategorias' => $categorias,
-            'filters' => ['search' => $search, 'tipo' => $tipo],
+            'filters' => ['search' => $search, 'tipo' => $tipo, 'per_page' => $per_page],
         ]);
     }
 

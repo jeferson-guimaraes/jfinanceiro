@@ -14,18 +14,17 @@ export interface Paginated<T> {
     label: string;
     active: boolean;
   }[];
-  meta: {
-    current_page: number;
-    from: number;
-    last_page: number;
-    path: string;
-    per_page: number;
-    to: number;
-    total: number;
-  };
+  current_page: number;
+  from: number;
+  last_page: number;
+  path: string;
+  per_page: number;
+  to: number;
+  total: number;
 }
 
 export interface Filter {
   search: string;
   tipo: 'ganho' | 'gasto' | 'gasto futuro';
+  per_page: number;
 }
