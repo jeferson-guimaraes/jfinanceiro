@@ -6,6 +6,7 @@ use App\Enums\TipoMovimentacaoEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Categoria extends Model
 {
@@ -13,16 +14,12 @@ class Categoria extends Model
 
     protected $fillable = [
         'nome',
-        'tipo',
-        'user_id',
+        'tipo_movimentacao',
+        'status',
     ];
 
-    protected $casts = [
-        'tipo' => TipoMovimentacaoEnum::class,
-    ];
-
-    public function user(): BelongsTo
+    public function movimentacoes(): HasMany
     {
-        return $this->belongsTo(User::class);
+        return $this->hasMany(Movimentacao::class);
     }
 }

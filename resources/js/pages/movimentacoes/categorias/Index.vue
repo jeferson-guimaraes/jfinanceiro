@@ -14,7 +14,7 @@ const props = defineProps<{
 	listaCategorias: Paginated<Categoria>;
 	filters: Filter;
 }>();
-console.log(props.listaCategorias)
+
 const breadcrumbs: BreadcrumbItem[] = [
 	{
 		title: 'Categorias',
@@ -24,11 +24,14 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const localSearch = ref(props.filters.search);
 const localTipo = ref(props.filters.tipo);
+const localPerPage = ref(props.filters.per_page || 10);
+
 
 const searchData = () => {
 	router.get('/movimentacoes/categorias', {
 		search: localSearch.value,
 		tipo: localTipo.value,
+		per_page: localPerPage.value,
 	}, {
 		preserveState: true,
 		replace: true,
@@ -46,11 +49,16 @@ watch(localTipo, (newTipo) => {
 	router.get('/movimentacoes/categorias', {
 		search: localSearch.value,
 		tipo: newTipo,
+		per_page: localPerPage.value,
 	}, {
 		preserveState: true,
 		replace: true,
 		preserveScroll: true,
 	});
+});
+
+watch(localPerPage, () => {
+	searchData();
 });
 
 </script>
@@ -72,9 +80,9 @@ watch(localTipo, (newTipo) => {
 
 					<div>
 						<Link :href="create()">
-							<Button class="w-30">
-								Nova Categoria
-							</Button>
+						<Button class="w-30">
+							Nova Categoria
+						</Button>
 						</Link>
 					</div>
 
@@ -82,8 +90,9 @@ watch(localTipo, (newTipo) => {
 
 				<div class="grid grid-cols-1 gap-x-6 gap-y-4">
 
-					<TabsListCategories :categorias="listaCategorias" :filters="filters" @update:search="localSearch = $event"
-						@update:tipo="localTipo = $event" />
+					<TabsListCategories :categorias="listaCategorias" :filters="filters"
+						@update:search="localSearch = $event" @update:tipo="localTipo = $event"
+						@update:per_page="localPerPage = $event" />
 
 				</div>
 			</div>
