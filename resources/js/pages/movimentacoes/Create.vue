@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
-import CategoriaModal from '@/components/movimentacoes/CategoriaModal.vue';
+import CategoriaModal from '@/components/modals/CategoriaModal.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

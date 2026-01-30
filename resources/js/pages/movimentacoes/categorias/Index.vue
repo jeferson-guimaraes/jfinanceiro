@@ -14,7 +14,7 @@ const props = defineProps<{
 	listaCategorias: Paginated<Categoria>;
 	filters: Filter;
 }>();
-console.log(props.listaCategorias)
+
 const breadcrumbs: BreadcrumbItem[] = [
 	{
 		title: 'Categorias',

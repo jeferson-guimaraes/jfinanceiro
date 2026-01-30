@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Input } from '@/components/ui/input';
-import { Link } from '@inertiajs/vue3';
-import { Categoria, Paginated, Filter } from '@/types/movimentacoes/categorias';
+import { ref, computed } from 'vue'
+import { router, Link } from '@inertiajs/vue3'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -9,14 +11,39 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/components/ui/table'
 
-defineProps<{
-  categorias: Paginated<Categoria>;
-  filters: Filter;
-}>();
+import ConfirmarExclusaoModal from './modals/ConfirmarExclusaoModal.vue'
+import type { Categoria, Paginated, Filter } from '@/types/movimentacoes/categorias'
 
-const emit = defineEmits(['update:search', 'update:tipo']);
+/* -------------------------------------------------------------------------- */
+/* Props / Emits                                                               */
+/* -------------------------------------------------------------------------- */
+
+const props = defineProps<{
+  categorias: Paginated<Categoria>
+  filters: Filter
+}>()
+
+const emit = defineEmits(['update:search', 'update:tipo'])
+
+/* -------------------------------------------------------------------------- */
+/* State                                                                      */
+/* -------------------------------------------------------------------------- */
+
+const selectedItems = ref<number[]>([])
+const isModalConfirmarExclusaoAberto = ref(false)
+
+type DeleteContext = {
+  type: 'single' | 'multiple'
+  count: number
+}
+
+const deleteContext = ref<DeleteContext | null>(null)
+
+/* -------------------------------------------------------------------------- */
+/* Tabs                                                                       */
+/* -------------------------------------------------------------------------- */
 
 const tabs = [
   { title: 'Ganhos', tipo: 'ganho' },
@@ -24,26 +51,110 @@ const tabs = [
   { title: 'Futuros', tipo: 'gasto futuro' },
 ]
 
+/* -------------------------------------------------------------------------- */
+/* Selection logic                                                            */
+/* -------------------------------------------------------------------------- */
+
+const allIds = computed(() =>
+  props.categorias.data.map(item => item.id)
+)
+
+const isAllSelected = computed(() =>
+  allIds.value.length > 0 &&
+  allIds.value.every(id => selectedItems.value.includes(id))
+)
+
+const isIndeterminate = computed(() =>
+  selectedItems.value.length > 0 && !isAllSelected.value
+)
+
+const allSelectedProxy = computed({
+  get: () => isAllSelected.value,
+  set: (value: boolean) => {
+    selectedItems.value = value ? [...allIds.value] : []
+  },
+})
+
+function toggleItem(id: number) {
+  selectedItems.value.includes(id)
+    ? selectedItems.value = selectedItems.value.filter(i => i !== id)
+    : selectedItems.value.push(id)
+}
+
+/* -------------------------------------------------------------------------- */
+/* Filters                                                                    */
+/* -------------------------------------------------------------------------- */
+
 function handleSearch(event: Event) {
-  emit('update:search', (event.target as HTMLInputElement).value);
+  emit('update:search', (event.target as HTMLInputElement).value)
 }
 
 function selectTab(tipo: string) {
-  emit('update:tipo', tipo);
+  emit('update:tipo', tipo)
 }
+
+/* -------------------------------------------------------------------------- */
+/* Delete flow                                                                */
+/* -------------------------------------------------------------------------- */
+
+function requestDeleteSingle(id: number) {
+  selectedItems.value = [id]
+  deleteContext.value = { type: 'single', count: 1 }
+  isModalConfirmarExclusaoAberto.value = true
+}
+
+function requestDeleteMultiple() {
+  deleteContext.value = {
+    type: 'multiple',
+    count: selectedItems.value.length,
+  }
+  isModalConfirmarExclusaoAberto.value = true
+}
+
+function confirmDelete() {
+  router.delete('/movimentacoes/categorias', {
+    data: { ids: selectedItems.value },
+    preserveScroll: true,
+    onSuccess: () => {
+      selectedItems.value = []
+      deleteContext.value = null
+      isModalConfirmarExclusaoAberto.value = false
+    },
+  })
+}
+
+/* -------------------------------------------------------------------------- */
+/* Modal texts                                                                */
+/* -------------------------------------------------------------------------- */
+
+const modalTitle = computed(() => {
+  if (!deleteContext.value) return ''
+
+  return deleteContext.value.type === 'single'
+    ? 'Excluir categoria'
+    : `Excluir ${deleteContext.value.count} categorias`
+})
+
+const modalMessage = computed(() => {
+  if (!deleteContext.value) return ''
+
+  return deleteContext.value.type === 'single'
+    ? 'Essa categoria será removida permanentemente.'
+    : 'As categorias selecionadas serão removidas permanentemente.'
+})
 </script>
 
 <template>
   <div>
+    <!-- Tabs -->
     <div class="border-b border-gray-200 dark:border-gray-700">
-      <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400">
+      <ul class="flex -mb-px text-sm font-medium text-gray-500 dark:text-gray-400">
         <li v-for="tab in tabs" :key="tab.tipo" class="mr-2">
-          <button @click="selectTab(tab.tipo)" :class="[
-            'inline-block p-4 border-b-2 rounded-t-lg cursor-pointer',
-            {
-              'text-blue-600 border-blue-600 active dark:text-blue-500 dark:border-blue-500': filters.tipo === tab.tipo,
-              'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300': filters.tipo !== tab.tipo,
-            },
+          <button class="hover:cursor-pointer" @click="selectTab(tab.tipo)" :class="[
+            'p-4 border-b-2',
+            filters.tipo === tab.tipo
+              ? 'text-blue-600 border-blue-600'
+              : 'border-transparent hover:text-gray-600 hover:border-gray-300',
           ]">
             {{ tab.title }}
           </button>
@@ -51,44 +162,66 @@ function selectTab(tipo: string) {
       </ul>
     </div>
 
+    <!-- Content -->
     <div class="p-4 bg-gray-50 dark:bg-sidebar rounded-b-lg">
-      <div class="mb-4">
+      <div class="mb-4 flex justify-between gap-2">
         <Input :model-value="filters.search" @input="handleSearch" placeholder="Buscar categoria..." class="max-w-sm" />
+
+        <Button v-if="selectedItems.length > 0" variant="destructive" size="sm" @click="requestDeleteMultiple">
+          Excluir selecionados
+        </Button>
       </div>
-      <div class="border rounded-md relative h-[600px] overflow-y-auto">
+
+      <div class="border rounded-md">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead class="text-gray-800 dark:text-gray-100">Nome</TableHead>
-              <TableHead class="text-gray-800 text-right dark:text-gray-100">Ações</TableHead>
-            </TableRow>
+          <TableHeader class="bg-[#5B92EA] dark:bg-blue-950">
+            <TableHead class="pr-0 w-1">
+              <Checkbox v-model="allSelectedProxy" :indeterminate="isIndeterminate" />
+            </TableHead>
+            <TableHead class="text-gray-100">Nome</TableHead>
+            <TableHead class="text-right text-gray-100">Ações</TableHead>
           </TableHeader>
+
           <TableBody>
-            <template v-if="categorias.data.length > 0">
-              <TableRow v-for="item in categorias.data" :key="item.id">
-                <TableCell class="text-gray-600 dark:text-gray-300">{{ item.nome }}</TableCell>
-                <TableCell class="text-right">
-                  <!-- Action buttons will go here -->
-                </TableCell>
-              </TableRow>
-            </template>
-            <template v-else>
-              <TableRow>
-                <TableCell colspan="2" class="h-24 text-center">
-                  Nenhum resultado.
-                </TableCell>
-              </TableRow>
-            </template>
+            <TableRow v-for="item in categorias.data" :key="item.id">
+              <TableCell class="pr-0">
+                <Checkbox :model-value="selectedItems.includes(item.id)"
+                  @update:modelValue="() => toggleItem(item.id)" />
+              </TableCell>
+
+              <TableCell>
+                {{ item.nome }}
+              </TableCell>
+
+              <TableCell class="text-right">
+                <Button size="sm" variant="destructive" @click="requestDeleteSingle(item.id)">
+                  Excluir
+                </Button>
+              </TableCell>
+            </TableRow>
+
+            <TableRow v-if="categorias.data.length === 0">
+              <TableCell colspan="3" class="h-24 text-center">
+                Nenhum resultado.
+              </TableCell>
+            </TableRow>
           </TableBody>
         </Table>
       </div>
 
-
-      <div class="flex items-center justify-end space-x-2 py-4">
-        <Link v-for="link in categorias.links" :key="link.label" :href="link.url || '#'" class="px-3 py-2 text-sm"
-          :class="{ 'bg-blue-500 text-white rounded-md': link.active, 'text-gray-500': !link.url }"
-          v-html="link.label" preserve-scroll />
+      <!-- Pagination -->
+      <div class="flex justify-end py-4">
+        <Link v-for="link in categorias.links" :key="link.label" :href="link.url || '#'" v-html="link.label"
+          preserve-scroll class="px-3 py-2 text-sm" :class="{
+            'bg-blue-500 text-white rounded-md': link.active,
+            'text-gray-500': !link.url,
+          }" />
       </div>
     </div>
   </div>
+
+  <!-- Modal -->
+  <ConfirmarExclusaoModal v-model:open="isModalConfirmarExclusaoAberto" :title="modalTitle" :message="modalMessage"
+    description="Essa ação não pode ser desfeita. As movimentações desta categoria serão alteradas para a categoria 'Outros'."
+    confirm-text="Excluir" @confirm="confirmDelete" @cancel="isModalConfirmarExclusaoAberto = false" />
 </template>
