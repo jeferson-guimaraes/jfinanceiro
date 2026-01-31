@@ -67,7 +67,36 @@ class CategoriaController extends Controller
             return redirect()->back();
         }
 
-        return redirect()->route('movimentacoes.categorias.create')->with('success', 'Categoria criada com sucesso!');
+        return redirect()->route('movimentacoes.categorias.index')->with('success', 'Categoria criada com sucesso!');
+    }
+
+    /**
+     * Renderiza a view para editar uma categoria.
+     *
+     * @param Categoria $categoria
+     * @return Response
+     */
+    public function edit(Categoria $categoria): Response
+    {
+        return Inertia::render('movimentacoes/categorias/Edit', [
+            'categoria' => $categoria,
+        ]);
+    }
+
+    /**
+     * Atualiza uma categoria no banco de dados.
+     *
+     * @param CategoriasRequest $request
+     * @param Categoria $categoria
+     * @return RedirectResponse
+     */
+    public function update(CategoriasRequest $request, Categoria $categoria): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $categoria->update($data);
+
+        return redirect()->route('movimentacoes.categorias.index')->with('success', 'Categoria atualizada com sucesso!');
     }
 
     /**

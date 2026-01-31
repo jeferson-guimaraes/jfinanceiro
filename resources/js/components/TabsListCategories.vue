@@ -103,7 +103,9 @@ function selectTab(tipo: string) {
 }
 
 function handlePerPageChange(value: AcceptableValue) {
-  emit('update:per_page', String(value))
+  if (value) {
+    emit('update:per_page', value)
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -188,13 +190,11 @@ const modalMessage = computed(() => {
       <div class="border rounded-md">
         <Table>
           <TableHeader class="bg-[#5B92EA] dark:bg-blue-950">
-            <TableRow :hover="false">
-              <TableHead class="pr-0 w-1">
-                <Checkbox v-model="allSelectedProxy" :indeterminate="isIndeterminate" />
-              </TableHead>
-              <TableHead class="text-gray-100">Nome</TableHead>
-              <TableHead class="text-right text-gray-100">Ações</TableHead>
-            </TableRow>
+            <TableHead class="pr-0 w-1">
+              <Checkbox v-model="allSelectedProxy" :indeterminate="isIndeterminate" />
+            </TableHead>
+            <TableHead class="text-gray-100">Nome</TableHead>
+            <TableHead class="text-right text-gray-100 pr-[15%] md:pr-[10%] xl:pr-[4%]">Ações</TableHead>
           </TableHeader>
 
           <TableBody>
@@ -209,6 +209,11 @@ const modalMessage = computed(() => {
               </TableCell>
 
               <TableCell class="text-right">
+                <Link :href="`/movimentacoes/categorias/${item.id}/edit`">
+                  <Button size="sm" variant="outline" class="mr-2 border-[#5B92EA] text-[#5B92EA] hover:bg-[#5B92EA]/10 hover:text-[#5B92EA] dark:border-[#5894f3] dark:hover:bg-[#5B92EA]/30">
+                    Editar
+                  </Button>
+                </Link>
                 <Button size="sm" variant="destructive" @click="requestDeleteSingle(item.id)">
                   Excluir
                 </Button>
@@ -256,13 +261,11 @@ const modalMessage = computed(() => {
           </div>
 
           <div class="flex items-center justify-center">
-            <Link
-              v-for="link in categorias.links" :key="link.label" :href="link.url || '#'" v-html="link.label"
+            <Link v-for="link in categorias.links" :key="link.label" :href="link.url || '#'" v-html="link.label"
               preserve-scroll class="px-3 py-2 text-sm" :class="{
                 'bg-blue-500 text-white rounded-md': link.active,
                 'text-gray-500': !link.url,
-              }"
-            />
+              }" />
           </div>
         </div>
       </div>
@@ -270,13 +273,7 @@ const modalMessage = computed(() => {
   </div>
 
   <!-- Modal -->
-  <ConfirmarExclusaoModal
-    v-model:open="isModalConfirmarExclusaoAberto"
-    :title="modalTitle"
-    :message="modalMessage"
+  <ConfirmarExclusaoModal v-model:open="isModalConfirmarExclusaoAberto" :title="modalTitle" :message="modalMessage"
     description="Essa ação não pode ser desfeita. As movimentações desta categoria serão alteradas para a categoria 'Outros'."
-    confirm-text="Excluir"
-    @confirm="confirmDelete"
-    @cancel="isModalConfirmarExclusaoAberto = false"
-  />
+    confirm-text="Excluir" @confirm="confirmDelete" @cancel="isModalConfirmarExclusaoAberto = false" />
 </template>

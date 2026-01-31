@@ -34,6 +34,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [CategoriaController::class, 'store'])
             ->name('store');
 
+        Route::get('{categoria}/edit', [CategoriaController::class, 'edit'])
+            ->name('edit');
+
+        Route::patch('{categoria}', [CategoriaController::class, 'update'])
+            ->name('update');
+
         Route::delete('/', [CategoriaController::class, 'destroyMany'])
             ->name('destroyMany');
     });
