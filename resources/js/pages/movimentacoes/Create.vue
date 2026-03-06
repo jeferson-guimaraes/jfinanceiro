@@ -23,7 +23,7 @@ const isCategoriaModalOpen = ref(false);
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Movimentações',
-        href: '/movimentacoes',
+        href: '/movimentacoes/index',
     },
     {
         title: 'Nova Movimentação',
