@@ -76,3 +76,16 @@ Resta pagar =
 
 - Gastos futuros:
   - Filtrados por mês/ano
+
+  ## Categoria
+
+Toda movimentação deve possuir uma categoria.
+
+Regras:
+- Categoria é obrigatória
+- Categoria padrão: "Outros"
+- Usuário pode criar, editar e remover categorias
+
+Uso:
+- Organização de movimentações
+- Base para filtros futuros

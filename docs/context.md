@@ -22,3 +22,15 @@ Permitir que usuários registrem:
 - Simplicidade > Complexidade
 - Regras financeiras explícitas
 - Backend é a fonte da verdade
+
+## Diretriz de Interface
+
+O sistema é **mobile-first**.
+
+Regras:
+- Mobile: exibição em cards
+- Desktop (>= md): exibição em tabela
+
+A UI deve sempre priorizar:
+- Leitura rápida
+- Ações claras (ex: pagar, filtrar)

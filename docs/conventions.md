@@ -37,3 +37,8 @@
 
 - Nunca calcular parcelas no backend baseado em lógica duplicada
 - Sempre confiar nos dados enviados validados
+
+## Categorias
+
+- Nunca criar movimentação sem categoria
+- Sempre fallback para "Outros" se não informado

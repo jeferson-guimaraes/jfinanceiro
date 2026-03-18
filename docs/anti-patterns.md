@@ -33,3 +33,9 @@
 - Respeitar separação:
   - Movimentação = transação
   - Parcela = execução financeira
+
+## ❌ Categorias
+
+- Permitir movimentação sem categoria
+- Hardcode de categorias no frontend
+- Ignorar categoria em listagens
