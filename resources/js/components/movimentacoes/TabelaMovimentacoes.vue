@@ -124,7 +124,7 @@ const getValorPrefix = (tipo: string) => {
   return tipo === 'gasto' ? '-' : '+';
 };
 
-function requestDelete(movimentacao: Movimentacao) {
+function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
   emit('delete', movimentacao);
 }
 </script>
