@@ -34,14 +34,13 @@ const formattedValue = computed(() => formataDinheiroBRL(props.value));
 </script>
 
 <template>
-  <div class="rounded-lg border bg-white p-4 space-y-2 shadow-sm dark:border-gray-700 dark:bg-gray-800 flex items-center gap-3 w-full">
-    <div class="flex justify-center items-center">
-      <component :is="props.icon" :class="props.iconClasses" />
-    </div>
-		
+  <div class="rounded-lg border bg-white p-4 space-y-2 shadow-sm dark:border-gray-700 dark:bg-gray-800 flex items-center gap-3 w-full">		
     <div>
-			<h3 class="md:block text-sm font-medium text-gray-500 dark:text-gray-400">{{ title }}</h3>
-      <div :class="`${props.valueClasses} ${props.valueColorClass}`">
+      <div class="flex gap-2 items-center">
+        <component :is="props.icon" :class="props.iconClasses" />
+        <h3 class="md:block text-sm font-medium text-gray-500 dark:text-gray-400">{{ title }}</h3>
+      </div>
+      <div :class="`mt-2 ${props.valueClasses} ${props.valueColorClass}`">
         {{ formattedValue }}
       </div>
     </div>

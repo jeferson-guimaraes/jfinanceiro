@@ -181,6 +181,7 @@ function changeTab(newAba: string) {
     mesSelecionado.value = '';
     anoSelecionado.value = '';
   }
+
   triggerSearch();
 }
 
@@ -210,16 +211,18 @@ watch(buscaTexto, () => {
 
 const limparFiltros = () => {
   const now = new Date();
-  const primeiroDia = new Date(now.getFullYear(), now.getMonth(), 1);
-  const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-  dataInicio.value = primeiroDia.toISOString().split('T')[0];
-  dataFim.value = ultimoDia.toISOString().split('T')[0];
+  if (abaAtiva.value === 'gasto futuro'){
+    mesSelecionado.value = String(currentDate.getMonth() + 1);
+    anoSelecionado.value = String(currentDate.getFullYear());
+  }else{
+    const primeiroDia = new Date(now.getFullYear(), now.getMonth(), 1);
+    const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    dataInicio.value = primeiroDia.toISOString().split('T')[0];
+    dataFim.value = ultimoDia.toISOString().split('T')[0];
+  }
 
   buscaTexto.value = '';
-  mesSelecionado.value = '';
-  anoSelecionado.value = '';
-  
   triggerSearch();
 };
 </script>
@@ -255,13 +258,21 @@ const limparFiltros = () => {
             </div>
 
             <div class="rounded-b-lg bg-gray-50 p-4 dark:bg-sidebar">
-              <div class="mb-4 flex flex-col lg:grid lg:grid-cols-3 md:gap-6 space-y-4">
+              <div class="mb-4 flex flex-col space-y-4"
+                :class="[
+                  abaAtiva === 'gasto futuro'
+                    ? 'lg:grid lg:grid-cols-2 lg:gap-6'
+                    : 'md:grid md:grid-cols-2 md:gap-6',
+                ]"
+              >
                 <!-- Filtros e Busca -->
-                <div class="space-y-4 order-2 lg:order-1 lg:col-span-2 xl:col-span-1 flex-1">
-                  <!-- Filtro de data (Visível apenas na aba 'todos') -->
+                <div class="space-y-4 order-2 lg:order-1 flex-1"
+                  :class="[abaAtiva === 'gastos futuros' && 'lg:col-span-2 xl:col-span-1']"
+                >
+                  <!-- Filtro de data (Invisível apenas na aba 'gasto futuro') -->
                   <div v-if="abaAtiva === 'todos' || abaAtiva === 'ganho' || abaAtiva === 'gasto'"
                     class="flex flex-col gap-2 lg:flex-row lg:items-center">
-                    <div class="grid grid-cols-2 items-center gap-2 w-full">
+                    <div class="grid grid-cols-2 items-center gap-2 w-full max-w-lg">
                       <div class="md:flex w-full gap-2">
                         <Label for="dataInicio" class="my-auto mb-2 md:mb-auto">De:</Label>
                         <Input v-model="dataInicio" type="date" class="w-full" id="dataInicio" />
@@ -275,10 +286,10 @@ const limparFiltros = () => {
                   </div>
 
                   <!-- Filtro mês/ano para gastos futuros -->
-                  <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-col gap-2 lg:items-center">
-                    <div class="flex items-center gap-2">
+                  <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-col gap-2 lg:items-center max-w-lg">
+                    <div class="flex w-full items-center gap-2">
                       <Select v-model="mesSelecionado">
-                        <SelectTrigger class="w-[180px]">
+                        <SelectTrigger>
                           <SelectValue placeholder="Mês" />
                         </SelectTrigger>
                         <SelectContent>
@@ -287,18 +298,19 @@ const limparFiltros = () => {
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      <Input type="text" v-model="anoSelecionado" placeholder="Ano" class="w-[100px]" />
+                      <Input type="text" v-model="anoSelecionado" placeholder="Ano" class="md:w-[180px]" />
                     </div>
                   </div>
 
-                  <div class="sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:block items-center gap-2">
+                  <!-- Filtro de Busca por Texto -->
+                  <div class="flex items-center gap-2 max-w-lg">
                     <!-- Busca -->
                     <Input v-model="buscaTexto" placeholder="Buscar por descrição..." class="lg:col-span-2" />
 
                     <!-- Limpar Filtros -->
                     <div class="flex items-center">
                       <button type="button" @click="limparFiltros"
-                        class="w-full border border-gray-200 text-gray-500 py-1.5 px-4 rounded-md flex gap-2 items-center justify-center hover:bg-gray-100 hover:cursor-pointer ease-in-out duration-300 mt-3 sm:mt-0 xl:mt-2">
+                        class="w-fit text-xs md:text-[11pt] border border-gray-200 text-gray-500 py-2.5 md:py-2 px-2 md:px-4 rounded-md flex gap-2 items-center justify-center hover:bg-gray-100 hover:cursor-pointer ease-in-out duration-300 whitespace-nowrap">
                         <X class="w-4 h-4" /> Limpar Filtros
                       </button>
                     </div>
@@ -306,40 +318,25 @@ const limparFiltros = () => {
                 </div>
 
                 <!-- Totais -->
-                <div
-                  class="order-1 lg:order-2 mb-5 lg:mb-0 flex flex-wrap justify-center lg:justify-end gap-2 lg:gap-6 xl:col-span-1 xl:col-start-3">
-                  <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-wrap sm:flex-nowrap justify-center gap-2 w-full">
+                <div class="order-1 max-w-md lg:max-w-none mb-5 lg:mb-0 flex flex-wrap gap-2 lg:gap-6 xl:col-span-1">
+                  <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-wrap sm:flex-nowrap gap-2 xl:ml-auto">
                     <!-- Card Total -->
-                    <TotalCard 
-                      :icon="Wallet" 
-                      :iconClasses="'text-[#6F4E37] w-6 h-6 md:w-8 md:h-8'" 
-                      title="Total" 
-                      :value="total"
-                      :valueClasses="'text-xl md:text-2xl font-semibold'" 
-                    />
+                    <TotalCard :icon="Wallet" :iconClasses="'text-[#6F4E37] w-6 h-6 xl:w-8 xl:h-8'" title="Total Contas"
+                      :value="total" :valueClasses="'text-xl xl:text-2xl font-semibold'" />
                     <!-- Card Total Pago -->
-                    <TotalCard 
-                      :icon="Check" 
-                      :iconClasses="'text-white bg-green-400 rounded-full p-1 w-6 h-6 md:w-8 md:h-8'"
-                      title="Total Pago" 
-                      :value="totalPago" 
-                      :valueClasses="'text-xl md:text-2xl font-semibold'" 
-                    />
+                    <TotalCard :icon="Check"
+                      :iconClasses="'text-white bg-green-400 rounded-full p-1 w-6 h-6 xl:w-8 xl:h-8'" title="Total Pago"
+                      :value="totalPago" :valueClasses="'text-xl xl:text-2xl font-semibold'" />
                     <!-- Card Total Pendente -->
-                    <TotalCard 
-                      :icon="Hourglass" 
-                      :iconClasses="'text-red-700 w-6 h-6 md:w-8 md:h-8'" 
-                      title="Total Pendente"
-                      :value="totalPendente" 
-                      :valueClasses="'text-xl md:text-2xl font-semibold'"
-                      :valueColorClass="'text-red-700 dark:text-red-400'" 
-                    />
+                    <TotalCard :icon="Hourglass" :iconClasses="'text-red-700 w-6 h-6 xl:w-8 xl:h-8'"
+                      title="Total Pendente" :value="totalPendente" :valueClasses="'text-xl xl:text-2xl font-semibold'"
+                      :valueColorClass="'text-red-700 dark:text-red-400'" />
                   </div>
-                  <div v-else class="w-full md:w-fit">
+                  <div v-else class="w-full md:w-fit ml-auto">
                     <!-- Card Total -->
                     <TotalCard :icon="Wallet" iconClasses="text-[#6F4E37] w-8 h-8" title="Total" :value="total"
                       valueClasses="text-2xl font-semibold flex"
-                      :valueColorClass="total >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" />
+                      :valueColorClass="total >= 0 && abaAtiva !== 'gasto' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'" />
                   </div>
                 </div>
               </div>
