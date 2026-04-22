@@ -61,7 +61,7 @@ const meses = [
 ];
 
 const currentDate = new Date();
-// Inicializa com mês/ano atual se a aba for 'gasto futuro' ou se quiser valores padrão
+// Inicializa com mês/ano atual
 onMounted(() => {
   const now = new Date();
   const primeiroDia = new Date(now.getFullYear(), now.getMonth(), 1);

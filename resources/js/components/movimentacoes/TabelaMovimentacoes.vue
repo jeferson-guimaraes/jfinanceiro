@@ -31,8 +31,14 @@ const sortOrder = ref<'asc' | 'desc'>('desc');
 const sortedMovimentacoes = computed(() => {
   if (!props.movimentacoes) return [];
   return [...props.movimentacoes].sort((a, b) => {
-    const aVal = a[sortKey.value as keyof Movimentacao] ?? 0;
-    const bVal = b[sortKey.value as keyof Movimentacao] ?? 0;
+    let key = sortKey.value;
+    if (key === 'movimentacao.valor') key = 'valor';
+    if (key === 'movimentacao.parcelas_pagas') key = 'parcelas_pagas';
+    if (key === 'categoria') key = 'categoria.nome';
+
+    const aVal = normalizeValue(getValueByPath(a, key));
+    const bVal = normalizeValue(getValueByPath(b, key));
+
     if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1;
     if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1;
     return 0;
@@ -43,11 +49,13 @@ const sortedParcelas = computed(() => {
   if (!props.parcelas) return [];
 
   return [...props.parcelas].sort((a, b) => {
-    const aRaw = getValueByPath(a, sortKey.value);
-    const bRaw = getValueByPath(b, sortKey.value);
+    let key = sortKey.value;
+    if (key === 'data') key = 'movimentacao.data';
+    if (key === 'descricao') key = 'movimentacao.descricao';
+    if (key === 'categoria') key = 'movimentacao.categoria.nome';
 
-    const aVal = normalizeValue(aRaw);
-    const bVal = normalizeValue(bRaw);
+    const aVal = normalizeValue(getValueByPath(a, key));
+    const bVal = normalizeValue(getValueByPath(b, key));
 
     if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1;
     if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1;
@@ -166,15 +174,30 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
             }}</span>
           </TableHead>
           <template v-if="activeTab === 'gasto futuro'">
-            <TableHead class="text-center text-gray-100">Parcela</TableHead>
+            <TableHead class="text-center cursor-pointer text-gray-100 hover:opacity-80" @click="sort('numero')">
+              Parcela
+              <span v-if="sortKey === 'numero'">{{ 
+                sortOrder === 'asc' ? '↑' : '↓'
+              }}</span>
+            </TableHead>
             <TableHead class="text-center cursor-pointer text-gray-100" @click="sort('valor')">
               Valor das Parcelas
               <span v-if="sortKey === 'valor'">{{ 
-                sortOrder === 'asc' ? '↓' : '↑'
+                sortOrder === 'asc' ? '↑' : '↓'
               }}</span>
             </TableHead>
-            <TableHead class="text-center text-gray-100">Data de Vencimento</TableHead>
-            <TableHead class="text-center text-gray-100">Parcelas Pagas</TableHead>
+            <TableHead class="text-center cursor-pointer text-gray-100 hover:opacity-80" @click="sort('data_vencimento')">
+              Data de Vencimento
+              <span v-if="sortKey === 'data_vencimento'">{{ 
+                sortOrder === 'asc' ? '↑' : '↓'
+              }}</span>
+            </TableHead>
+            <TableHead class="text-center cursor-pointer text-gray-100 hover:opacity-80" @click="sort('movimentacao.parcelas_pagas')">
+              Parcelas Pagas
+              <span v-if="sortKey === 'movimentacao.parcelas_pagas'">{{ 
+                sortOrder === 'asc' ? '↑' : '↓'
+              }}</span>
+            </TableHead>
           </template>
           <TableHead class="text-center text-gray-100">Ações</TableHead>
       </TableHeader>
@@ -183,7 +206,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
         <template v-if="activeTab === 'gasto futuro'">
           <TableRow v-for="parcela in sortedParcelas" :key="parcela.id">
             <TableCell class="whitespace-nowrap">
-              {{ formatDate(parcela.data_vencimento) }}
+              {{ formatDate(parcela.movimentacao.data) }}
             </TableCell>
             <TableCell>
               {{ parcela.movimentacao.descricao }}
