@@ -5,10 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
+import { Categoria } from '@/types/movimentacoes/categorias';
 import { Head, useForm } from '@inertiajs/vue3';
 
-defineProps<{
+const props = defineProps<{
 	tipos_movimentacao: { name: string; value: string }[];
+	categoria: Categoria;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -17,18 +19,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 		href: '/movimentacoes/categorias',
 	},
 	{
-		title: 'Nova Categoria',
+		title: 'Editar Categoria',
 		href: '#',
 	},
 ];
 
 const form = useForm({
-	nome: '',
-	tipo: 'ganho',
+	nome: props.categoria.nome,
+	tipo: props.categoria.tipo,
 });
 
 function submit() {
-	form.post('/movimentacoes/categorias', {
+	form.patch(`/movimentacoes/categorias/${props.categoria.id}`, {
 		onSuccess: () => {
 			form.reset('nome', 'tipo');
 		},
@@ -38,19 +40,18 @@ function submit() {
 
 <template>
 
-	<Head title="Nova Categoria" />
+	<Head title="Editar Categoria" />
 
 	<AppLayout :breadcrumbs="breadcrumbs">
 		<div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 			<form @submit.prevent="submit" class="md:max-w-5xl">
 				<div class="space-y-12">
 					<div class="border-b border-gray-900/10 dark:border-gray-700 pb-12">
-						<h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">Nova Categoria</h2>
-						<p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">Crie uma nova categoria para suas
-							movimentações.</p>
+						<h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">Editar Categoria</h2>
+						<p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">Altere os dados da categoria.</p>
 
 						<div class="mt-10 grid grid-cols-1 gap-6">
-							
+
 							<div>
 								<Label for="nome">Nome</Label>
 								<Input id="nome" v-model="form.nome" name="nome" type="text" autocomplete="off" />
@@ -59,14 +60,15 @@ function submit() {
 								<Label for="tipo">
 									Tipo
 								</Label>
-								
+
 								<div class="mt-2">
 									<Select v-model="form.tipo">
 										<SelectTrigger>
 											<SelectValue placeholder="Selecione o tipo" />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem v-for="t in tipos_movimentacao" :key="t.value" :value="t.value"> {{ t.name }} </SelectItem>
+											<SelectItem v-for="t in tipos_movimentacao" :key="t.value" :value="t.value"> {{ t.name }}
+											</SelectItem>
 										</SelectContent>
 									</Select>
 								</div>

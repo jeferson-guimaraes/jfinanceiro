@@ -3,8 +3,10 @@
 namespace Tests\Feature\Movimentacoes;
 
 use App\Enums\TipoMovimentacaoEnum;
+use App\Models\Categoria;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class CategoriaTest extends TestCase
@@ -107,5 +109,123 @@ class CategoriaTest extends TestCase
         ]);
 
         $response->assertRedirect('/login');
+    }
+
+    public function test_lista_categorias_do_tipo_ganho_por_padrao(): void
+    {
+        Categoria::factory()->count(3)->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+        ]);
+        Categoria::factory()->count(2)->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GASTO,
+        ]);
+
+        Categoria::factory()->create();
+
+        $this->actingAs($this->user)
+            ->get('/movimentacoes/categorias')
+            ->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('movimentacoes/categorias/Index')
+                ->has('listaCategorias.data', 3)
+                ->where('filters.tipo', 'ganho')
+                ->where('listaCategorias.data.0.tipo', TipoMovimentacaoEnum::GANHO->value)
+            );
+    }
+
+    public function test_filtra_categorias_do_tipo_ganho(): void
+    {
+        Categoria::factory()->count(2)->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+        ]);
+        Categoria::factory()->count(3)->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GASTO,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get('/movimentacoes/categorias?tipo=ganho')
+            ->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('movimentacoes/categorias/Index')
+                ->has('listaCategorias.data', 2)
+                ->where('filters.tipo', 'ganho')
+                ->where('listaCategorias.data.0.tipo', TipoMovimentacaoEnum::GANHO->value)
+            );
+    }
+
+    public function test_filtra_categorias_do_tipo_gasto_futuro(): void
+    {
+        Categoria::factory()->count(2)->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+        ]);
+        Categoria::factory()->count(3)->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GASTO,
+        ]);
+        Categoria::factory()->count(4)->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GASTO_FUTURO,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get('/movimentacoes/categorias?tipo=gasto%20futuro')
+            ->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('movimentacoes/categorias/Index')
+                ->has('listaCategorias.data', 4)
+                ->where('filters.tipo', 'gasto futuro')
+                ->where('listaCategorias.data.0.tipo', TipoMovimentacaoEnum::GASTO_FUTURO->value)
+            );
+    }
+
+    public function test_filtra_categorias_do_tipo_gasto(): void
+    {
+        Categoria::factory()->count(3)->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+        ]);
+        Categoria::factory()->count(2)->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GASTO,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get('/movimentacoes/categorias?tipo=gasto')
+            ->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('movimentacoes/categorias/Index')
+                ->has('listaCategorias.data', 2)
+                ->where('filters.tipo', 'gasto')
+                ->where('listaCategorias.data.0.tipo', TipoMovimentacaoEnum::GASTO->value)
+            );
+    }
+
+     public function test_filtra_categorias_por_busca(): void
+    {
+        $categoria1 = Categoria::factory()->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+            'nome' => 'Salário'
+        ]);
+        $categoria2 = Categoria::factory()->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+            'nome' => 'Investimento'
+        ]);
+
+        $this->actingAs($this->user)
+            ->get('/movimentacoes/categorias?search=Sal')
+            ->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('movimentacoes/categorias/Index')
+                ->has('listaCategorias.data', 1)
+                ->where('filters.search', 'Sal')
+                ->where('listaCategorias.data.0.nome', $categoria1->nome)
+            );
     }
 }

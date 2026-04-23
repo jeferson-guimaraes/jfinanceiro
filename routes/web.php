@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\MovimentacaoController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\MovimentacaoController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -17,23 +17,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('dashboard');
 
     Route::prefix('movimentacoes')->name('movimentacoes.')->group(function () {
+        Route::get('index', [MovimentacaoController::class, 'index'])
+            ->name('index');
+
         Route::get('create', [MovimentacaoController::class, 'create'])
             ->name('create');
 
         Route::post('/', [MovimentacaoController::class, 'store'])
             ->name('store');
+
+        Route::get('{movimentacao}/edit', [MovimentacaoController::class, 'edit'])
+            ->name('edit');
+
+        Route::patch('{movimentacao}', [MovimentacaoController::class, 'update'])
+            ->name('update');
+
+        Route::delete('{movimentacao}', [MovimentacaoController::class, 'destroy'])
+            ->name('destroy');
     });
 
     Route::prefix('movimentacoes/categorias')->name('movimentacoes.categorias.')->group(function () {
-        Route::get('/', function () {
-            return Inertia::render('movimentacoes/categorias/Index');
-        })->name('index');
+        Route::get('/', [CategoriaController::class, 'index'])
+            ->name('index');
 
         Route::get('create', [CategoriaController::class, 'create'])
             ->name('create');
 
         Route::post('/', [CategoriaController::class, 'store'])
             ->name('store');
+
+        Route::get('{categoria}/edit', [CategoriaController::class, 'edit'])
+            ->name('edit');
+
+        Route::patch('{categoria}', [CategoriaController::class, 'update'])
+            ->name('update');
+
+        Route::delete('/', [CategoriaController::class, 'destroyMany'])
+            ->name('destroyMany');
     });
 });
 

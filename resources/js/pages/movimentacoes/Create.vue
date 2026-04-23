@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
-import CategoriaModal from '@/components/movimentacoes/CategoriaModal.vue';
+import CategoriaModal from '@/components/modals/CategoriaModal.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,7 @@ const isCategoriaModalOpen = ref(false);
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Movimentações',
-        href: '/movimentacoes',
+        href: '/movimentacoes/index',
     },
     {
         title: 'Nova Movimentação',
@@ -127,7 +127,7 @@ function refreshCategories() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <form @submit.prevent="submit" class="max-w-5xl">
+            <form @submit.prevent="submit" class="md:max-w-5xl">
                 <div class="space-y-12">
                     <div class="border-b border-gray-900/10 dark:border-gray-700 pb-12">
                         <h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">

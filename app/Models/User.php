@@ -54,6 +54,11 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Obtém as movimentações associadas a este usuário.
+     *
+     * @return HasMany
+     */
     public function movimentacoes(): HasMany
     {
         return $this->hasMany(Movimentacao::class, 'user_id');

@@ -49,3 +49,34 @@ export interface Categoria {
     updated_at: string;
 }
 
+export interface Movimentacao {
+    id: number;
+    categoria_id: number;
+    user_id: number;
+    data: string;
+    descricao: string;
+    valor: number;
+    tipo: 'ganho' | 'gasto' | 'gasto futuro';
+    parcelas: number;
+    parcelas_pagas?: number;
+    created_at: string;
+    updated_at: string;
+    categoria?: Categoria;
+    parcelas?: Parcela[];
+}
+
+export interface Parcela {
+    id: number;
+    movimentacao_id: number;
+    numero: number;
+    valor: number;
+    data_vencimento: string;
+    data_pagamento: string | null;
+    pago: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ParcelaComMovimentacao extends Parcela {
+    movimentacao: Movimentacao;
+}

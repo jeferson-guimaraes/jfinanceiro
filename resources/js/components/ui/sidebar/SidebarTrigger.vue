@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
+import { computed, type HTMLAttributes } from 'vue'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-vue-next'
@@ -9,6 +9,11 @@ const props = defineProps<{
 }>()
 
 const { toggleSidebar, open, isMobile } = useSidebar()
+
+const currentIcon = computed(() => {
+  if (isMobile.value) return Menu;
+  return open.value ? X : Menu;
+});
 </script>
 
 <template>
@@ -20,7 +25,7 @@ const { toggleSidebar, open, isMobile } = useSidebar()
     :class="cn('h-7 w-7', props.class)"
     @click="toggleSidebar"
   >
-    <component :is="open || isMobile ? Menu : X" />
+    <component :is="currentIcon" />
     <span class="sr-only">Toggle Sidebar</span>
   </Button>
 </template>
