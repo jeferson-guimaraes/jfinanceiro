@@ -24,6 +24,7 @@ class CategoriaController extends Controller
 
         $categorias = Categoria::query()
             ->where('user_id', $user->id)
+            ->orWhere('user_id', null)
             ->when($search, function ($query, $search) {
                 $query->where('nome', 'like', "%{$search}%");
             })

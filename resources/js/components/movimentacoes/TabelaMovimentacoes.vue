@@ -71,15 +71,23 @@ function normalizeValue(value: unknown): number | string {
   if (value instanceof Date) return value.getTime();
 
   if (typeof value === 'string') {
-    if (!isNaN(Date.parse(value))) {
+    // Se for um número válido no formato padrão (ex: "100.05"), retorna o número
+    const asNumber = Number(value);
+    if (!isNaN(asNumber) && value.trim() !== '') {
+      return asNumber;
+    }
+
+    // Se parecer uma data, tenta converter para timestamp
+    if (value.includes('-') && !isNaN(Date.parse(value))) {
       return new Date(value).getTime();
     }
 
+    // Tenta converter formato brasileiro (ex: "1.234,56")
     const numeric = value
       .replace(/\./g, '')
       .replace(',', '.');
 
-    if (!isNaN(Number(numeric))) {
+    if (!isNaN(Number(numeric)) && numeric.trim() !== '') {
       return Number(numeric);
     }
 

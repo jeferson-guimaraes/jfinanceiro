@@ -332,7 +332,7 @@ const limparFiltros = () => {
                       title="Total Pendente" :value="totalPendente" :valueClasses="'text-xl xl:text-2xl font-semibold'"
                       :valueColorClass="'text-red-700 dark:text-red-400'" />
                   </div>
-                  <div v-else class="w-full md:w-fit ml-auto">
+                  <div v-else class="w-full md:w-fit lg:ml-auto">
                     <!-- Card Total -->
                     <TotalCard :icon="Wallet" iconClasses="text-[#6F4E37] w-8 h-8" title="Total" :value="total"
                       valueClasses="text-2xl font-semibold flex"

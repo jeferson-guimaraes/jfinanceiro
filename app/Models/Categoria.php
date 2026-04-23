@@ -35,7 +35,7 @@ class Categoria extends Model
 
     protected $fillable = [
         'nome',
-        'tipo_movimentacao',
+        'tipo',
         'status',
     ];
 

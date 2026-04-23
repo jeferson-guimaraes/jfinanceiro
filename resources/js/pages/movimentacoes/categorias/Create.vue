@@ -31,7 +31,6 @@ function submit() {
 	form.post('/movimentacoes/categorias', {
 		onSuccess: () => {
 			form.reset('nome', 'tipo');
-			form.tipo = 'ganho';
 		},
 	});
 }
