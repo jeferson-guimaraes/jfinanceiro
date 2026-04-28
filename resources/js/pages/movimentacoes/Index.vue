@@ -13,6 +13,7 @@ import { Check, Hourglass, Wallet, X, Plus } from 'lucide-vue-next';
 import MovimentacoesCardList from '@/components/movimentacoes/MovimentacoesCardList.vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import isValidDate from '@/utils/validaData';
+import { Button } from '@/components/ui/button';
 
 const isMediumScreen = ref(false);
 
@@ -42,7 +43,7 @@ const tabs = [
   { title: 'Todas', tipo: 'todos' },
   { title: 'Ganhos', tipo: 'ganho' },
   { title: 'Despesas', tipo: 'gasto' },
-  { title: 'Futuros', tipo: 'gasto futuro' },
+  { title: 'Futuras', tipo: 'gasto futuro' },
 ];
 
 const abaAtiva = ref('todos');
@@ -233,13 +234,23 @@ const limparFiltros = () => {
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
       <div class="space-y-2 xl:px-8">
-        <div>
-          <h2 class="text-base leading-7 font-semibold text-gray-900 dark:text-gray-100">
-            Movimentações
-          </h2>
-          <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
-            Visualize todas as suas movimentações financeiras.
-          </p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base leading-7 font-semibold text-gray-900 dark:text-gray-100">
+              Movimentações
+            </h2>
+            <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
+              Visualize todas as suas movimentações financeiras.
+            </p>
+          </div>
+
+          <div class="hidden md:block">
+            <Link :href="movimentacoesRoutes.create({ query: { tipo: abaAtiva !== 'todos' ? abaAtiva : 'ganho' } }).url">
+              <Button class="w-full md:w-auto">
+                Nova Movimentação
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 gap-x-6 gap-y-4">
@@ -367,7 +378,7 @@ const limparFiltros = () => {
 
     <!-- Floating Action Button para Telas Pequenas -->
     <div v-if="isMediumScreen" class="fixed bottom-4 right-4 z-50">
-      <Link :href="movimentacoesRoutes.create().url"
+      <Link :href="movimentacoesRoutes.create({ query: { tipo: abaAtiva !== 'todos' ? abaAtiva : 'gasto' } }).url"
         class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
         <Plus class="h-6 w-6" />
       </Link>

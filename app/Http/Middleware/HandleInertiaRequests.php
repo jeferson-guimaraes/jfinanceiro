@@ -48,7 +48,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'tipos_movimentacao' => collect(TipoMovimentacaoEnum::cases())->map(function ($enum) {
                 return [
-                    'name' => ucfirst($enum->value),
+                    'name' => match ($enum) {
+                        TipoMovimentacaoEnum::GANHO => 'Ganho',
+                        TipoMovimentacaoEnum::GASTO => 'Despesa',
+                        TipoMovimentacaoEnum::GASTO_FUTURO => 'Despesa Futura',
+                    },
                     'value' => $enum->value,
                 ];
             })->toArray(),

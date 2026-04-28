@@ -79,7 +79,7 @@ watch(localPerPage, () => {
 					</div>
 
 					<div>
-						<Link :href="create()">
+						<Link :href="create({ query: { tipo: localTipo } }).url">
 						<Button class="w-30">
 							Nova Categoria
 						</Button>

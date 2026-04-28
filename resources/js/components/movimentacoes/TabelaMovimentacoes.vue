@@ -117,7 +117,7 @@ const getTipoLabel = (tipo: string) => {
     case 'gasto':
       return 'Despesa';
     case 'gasto futuro':
-      return 'Futuro';
+      return 'Despesa Futura';
     default:
       return tipo;
   }

@@ -38,7 +38,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Editar Movimentação',
-        href: movimentacoes.edit({ movimentacao: props.movimentacao?.id }).url,
+        href: props.movimentacao ? movimentacoes.edit({ movimentacao: props.movimentacao.id }).url : '#',
     },
 ];
 
@@ -77,7 +77,9 @@ const valorFormatado = computed({
 });
 
 function submit() {
-    form.put(movimentacoes.edit({ movimentacao: props.movimentacao?.id }).url, {
+    if (!props.movimentacao) return;
+
+    form.patch(movimentacoes.update({ movimentacao: props.movimentacao.id }).url, {
         onSuccess: () => {
             router.get(movimentacoes.index().url);
         },
@@ -136,15 +138,9 @@ function refreshCategories() {
                                         />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="ganho">
-                                            Ganho
-                                        </SelectItem>
-                                        <SelectItem value="gasto">
-                                            Gasto
-                                        </SelectItem>
-                                        <SelectItem value="gasto futuro">
-                                            Gasto Futuro
-                                        </SelectItem>
+                                        <SelectItem value="ganho"> Ganho </SelectItem>
+                                        <SelectItem value="gasto"> Despesa </SelectItem>
+                                        <SelectItem value="gasto futuro"> Despesa Futura </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <InputError

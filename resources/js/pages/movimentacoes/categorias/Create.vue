@@ -7,8 +7,9 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
 
-defineProps<{
+const props = defineProps<{
 	tipos_movimentacao: { name: string; value: string }[];
+	tipo?: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,7 +25,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const form = useForm({
 	nome: '',
-	tipo: 'ganho',
+	tipo: props.tipo && ['ganho', 'gasto', 'gasto futuro'].includes(props.tipo) ? props.tipo : 'ganho',
 });
 
 function submit() {

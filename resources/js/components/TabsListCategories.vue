@@ -57,8 +57,8 @@ const deleteContext = ref<DeleteContext | null>(null)
 const tabs = [
   { title: 'Ganhos', tipo: 'ganho' },
   { title: 'Despesas', tipo: 'gasto' },
-  { title: 'Futuros', tipo: 'gasto futuro' },
-]
+  { title: 'Futuras', tipo: 'gasto futuro' },
+  ];
 
 /* -------------------------------------------------------------------------- */
 /* Selection logic                                                            */

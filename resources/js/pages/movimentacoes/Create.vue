@@ -16,6 +16,7 @@ const props = defineProps({
     categoriasGanhos: Array as PropType<Categoria[]>,
     categoriasGastos: Array as PropType<Categoria[]>,
     categoriasGastosFuturos: Array as PropType<Categoria[]>,
+    tipo: String,
 });
 
 const isCategoriaModalOpen = ref(false);
@@ -34,7 +35,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const form = useForm({
     descricao: '',
     valor: 0,
-    tipo: 'gasto',
+    tipo: props.tipo && ['ganho', 'gasto', 'gasto futuro'].includes(props.tipo) ? props.tipo : 'ganho',
     data_movimentacao: '',
     categoria_id: null as number | null,
     parcelas: 1,
@@ -55,10 +56,17 @@ const categoriasDisponiveis = computed(() => {
     }
 });
 
-watch(categoriasDisponiveis, (newCategorias) => {
-    const padrao = newCategorias!.find((c) => c.nome === 'Padrão');
-    if (padrao) {
-        form.categoria_id = padrao.id;
+watch(() => form.tipo, (newTipo) => {
+    switch (newTipo) {
+        case 'ganho':
+            form.categoria_id = 2;
+            break;
+        case 'gasto':
+            form.categoria_id = 1;
+            break;
+        case 'gasto futuro':
+            form.categoria_id = 3;
+            break;
     }
 }, { immediate: true });
 
@@ -146,8 +154,8 @@ function refreshCategories() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="ganho"> Ganho </SelectItem>
-                                        <SelectItem value="gasto"> Gasto </SelectItem>
-                                        <SelectItem value="gasto futuro"> Gasto Futuro </SelectItem>
+                                        <SelectItem value="gasto"> Despesa </SelectItem>
+                                        <SelectItem value="gasto futuro"> Despesa Futura </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <InputError class="mt-2" :message="form.errors.tipo" />

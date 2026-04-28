@@ -85,6 +85,19 @@ const getStatusBgClass = (parcela: ParcelaComMovimentacao) => {
   const status = getParcelaStatus(parcela);
   return statusBgColors[status];
 };
+
+const getTipoLabel = (tipo: string) => {
+  switch (tipo) {
+    case 'ganho':
+      return 'Ganho';
+    case 'gasto':
+      return 'Despesa';
+    case 'gasto futuro':
+      return 'Despesa Futura';
+    default:
+      return tipo;
+  }
+};
 </script>
 
 <template>
@@ -189,7 +202,7 @@ const getStatusBgClass = (parcela: ParcelaComMovimentacao) => {
           <div class="text-right">
             <p class="font-bold text-xs"
               :class="movimentacao.tipo === 'ganho' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-              {{ movimentacao.tipo.toUpperCase() }}
+              {{ getTipoLabel(movimentacao.tipo).toUpperCase() }}
             </p>
             <p class="font-bold"
               :class="movimentacao.tipo === 'ganho' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">

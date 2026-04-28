@@ -2,30 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\TipoMovimentacaoEnum;
 use App\Http\Requests\Movimentacoes\StoreMovimentacaoRequest;
 use App\Http\Requests\Movimentacoes\UpdateMovimentacaoRequest;
-use App\Models\Categoria;
 use App\Models\Movimentacao;
-use App\Models\Parcela;
 use App\Services\MovimentacaoService;
-use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class MovimentacaoController extends Controller
 {
     /**
-     * Exibe as movimentações financeiras do usuário.
+     * Índice da página de movimentações.
      *
-     * @param string|null $dataInicio Data de início para filtrar as movimentações.
-     * @param string|null $dataFim Data de fim para filtrar as movimentações.
-     * @param int|null $mes Mês para filtrar as movimentações.
-     * @param int|null $ano Ano para filtrar as movimentações.
-     * @return \Inertia\Response
+     * Esta função recebe uma instância do serviço MovimentacaoService e busca as movimentações.
+     * Em seguida, retorna uma renderização da página 'movimentacoes/Index' com as movimentações.
+     *
+     * @param MovimentacaoService $movimentacaoService A instância do serviço MovimentacaoService.
+     * @return \Inertia\Response A renderização da página 'movimentacoes/Index' com as movimentações.
      */
     public function index(MovimentacaoService $movimentacaoService)
     {
@@ -43,7 +38,9 @@ class MovimentacaoController extends Controller
     {
         $data = $movimentacaoService->getCreateMovimentacaoData();
 
-        return Inertia::render('movimentacoes/Create', $data);
+        return Inertia::render('movimentacoes/Create', array_merge($data, [
+            'tipo' => request('tipo'),
+        ]));
     }
 
     /**

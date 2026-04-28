@@ -64,10 +64,9 @@ function closeModal() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="ganho"> Ganho </SelectItem>
-                                <SelectItem value="gasto"> Gasto </SelectItem>
-                                <SelectItem value="gasto futuro"> Gasto Futuro </SelectItem>
-                            </SelectContent>
-                        </Select>
+                                <SelectItem value="gasto"> Despesa </SelectItem>
+                                <SelectItem value="gasto futuro"> Despesa Futura </SelectItem>
+                            </SelectContent>                        </Select>
                     </div>
                 </div>
                 <DialogFooter>

@@ -46,7 +46,9 @@ class CategoriaController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('movimentacoes/categorias/Create');
+        return Inertia::render('movimentacoes/categorias/Create', [
+            'tipo' => request('tipo'),
+        ]);
     }
 
     /**

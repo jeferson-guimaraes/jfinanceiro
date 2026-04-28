@@ -36,11 +36,6 @@ const mainNavItems: NavItem[] = [
         icon: ArrowUpDown,
     },
     {
-        title: 'Nova Movimentação',
-        href: create(),
-        icon: ArrowUpRight,
-    },
-    {
         title: 'Categorias',
         href: indexCategorias(),
         icon: LayoutGrid,
