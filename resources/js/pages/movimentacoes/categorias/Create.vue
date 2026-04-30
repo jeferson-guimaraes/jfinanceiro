@@ -31,7 +31,7 @@ const form = useForm({
 function submit() {
 	form.post('/movimentacoes/categorias', {
 		onSuccess: () => {
-			form.reset('nome', 'tipo');
+			form.reset('nome');
 		},
 	});
 }

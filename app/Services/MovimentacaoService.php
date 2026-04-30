@@ -23,8 +23,10 @@ class MovimentacaoService
 	{
 		$user = Auth::user();
 
-		$categorias = Categoria::where('user_id', $user->id)
-			->orWhere('user_id', null)
+		$categorias = Categoria::where(function ($query) use ($user) {
+				$query->where('user_id', $user->id)
+					->orWhereNull('user_id');
+			})
 			->orderBy('nome')
 			->get();
 
@@ -263,5 +265,17 @@ class MovimentacaoService
 	public function destroyMovimentacao(Movimentacao $movimentacao): void
 	{
 		$movimentacao->delete();
+	}
+
+	/**
+	 * Deleta várias movimentações.
+	 *
+	 * @param array $movimentacoesIds Array com os IDs das movimentações a serem deletadas.
+	 */
+	public function destroyManyMovimentacoes(array $movimentacoesIds): void
+	{
+		Movimentacao::whereIn('id', $movimentacoesIds)
+			->where('user_id', Auth::id())
+			->delete();
 	}
 }

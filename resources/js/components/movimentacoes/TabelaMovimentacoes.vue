@@ -14,6 +14,8 @@ import { formatDate } from '@/utils/formatDate';
 import { formatBRL } from '@/utils/masks';
 import { Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import Checkbox from '../ui/checkbox/Checkbox.vue';
+import { Trash2 } from 'lucide-vue-next';
 
 interface Props {
   movimentacoes?: Movimentacao[];
@@ -23,7 +25,24 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const emit = defineEmits(['delete']);
+const emit = defineEmits(['delete', 'delete:selected']);
+
+const selectedMovimentacoes = ref<number[]>([]);
+
+const toggleSelection = (id: number, checked: boolean) => {
+  if (checked) {
+    if (!selectedMovimentacoes.value.includes(id)) {
+      selectedMovimentacoes.value.push(id);
+    }
+  } else {
+    selectedMovimentacoes.value = selectedMovimentacoes.value.filter(item => item !== id);
+  }
+};
+
+const requestDeleteMany = () => {
+  emit('delete:selected', selectedMovimentacoes.value);
+  selectedMovimentacoes.value = [];
+};
 
 const sortKey = ref<string>('data');
 const sortOrder = ref<'asc' | 'desc'>('desc');
@@ -146,8 +165,16 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
 </script>
 
 <template>
+  <div class="space-y-4">
+    <div v-if="selectedMovimentacoes.length > 0" class="flex justify-end">
+        <Button class="bg-red-500/10 text-red-500 font-semibold hover:bg-red-200" @click="requestDeleteMany">
+          <Trash2 class="text-red-500 font-semibold h-4 w-4 mr-2" />
+          Excluir selecionados ({{ selectedMovimentacoes.length }})
+        </Button>
+      </div>
     <Table>
       <TableHeader class="bg-[#5B92EA] dark:bg-blue-950">
+          <TableHead class="w-10"></TableHead>
           <TableHead class="text-center cursor-pointer text-gray-100 hover:opacity-80" @click="sort('data')">
             Data
             <span v-if="activeTab === 'gasto futuro'">
@@ -212,7 +239,10 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
 
       <TableBody class="text-center">
         <template v-if="activeTab === 'gasto futuro'">
-          <TableRow v-for="parcela in sortedParcelas" :key="parcela.id">
+          <TableRow v-for="parcela in sortedParcelas" :key="parcela.id" :class="selectedMovimentacoes.includes(parcela.movimentacao.id) ? 'bg-blue-100' : ''">
+            <TableCell>
+              <Checkbox :checked="selectedMovimentacoes.includes(parcela.movimentacao.id)" @update:modelValue="(val) => toggleSelection(parcela.movimentacao.id, Boolean(val))" />
+            </TableCell>
             <TableCell class="whitespace-nowrap">
               {{ formatDate(parcela.movimentacao.data) }}
             </TableCell>
@@ -257,7 +287,10 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
           </TableRow>
         </template>
         <template v-else>
-          <TableRow v-for="movimentacao in sortedMovimentacoes" :key="movimentacao.id">
+          <TableRow v-for="movimentacao in sortedMovimentacoes" :key="movimentacao.id" :class="selectedMovimentacoes.includes(movimentacao.id) ? 'bg-blue-100' : ''">
+            <TableCell>
+              <Checkbox :checked="selectedMovimentacoes.includes(movimentacao.id)" @update:modelValue="(val) => toggleSelection(movimentacao.id, Boolean(val))" />
+            </TableCell>
             <TableCell class="whitespace-nowrap">
               {{ formatDate(movimentacao.data) }}
             </TableCell>
@@ -302,10 +335,11 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
             ? sortedParcelas.length
             : sortedMovimentacoes.length) === 0
         ">
-          <TableCell :colspan="activeTab === 'gasto futuro' ? 9 : 6" class="h-24 text-center">
+          <TableCell :colspan="activeTab === 'gasto futuro' ? 10 : 7" class="h-24 text-center">
             Nenhuma movimentação encontrada.
           </TableCell>
         </TableRow>
       </TableBody>
     </Table>
+  </div>
 </template>
