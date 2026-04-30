@@ -24,5 +24,9 @@ class DatabaseSeeder extends Seeder
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
         ]);
+
+        $this->call([
+            CategoriaSeeder::class,
+        ]);
     }
 }
