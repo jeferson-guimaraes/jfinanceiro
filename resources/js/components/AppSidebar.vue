@@ -12,16 +12,11 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { create, index } from '@/routes/movimentacoes';
+import { index } from '@/routes/movimentacoes';
 import { index as indexCategorias } from '@/routes/movimentacoes/categorias';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import {
-    ArrowUpDown,
-    ArrowUpRight,
-    LayoutDashboard,
-    LayoutGrid,
-} from 'lucide-vue-next';
+import { ArrowUpDown, LayoutDashboard, LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [

@@ -9,7 +9,7 @@ import { Link } from '@inertiajs/vue3';
 import movimentacoesRoute from '@/routes/movimentacoes';
 import Checkbox from '../ui/checkbox/Checkbox.vue';
 
-const props = defineProps<{
+defineProps<{
   movimentacoes: Movimentacao[];
   parcelas: ParcelaComMovimentacao[];
   activeTab: string;

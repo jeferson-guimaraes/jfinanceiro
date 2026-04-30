@@ -85,9 +85,11 @@ const allSelectedProxy = computed({
 })
 
 function toggleItem(id: number) {
-  selectedItems.value.includes(id)
-    ? selectedItems.value = selectedItems.value.filter(i => i !== id)
-    : selectedItems.value.push(id)
+  if (selectedItems.value.includes(id)) {
+    selectedItems.value = selectedItems.value.filter(i => i !== id)
+  } else {
+    selectedItems.value.push(id)
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -261,11 +263,13 @@ const modalMessage = computed(() => {
           </div>
 
           <div class="flex items-center justify-center">
-            <Link v-for="link in categorias.links" :key="link.label" :href="link.url || '#'" v-html="link.label"
+            <Link v-for="link in categorias.links" :key="link.label" :href="link.url || '#'"
               preserve-scroll class="px-3 py-2 text-sm" :class="{
                 'bg-blue-500 text-white rounded-md': link.active,
                 'text-gray-500': !link.url,
-              }" />
+              }">
+              <span v-html="link.label" />
+            </Link>
           </div>
         </div>
       </div>
