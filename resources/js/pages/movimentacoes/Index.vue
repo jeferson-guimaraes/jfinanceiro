@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import movimentacoesRoutes from '@/routes/movimentacoes';
 import type { BreadcrumbItem, Movimentacao, ParcelaComMovimentacao } from '@/types';
 import { Head, router, Link } from '@inertiajs/vue3';
-import { Check, Hourglass, Wallet, X, Plus } from 'lucide-vue-next';
+import { Check, Hourglass, Wallet, X, Plus, ArrowUp, ArrowDown } from 'lucide-vue-next';
 import MovimentacoesCardList from '@/components/movimentacoes/MovimentacoesCardList.vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import isValidDate from '@/utils/validaData';
@@ -83,6 +83,25 @@ const total = computed(() => {
     return props.parcelasFuturas.reduce((acc, parcela) => acc + Number(parcela.valor), 0);
   }
   return props.movimentacoes.reduce((acc, movimentacao) => acc + Number(movimentacao.valor), 0);
+});
+
+const totalGanhos = computed(() => {
+  if (abaAtiva.value !== 'todos') return 0;
+  return props.movimentacoes
+    .filter(m => m.tipo === 'ganho')
+    .reduce((acc, m) => acc + Number(m.valor), 0);
+});
+
+const totalDespesas = computed(() => {
+  if (abaAtiva.value !== 'todos') return 0;
+  return props.movimentacoes
+    .filter(m => m.tipo === 'gasto')
+    .reduce((acc, m) => acc + Number(m.valor), 0);
+});
+
+const totalDisponivel = computed(() => {
+  if (abaAtiva.value !== 'todos') return 0;
+  return totalGanhos.value - totalDespesas.value;
 });
 
 const totalPago = computed(() => {
@@ -270,36 +289,26 @@ const limparFiltros = () => {
             </div>
 
             <div class="rounded-b-lg bg-gray-50 p-4 dark:bg-sidebar">
-              <div class="mb-4 flex flex-col space-y-4"
-                :class="[
-                  abaAtiva === 'gasto futuro'
-                    ? 'lg:grid lg:grid-cols-2 lg:gap-6'
-                    : 'md:grid md:grid-cols-2 md:gap-6',
-                ]"
-              >
+              <div class="mb-4 grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <!-- Filtros e Busca -->
-                <div class="space-y-4 order-2 lg:order-1 flex-1"
-                  :class="[abaAtiva === 'gastos futuros' && 'lg:col-span-2 xl:col-span-1']"
-                >
+                <div class="flex flex-col gap-4">
                   <!-- Filtro de data (Invisível apenas na aba 'gasto futuro') -->
                   <div v-if="abaAtiva === 'todos' || abaAtiva === 'ganho' || abaAtiva === 'gasto'"
-                    class="flex flex-col gap-2 lg:flex-row lg:items-center">
-                    <div class="grid grid-cols-2 items-center gap-2 w-full max-w-lg">
-                      <div class="md:flex w-full gap-2">
-                        <Label for="dataInicio" class="my-auto mb-2 md:mb-auto">De:</Label>
-                        <Input v-model="dataInicio" type="date" class="w-full" id="dataInicio" />
+                    class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="flex flex-col gap-1">
+                        <Label for="dataInicio">De:</Label>
+                        <Input v-model="dataInicio" type="date" id="dataInicio" />
                       </div>
-                      <span class="text-gray-500 hidden">-</span>
-                      <div class="md:flex w-full gap-2">
-                        <Label for="dataFim" class="my-auto mb-2 md:mb-auto">Até:</Label>
-                        <Input v-model="dataFim" type="date" class="w-full" id="dataFim" />
+                      <div class="flex flex-col gap-1">
+                        <Label for="dataFim">Até:</Label>
+                        <Input v-model="dataFim" type="date" id="dataFim" />
                       </div>
-                    </div>
                   </div>
 
                   <!-- Filtro mês/ano para gastos futuros -->
-                  <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-col gap-2 lg:items-center max-w-lg">
-                    <div class="flex w-full items-center gap-2">
+                  <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-col gap-2">
+                    <Label>Período:</Label>
+                    <div class="flex gap-2">
                       <Select v-model="mesSelecionado">
                         <SelectTrigger>
                           <SelectValue placeholder="Mês" />
@@ -310,46 +319,42 @@ const limparFiltros = () => {
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      <Input type="text" v-model="anoSelecionado" placeholder="Ano" class="md:w-[180px]" />
+                      <Input type="text" v-model="anoSelecionado" placeholder="Ano" />
                     </div>
                   </div>
 
                   <!-- Filtro de Busca por Texto -->
-                  <div class="flex items-center gap-2 max-w-lg">
-                    <!-- Busca -->
-                    <Input v-model="buscaTexto" placeholder="Buscar por descrição..." class="lg:col-span-2" />
-
-                    <!-- Limpar Filtros -->
-                    <div class="flex items-center">
-                      <button type="button" @click="limparFiltros"
-                        class="w-fit text-xs md:text-[11pt] border border-gray-200 text-gray-500 py-2.5 md:py-2 px-2 md:px-4 rounded-md flex gap-2 items-center justify-center hover:bg-gray-100 hover:cursor-pointer ease-in-out duration-300 whitespace-nowrap">
-                        <X class="w-4 h-4" /> Limpar Filtros
-                      </button>
-                    </div>
+                  <div class="flex items-end gap-2">
+                    <Input v-model="buscaTexto" placeholder="Buscar por descrição..." class="flex-1" />
+                    <button type="button" @click="limparFiltros"
+                      class="border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2">
+                      <X class="w-5 h-5" />
+                      <span class="text-sm">Limpar</span>
+                    </button>
                   </div>
                 </div>
 
                 <!-- Totais -->
-                <div class="order-1 max-w-md lg:max-w-none mb-5 lg:mb-0 flex flex-wrap gap-2 lg:gap-6 xl:col-span-1">
-                  <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-wrap sm:flex-nowrap gap-2 xl:ml-auto">
-                    <!-- Card Total -->
-                    <TotalCard :icon="Wallet" :iconClasses="'text-[#6F4E37] w-6 h-6 xl:w-8 xl:h-8'" title="Total Contas"
-                      :value="total" :valueClasses="'text-xl xl:text-2xl font-semibold'" />
-                    <!-- Card Total Pago -->
-                    <TotalCard :icon="Check"
-                      :iconClasses="'text-white bg-green-400 rounded-full p-1 w-6 h-6 xl:w-8 xl:h-8'" title="Total Pago"
-                      :value="totalPago" :valueClasses="'text-xl xl:text-2xl font-semibold'" />
-                    <!-- Card Total Pendente -->
-                    <TotalCard :icon="Hourglass" :iconClasses="'text-red-700 w-6 h-6 xl:w-8 xl:h-8'"
-                      title="Total Pendente" :value="totalPendente" :valueClasses="'text-xl xl:text-2xl font-semibold'"
-                      :valueColorClass="'text-red-700 dark:text-red-400'" />
-                  </div>
-                  <div v-else class="w-full md:w-fit lg:ml-auto">
-                    <!-- Card Total -->
-                    <TotalCard :icon="Wallet" iconClasses="text-[#6F4E37] w-8 h-8" title="Total" :value="total"
-                      valueClasses="text-2xl font-semibold flex"
-                      :valueColorClass="total >= 0 && abaAtiva !== 'gasto' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'" />
-                  </div>
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                  <!-- Caso 'gasto futuro' -->
+                  <template v-if="abaAtiva === 'gasto futuro'">
+                    <TotalCard :icon="Wallet" title="Total" :value="total" />
+                    <TotalCard :icon="Check" title="Pago" :value="totalPago" />
+                    <TotalCard :icon="Hourglass" title="Pendente" :value="totalPendente" />
+                  </template>
+                  
+                  <!-- Caso 'todos' -->
+                  <template v-else-if="abaAtiva === 'todos'">
+                    <TotalCard :icon="ArrowUp" title="Ganhos" :value="totalGanhos" icon-classes="text-green-600" />
+                    <TotalCard :icon="ArrowDown" title="Despesas" :value="totalDespesas" icon-classes="text-red-600" />
+                    <TotalCard :icon="Wallet" title="Disponível" :value="totalDisponivel" 
+                      :valueColorClass="totalDisponivel >= 0 ? 'text-green-600' : 'text-red-600'" />
+                  </template>
+
+                  <!-- Caso simples (ganho/gasto) -->
+                  <template v-else>
+                    <TotalCard :icon="Wallet" title="Total" :value="total" />
+                  </template>
                 </div>
               </div>
 
