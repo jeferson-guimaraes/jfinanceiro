@@ -35,7 +35,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao whereValor($value)
- * @mixin \Eloquent
  */
 class Movimentacao extends Model
 {

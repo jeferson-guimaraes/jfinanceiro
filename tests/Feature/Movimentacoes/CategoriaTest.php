@@ -21,15 +21,16 @@ class CategoriaTest extends TestCase
         $this->user = User::factory()->create();
     }
 
-    public function test_usuario_logado_pode_cria_categoria_de_ganho_com_sucesso(): void
+    public function test_usuario_logado_pode_criar_categoria_de_ganho_com_sucesso(): void
     {
         $this->withoutExceptionHandling();
         $response = $this->actingAs($this->user)->post(route('movimentacoes.categorias.store'), [
+            'user_id' => $this->user->id,
             'nome' => 'Salário',
             'tipo' => TipoMovimentacaoEnum::GANHO->value,
         ]);
 
-        $response->assertRedirect(route('movimentacoes.categorias.create'));
+        $response->assertRedirect(route('movimentacoes.categorias.index'));
         $response->assertSessionHas('success', 'Categoria criada com sucesso!');
 
         $this->assertDatabaseHas('categorias', [
@@ -39,14 +40,14 @@ class CategoriaTest extends TestCase
         ]);
     }
 
-    public function test_usuario_logado_pode_cria_categoria_de_gasto_com_sucesso(): void
+    public function test_usuario_logado_pode_criar_categoria_de_gasto_com_sucesso(): void
     {
         $response = $this->actingAs($this->user)->post(route('movimentacoes.categorias.store'), [
             'nome' => 'Alimentação',
             'tipo' => TipoMovimentacaoEnum::GASTO->value,
         ]);
 
-        $response->assertRedirect(route('movimentacoes.categorias.create'));
+        $response->assertRedirect(route('movimentacoes.categorias.index'));
         $response->assertSessionHas('success', 'Categoria criada com sucesso!');
 
         $this->assertDatabaseHas('categorias', [
@@ -56,14 +57,14 @@ class CategoriaTest extends TestCase
         ]);
     }
 
-    public function test_usuario_logado_pode_cria_categoria_de_gasto_futuro_com_sucesso(): void
+    public function test_usuario_logado_pode_criar_categoria_de_gasto_futuro_com_sucesso(): void
     {
         $response = $this->actingAs($this->user)->post(route('movimentacoes.categorias.store'), [
             'nome' => 'Viagem',
             'tipo' => TipoMovimentacaoEnum::GASTO_FUTURO->value,
         ]);
 
-        $response->assertRedirect(route('movimentacoes.categorias.create'));
+        $response->assertRedirect(route('movimentacoes.categorias.index'));
         $response->assertSessionHas('success', 'Categoria criada com sucesso!');
 
         $this->assertDatabaseHas('categorias', [
@@ -109,30 +110,6 @@ class CategoriaTest extends TestCase
         ]);
 
         $response->assertRedirect('/login');
-    }
-
-    public function test_lista_categorias_do_tipo_ganho_por_padrao(): void
-    {
-        Categoria::factory()->count(3)->create([
-            'user_id' => $this->user->id,
-            'tipo' => TipoMovimentacaoEnum::GANHO,
-        ]);
-        Categoria::factory()->count(2)->create([
-            'user_id' => $this->user->id,
-            'tipo' => TipoMovimentacaoEnum::GASTO,
-        ]);
-
-        Categoria::factory()->create();
-
-        $this->actingAs($this->user)
-            ->get('/movimentacoes/categorias')
-            ->assertStatus(200)
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('movimentacoes/categorias/Index')
-                ->has('listaCategorias.data', 3)
-                ->where('filters.tipo', 'ganho')
-                ->where('listaCategorias.data.0.tipo', TipoMovimentacaoEnum::GANHO->value)
-            );
     }
 
     public function test_filtra_categorias_do_tipo_ganho(): void

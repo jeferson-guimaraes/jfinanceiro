@@ -58,7 +58,7 @@ class MovimentacaoTest extends TestCase
             'user_id' => $this->user->id,
             'descricao' => 'Aluguel',
             'valor' => 1500,
-            'data' => '2026-01-05 00:00:00',
+            'data' => '2026-01-05',
             'categoria_id' => $this->categoriaGanho->id,
             'tipo' => TipoMovimentacaoEnum::GANHO->value,
         ]);
@@ -83,7 +83,7 @@ class MovimentacaoTest extends TestCase
             'user_id' => $this->user->id,
             'descricao' => 'Aluguel',
             'valor' => 1500,
-            'data' => '2026-01-05 00:00:00',
+            'data' => '2026-01-05',
             'categoria_id' => $this->categoriaGasto->id,
             'tipo' => TipoMovimentacaoEnum::GASTO->value,
         ]);
@@ -111,7 +111,7 @@ class MovimentacaoTest extends TestCase
             'user_id' => $this->user->id,
             'descricao' => 'Plano de saúde',
             'valor' => 500,
-            'data' => '2026-01-10 00:00:00',
+            'data' => '2026-01-10',
             'categoria_id' => $this->categoriaGastoFuturo->id,
             'tipo' => TipoMovimentacaoEnum::GASTO_FUTURO->value,
         ]);

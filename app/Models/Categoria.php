@@ -27,7 +27,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Categoria whereTipo($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Categoria whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Categoria whereUserId($value)
- * @mixin \Eloquent
  */
 class Categoria extends Model
 {
@@ -37,6 +36,11 @@ class Categoria extends Model
         'nome',
         'tipo',
         'status',
+        'user_id',
+    ];
+
+    protected $casts = [
+        'tipo' => TipoMovimentacaoEnum::class,
     ];
 
     public function movimentacoes(): HasMany

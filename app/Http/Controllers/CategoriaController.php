@@ -23,8 +23,10 @@ class CategoriaController extends Controller
         $per_page = $request->input('per_page', 10);
 
         $categorias = Categoria::query()
-            ->where('user_id', $user->id)
-            ->orWhere('user_id', null)
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhereNull('user_id');
+            })
             ->when($search, function ($query, $search) {
                 $query->where('nome', 'like', "%{$search}%");
             })
