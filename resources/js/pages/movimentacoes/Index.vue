@@ -128,17 +128,18 @@ const requestDeleteMany = (movimentacoesIds: number[]) => {
 };
 
 const confirmDeleteMany = () => {
-  // if (selectedMovimentacoes.value.length > 0) {
-  //   router.post(movimentacoesRoutes.destroyMany().url, {
-  //     movimentacoes_ids: selectedMovimentacoes.value,
-  //   }, {
-  //     preserveScroll: true,
-  //     onSuccess: () => {
-  //       isModalExclusaoMassaAberto.value = false;
-  //       selectedMovimentacoes.value = [];
-  //     }
-  //   });
-  // }
+  if (selectedMovimentacoes.value.length > 0) {
+    router.delete(movimentacoesRoutes.destroyMany().url, {
+      data: {
+        movimentacoes_ids: selectedMovimentacoes.value,
+      },
+      preserveScroll: true,
+      onSuccess: () => {
+        isModalExclusaoMassaAberto.value = false;
+        selectedMovimentacoes.value = [];
+      },
+    });
+  }
 };
 
 const debounceTimer = ref<any>(null);
@@ -356,7 +357,7 @@ const limparFiltros = () => {
               <TabelaMovimentacoes v-if="!isMediumScreen"
                 :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
                 :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
-                @delete="requestDelete" />
+                @delete="requestDelete" @delete:selected="requestDeleteMany" />
               <MovimentacoesCardList v-else-if="isMediumScreen"
                 :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
                 :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"

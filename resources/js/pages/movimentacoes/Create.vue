@@ -109,7 +109,7 @@ watch([valor, () => form.parcelas], () => {
 function submit() {
     form.post(movimentacoes.store().url, {
         onSuccess: () => {
-            form.reset();
+            form.reset('descricao', 'valor', 'data_movimentacao', 'parcelas', 'valor_parcelas', 'data_vencimento');
             valor.value = 0;
             valorParcelas.value = 0;
         },

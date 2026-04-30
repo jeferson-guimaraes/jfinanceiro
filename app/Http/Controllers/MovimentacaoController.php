@@ -7,6 +7,7 @@ use App\Http\Requests\Movimentacoes\UpdateMovimentacaoRequest;
 use App\Models\Movimentacao;
 use App\Services\MovimentacaoService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,13 +15,10 @@ use Inertia\Response;
 class MovimentacaoController extends Controller
 {
     /**
-     * Índice da página de movimentações.
+     * Exibe a listagem de movimentações.
      *
-     * Esta função recebe uma instância do serviço MovimentacaoService e busca as movimentações.
-     * Em seguida, retorna uma renderização da página 'movimentacoes/Index' com as movimentações.
-     *
-     * @param MovimentacaoService $movimentacaoService A instância do serviço MovimentacaoService.
-     * @return \Inertia\Response A renderização da página 'movimentacoes/Index' com as movimentações.
+     * @param MovimentacaoService $movimentacaoService
+     * @return Response
      */
     public function index(MovimentacaoService $movimentacaoService)
     {
@@ -30,9 +28,10 @@ class MovimentacaoController extends Controller
     }
 
     /**
-     * Renderiza a view para criar uma nova movimentação.
+     * Exibe o formulário para criação de uma nova movimentação.
      *
-     * Retorna uma view com as categorias filtradas por tipo.
+     * @param MovimentacaoService $movimentacaoService
+     * @return Response
      */
     public function create(MovimentacaoService $movimentacaoService): Response
     {
@@ -44,19 +43,25 @@ class MovimentacaoController extends Controller
     }
 
     /**
-     * Salva uma nova movimentação no banco de dados.
+     * Armazena uma nova movimentação no banco de dados.
      *
-     * A requisição deve ser uma instância de StoreMovimentacaoRequest.
+     * @param StoreMovimentacaoRequest $request
+     * @param MovimentacaoService $movimentacaoService
+     * @return RedirectResponse
      */
     public function store(StoreMovimentacaoRequest $request, MovimentacaoService $movimentacaoService): RedirectResponse
     {
         $movimentacaoService->storeMovimentacao($request->validated());
 
-        return redirect()->route('movimentacoes.create')->with('success', 'Movimentação criada com sucesso!');
+        return redirect()->route('movimentacoes.create')
+            ->with('tipo', $request->validated('tipo'))->with('success', 'Movimentação criada com sucesso!');
     }
 
     /**
-     * Display the specified resource.
+     * Exibe a movimentação especificada.
+     *
+     * @param Movimentacao $movimentacao
+     * @return void
      */
     public function show(Movimentacao $movimentacao)
     {
@@ -64,7 +69,11 @@ class MovimentacaoController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Exibe o formulário para edição da movimentação especificada.
+     *
+     * @param Movimentacao $movimentacao
+     * @param MovimentacaoService $movimentacaoService
+     * @return Response
      */
     public function edit(Movimentacao $movimentacao, MovimentacaoService $movimentacaoService): Response
     {
@@ -80,7 +89,12 @@ class MovimentacaoController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Atualiza a movimentação especificada no banco de dados.
+     *
+     * @param UpdateMovimentacaoRequest $request
+     * @param Movimentacao $movimentacao
+     * @param MovimentacaoService $movimentacaoService
+     * @return RedirectResponse
      */
     public function update(UpdateMovimentacaoRequest $request, Movimentacao $movimentacao, MovimentacaoService $movimentacaoService): RedirectResponse
     {
@@ -94,7 +108,11 @@ class MovimentacaoController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove a movimentação especificada do banco de dados.
+     *
+     * @param Movimentacao $movimentacao
+     * @param MovimentacaoService $movimentacaoService
+     * @return RedirectResponse
      */
     public function destroy(Movimentacao $movimentacao, MovimentacaoService $movimentacaoService): RedirectResponse
     {
@@ -105,5 +123,24 @@ class MovimentacaoController extends Controller
         $movimentacaoService->destroyMovimentacao($movimentacao);
 
         return redirect()->route('movimentacoes.index')->with('success', 'Movimentação excluída com sucesso!');
+    }
+
+    /**
+     * Remove várias movimentações do banco de dados.
+     *
+     * @param Request $request
+     * @param MovimentacaoService $movimentacaoService
+     * @return RedirectResponse
+     */
+    public function destroyMany(Request $request, MovimentacaoService $movimentacaoService): RedirectResponse
+    {
+        $validated = $request->validate([
+            'movimentacoes_ids' => 'required|array',
+            'movimentacoes_ids.*' => 'exists:movimentacoes,id',
+        ]);
+
+        $movimentacaoService->destroyManyMovimentacoes($validated['movimentacoes_ids']);
+
+        return redirect()->route('movimentacoes.index')->with('success', 'Movimentações excluídas com sucesso!');
     }
 }

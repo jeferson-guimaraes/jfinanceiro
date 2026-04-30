@@ -34,6 +34,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::delete('{movimentacao}', [MovimentacaoController::class, 'destroy'])
             ->name('destroy');
+
+        Route::delete('/', [MovimentacaoController::class, 'destroyMany'])
+            ->name('destroyMany');
     });
 
     Route::prefix('movimentacoes/categorias')->name('movimentacoes.categorias.')->group(function () {
