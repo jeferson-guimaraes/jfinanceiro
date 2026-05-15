@@ -353,7 +353,22 @@ const limparFiltros = () => {
 
                   <!-- Caso simples (ganho/gasto) -->
                   <template v-else>
-                    <TotalCard :icon="Wallet" title="Total" :value="total" />
+                    <TotalCard 
+                      v-if="abaAtiva === 'ganho'" 
+                      :icon="ArrowUp" 
+                      title="Total" 
+                      :value="total" 
+                      icon-classes="text-green-600" 
+                      class="col-start-2 lg:col-start-3"
+                    />
+                    <TotalCard 
+                      v-else-if="abaAtiva === 'gasto'" 
+                      :icon="ArrowDown" 
+                      title="Total" 
+                      :value="total" 
+                      icon-classes="text-red-600" 
+                      class="col-start-2 lg:col-start-3"
+                    />
                   </template>
                 </div>
               </div>
