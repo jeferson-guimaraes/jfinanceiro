@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import movimentacoesRoutes from '@/routes/movimentacoes';
 import type { BreadcrumbItem, Movimentacao, ParcelaComMovimentacao } from '@/types';
 import { Head, router, Link } from '@inertiajs/vue3';
-import { Check, Hourglass, Wallet, X, Plus, ArrowUp, ArrowDown } from 'lucide-vue-next';
+import { Check, Hourglass, Wallet, X, Plus, ArrowUp, ArrowDown, CircleDollarSign } from 'lucide-vue-next';
 import MovimentacoesCardList from '@/components/movimentacoes/MovimentacoesCardList.vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import isValidDate from '@/utils/validaData';
@@ -338,9 +338,9 @@ const limparFiltros = () => {
                 <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
                   <!-- Caso 'gasto futuro' -->
                   <template v-if="abaAtiva === 'gasto futuro'">
-                    <TotalCard :icon="Wallet" title="Total" :value="total" />
-                    <TotalCard :icon="Check" title="Pago" :value="totalPago" />
-                    <TotalCard :icon="Hourglass" title="Pendente" :value="totalPendente" />
+                    <TotalCard :icon="CircleDollarSign" :icon-classes="'text-red-700'" title="Total" :value="total" />
+                    <TotalCard :icon="Check" :icon-classes="'text-green-500'" title="Pago" :value="totalPago" />
+                    <TotalCard :icon="Hourglass" :icon-classes="'text-yellow-500'" title="Pendente" :value="totalPendente" />
                   </template>
                   
                   <!-- Caso 'todos' -->
