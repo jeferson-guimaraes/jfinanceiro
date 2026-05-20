@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/composables/useToast';
 import movimentacoes from '@/routes/movimentacoes';
 import { useForm } from '@inertiajs/vue3';
+import { Tag, PlusCircle, Wallet, Calendar, CreditCard } from 'lucide-vue-next';
+import { computed } from 'vue';
 
 defineProps({
     open: Boolean,
@@ -19,6 +21,24 @@ const form = useForm({
     nome: '',
     tipo: 'gasto',
     origem: 'modal',
+});
+
+const variantClasses = computed(() => {
+    switch (form.tipo) {
+        case 'ganho': return 'bg-emerald-600';
+        case 'gasto': return 'bg-red-600';
+        case 'gasto futuro': return 'bg-amber-600';
+        default: return 'bg-blue-600';
+    }
+});
+
+const formIcon = computed(() => {
+    switch (form.tipo) {
+        case 'ganho': return Wallet;
+        case 'gasto': return CreditCard;
+        case 'gasto futuro': return Calendar;
+        default: return Tag;
+    }
 });
 
 function submit() {
@@ -43,37 +63,53 @@ function closeModal() {
 
 <template>
     <Dialog :open="open" @update:open="closeModal">
-        <DialogContent class="sm:max-w-[425px]">
-            <DialogHeader>
-                <DialogTitle>Cadastrar Nova Categoria</DialogTitle>
-                <DialogDescription>
-                    Crie uma nova categoria para suas movimentações.
-                </DialogDescription>
-            </DialogHeader>
-            <form @submit.prevent="submit">
-                <div class="grid gap-4 py-4">
-                    <div class="grid grid-cols-4 items-center gap-4">
-                        <Label for="nome" class="text-right"> Nome </Label>
-                        <Input id="nome" v-model="form.nome" class="col-span-3" />
+        <DialogContent class="sm:max-w-[450px] p-0 overflow-hidden border-none shadow-2xl">
+            <div :class="[variantClasses, 'p-6 text-white relative transition-colors duration-300']">
+                <div class="absolute top-4 right-4 opacity-10">
+                    <component :is="formIcon" class="h-20 w-20" />
+                </div>
+                <DialogHeader>
+                    <DialogTitle class="text-2xl font-bold text-white">Nova Categoria</DialogTitle>
+                    <DialogDescription class="text-white/80">
+                        Crie uma nova categoria para organizar suas movimentações.
+                    </DialogDescription>
+                </DialogHeader>
+            </div>
+
+            <form @submit.prevent="submit" class="p-6 space-y-6 bg-white dark:bg-sidebar">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <Label for="nome" class="text-sm font-semibold flex items-center gap-2">
+                            <Tag class="h-4 w-4 text-muted-foreground" />
+                            Nome
+                        </Label>
+                        <Input id="nome" v-model="form.nome" placeholder="Ex: Alimentação, Lazer..." class="h-11 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700" />
                     </div>
-                    <div class="grid grid-cols-4 items-center gap-4">
-                        <Label for="tipo" class="text-right"> Tipo </Label>
+                    
+                    <div class="space-y-2">
+                        <Label for="tipo" class="text-sm font-semibold flex items-center gap-2">
+                            <PlusCircle class="h-4 w-4 text-muted-foreground" />
+                            Tipo
+                        </Label>
                         <Select v-model="form.tipo">
-                            <SelectTrigger class="col-span-3">
+                            <SelectTrigger class="h-11 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                                 <SelectValue placeholder="Selecione o tipo" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="ganho"> Ganho </SelectItem>
                                 <SelectItem value="gasto"> Despesa </SelectItem>
                                 <SelectItem value="gasto futuro"> Despesa Futura </SelectItem>
-                            </SelectContent>                        </Select>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button type="button" variant="outline" @click="closeModal"> Cancelar </Button>
-                    <Button type="submit" :disabled="form.processing" class="btn-primary"> Salvar </Button>
+
+                <DialogFooter class="pt-2">
+                    <Button type="button" variant="ghost" @click="closeModal" class="h-11"> Cancelar </Button>
+                    <Button type="submit" :disabled="form.processing" class="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"> Salvar Categoria </Button>
                 </DialogFooter>
             </form>
         </DialogContent>
     </Dialog>
 </template>
+

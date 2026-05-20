@@ -124,8 +124,8 @@ const handleOpenChange = (value: boolean) => {
 
         <div class="grid grid-cols-2 gap-6">
           <div class="space-y-2">
-            <div class="flex items-center gap-1.5 mb-1">
-              <Label for="quantidade" class="text-sm font-medium">Qtd. Parcelas</Label>
+            <Label for="quantidade" class="text-sm font-medium">
+              Qtd. Parcelas
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger as-child>
@@ -136,7 +136,7 @@ const handleOpenChange = (value: boolean) => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            </div>
+            </Label>
             <Select v-model="form.quantidade_parcelas">
               <SelectTrigger id="quantidade" class="h-11 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <SelectValue placeholder="Selecione" />

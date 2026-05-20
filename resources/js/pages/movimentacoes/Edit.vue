@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FormLayout from '@/components/FormLayout.vue';
 import InputError from '@/components/InputError.vue';
 import CategoriaModal from '@/components/modals/CategoriaModal.vue';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
 } from '@/types';
 import { formatBRL, handleValorKeydown } from '@/utils/masks';
 import { Head, router, useForm } from '@inertiajs/vue3';
+import { Info, Save, Wallet, Calendar, Tag, CreditCard, Edit } from 'lucide-vue-next';
 import { computed, ref, type PropType } from 'vue';
 
 const props = defineProps({
@@ -48,6 +50,24 @@ const form = useForm({
     tipo: props.movimentacao?.tipo || 'gasto',
     data_movimentacao: props.movimentacao?.data || '',
     categoria_id: props.movimentacao?.categoria_id || (null as number | null),
+});
+
+const formVariant = computed(() => {
+    switch (form.tipo) {
+        case 'ganho': return 'success';
+        case 'gasto': return 'danger';
+        case 'gasto futuro': return 'warning';
+        default: return 'primary';
+    }
+});
+
+const formIcon = computed(() => {
+    switch (form.tipo) {
+        case 'ganho': return Wallet;
+        case 'gasto': return CreditCard;
+        case 'gasto futuro': return Calendar;
+        default: return Edit;
+    }
 });
 
 const categoriasDisponiveis = computed(() => {
@@ -107,139 +127,94 @@ function refreshCategories() {
     <Head title="Editar Movimentação" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <form @submit.prevent="submit" class="md:max-w-5xl">
-                <div class="space-y-12">
-                    <div
-                        class="border-b border-gray-900/10 pb-12 dark:border-gray-700"
-                    >
-                        <h2
-                            class="text-base leading-7 font-semibold text-gray-900 dark:text-gray-100"
-                        >
-                            Editar Movimentação
-                        </h2>
-                        <p
-                            class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400"
-                        >
-                            Edite uma movimentação financeira.
-                        </p>
+        <div class="flex h-full flex-1 flex-col gap-4 p-4">
+            <form @submit.prevent="submit">
+                <FormLayout 
+                    title="Editar Movimentação" 
+                    description="Atualize as informações da sua movimentação financeira."
+                    :variant="formVariant"
+                    :icon="formIcon"
+                >
+                    <div class="grid grid-cols-1 gap-8 sm:grid-cols-6">
+                        <div class="sm:col-span-3 space-y-2">
+                            <Label for="tipo" class="text-sm font-semibold flex items-center gap-2">
+                                <Info class="h-4 w-4 text-muted-foreground" />
+                                Tipo de Movimentação
+                            </Label>
+                            <Select v-model="form.tipo">
+                                <SelectTrigger class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                                    <SelectValue placeholder="Selecione o tipo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ganho"> Ganho </SelectItem>
+                                    <SelectItem value="gasto"> Despesa </SelectItem>
+                                    <SelectItem value="gasto futuro"> Despesa Futura </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <InputError :message="form.errors.tipo" />
+                        </div>
 
-                        <div
-                            class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-6"
-                        >
-                            <div class="sm:col-span-3">
-                                <Label for="tipo">Tipo</Label>
-                                <Select v-model="form.tipo">
-                                    <SelectTrigger>
-                                        <SelectValue
-                                            placeholder="Selecione o tipo"
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="ganho"> Ganho </SelectItem>
-                                        <SelectItem value="gasto"> Despesa </SelectItem>
-                                        <SelectItem value="gasto futuro"> Despesa Futura </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError
-                                    class="mt-2"
-                                    :message="form.errors.tipo"
-                                />
-                            </div>
+                        <div class="sm:col-span-3 space-y-2">
+                            <Label for="data" class="text-sm font-semibold flex items-center gap-2">
+                                <Calendar class="h-4 w-4 text-muted-foreground" />
+                                Data da Movimentação
+                            </Label>
+                            <Input id="data" v-model="form.data_movimentacao" name="data" type="date" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700" />
+                            <InputError :message="form.errors.data_movimentacao" />
+                        </div>
 
-                            <div class="sm:col-span-3">
-                                <Label for="data">Data</Label>
-                                <Input
-                                    id="data"
-                                    v-model="form.data_movimentacao"
-                                    name="data"
-                                    type="date"
-                                />
-                                <InputError
-                                    class="mt-2"
-                                    :message="form.errors.data_movimentacao"
-                                />
-                            </div>
+                        <div class="sm:col-span-full space-y-2">
+                            <Label for="descricao" class="text-sm font-semibold">Descrição</Label>
+                            <Input id="descricao" v-model="form.descricao" name="descricao" type="text"
+                                placeholder="Ex: Salário, Aluguel, Supermercado..."
+                                autocomplete="off" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700" />
+                            <InputError :message="form.errors.descricao" />
+                        </div>
 
-                            <div class="sm:col-span-full">
-                                <Label for="descricao">Descrição</Label>
-                                <Input
-                                    id="descricao"
-                                    v-model="form.descricao"
-                                    name="descricao"
-                                    type="text"
-                                    autocomplete="off"
-                                />
-                                <InputError
-                                    class="mt-2"
-                                    :message="form.errors.descricao"
-                                />
-                            </div>
-
-                            <div class="sm:col-span-3">
-                                <Label for="categoria_id">Categoria</Label>
-                                <Select v-model="form.categoria_id">
-                                    <SelectTrigger
-                                        class="focus:border-indigo-500 focus:ring-indigo-500"
-                                    >
-                                        <SelectValue
-                                            placeholder="Selecione a categoria"
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem
-                                            v-for="categoria in categoriasDisponiveis"
-                                            :key="categoria.id"
-                                            :value="categoria.id"
-                                        >
-                                            {{ categoria.nome }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError
-                                    class="mt-2"
-                                    :message="form.errors.categoria_id"
-                                />
-                                <div class="mt-1">
-                                    <button
-                                        type="button"
-                                        @click="isCategoriaModalOpen = true"
-                                        class="text-sm text-blue-400 underline hover:cursor-pointer hover:text-indigo-500"
-                                    >
-                                        Cadastrar nova categoria
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="sm:col-span-3">
-                                <Label for="valor">Valor</Label>
-                                <Input
-                                    id="valor"
-                                    v-model="valorFormatado"
-                                    name="valor"
-                                    type="tel"
-                                    @keydown="handleValorKeydown"
-                                />
-                                <InputError
-                                    class="mt-2"
-                                    :message="form.errors.valor"
-                                />
+                        <div class="sm:col-span-3 space-y-2">
+                            <Label for="categoria_id" class="text-sm font-semibold flex items-center gap-2">
+                                <Tag class="h-4 w-4 text-muted-foreground" />
+                                Categoria
+                            </Label>
+                            <Select v-model="form.categoria_id">
+                                <SelectTrigger class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                                    <SelectValue placeholder="Selecione a categoria" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="categoria in categoriasDisponiveis" :key="categoria.id"
+                                        :value="categoria.id">
+                                        {{ categoria.nome }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <InputError :message="form.errors.categoria_id" />
+                            <div class="mt-1">
+                                <button type="button" @click="isCategoriaModalOpen = true"
+                                    class="text-xs text-blue-500 hover:text-blue-600 font-medium flex items-center gap-1">
+                                    <PlusCircle class="h-3 w-3" />
+                                    Cadastrar nova categoria
+                                </button>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="mt-6 flex items-center justify-end gap-x-6">
-                    <Button
-                        type="submit"
-                        class="btn-primary w-30"
-                        :disabled="form.processing"
-                    >
-                        Salvar
-                    </Button>
-                </div>
+                        <div class="sm:col-span-3 space-y-2">
+                            <Label for="valor" class="text-sm font-semibold flex items-center gap-2">
+                                <Wallet class="h-4 w-4 text-muted-foreground" />
+                                Valor Total
+                            </Label>
+                            <Input id="valor" v-model="valorFormatado" name="valor" type="tel"
+                                @keydown="handleValorKeydown" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 font-mono text-lg" />
+                            <InputError :message="form.errors.valor" />
+                        </div>
+                    </div>
+
+                    <template #footer>
+                        <Button type="submit" class="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20" :disabled="form.processing">
+                            <Save class="h-4 w-4 mr-2" />
+                            Salvar Alterações
+                        </Button>
+                    </template>
+                </FormLayout>
             </form>
         </div>
         <CategoriaModal
