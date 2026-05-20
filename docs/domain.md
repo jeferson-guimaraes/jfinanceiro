@@ -25,6 +25,7 @@ Regras:
 - Possui valor fixo
 - Soma das parcelas = valor total da movimentação
 - Não existem parcelas variáveis
+- A data de vencimento da primeira parcela não pode ser anterior a data da compra
 
 Campo importante:
 - `pago` (boolean)
