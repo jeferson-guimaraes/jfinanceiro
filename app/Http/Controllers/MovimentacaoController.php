@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Movimentacoes\PagarParcelaRequest;
+use App\Http\Requests\Movimentacoes\PagarParcelasMassaRequest;
 use App\Http\Requests\Movimentacoes\StoreMovimentacaoRequest;
 use App\Http\Requests\Movimentacoes\UpdateMovimentacaoRequest;
 use App\Models\Movimentacao;
@@ -142,5 +144,38 @@ class MovimentacaoController extends Controller
         $movimentacaoService->destroyManyMovimentacoes($validated['movimentacoes_ids']);
 
         return redirect()->route('movimentacoes.index')->with('success', 'Movimentações excluídas com sucesso!');
+    }
+
+    /**
+     * Processa o pagamento de parcelas de uma movimentação.
+     *
+     * @param PagarParcelaRequest $request
+     * @param Movimentacao $movimentacao
+     * @param MovimentacaoService $movimentacaoService
+     * @return RedirectResponse
+     */
+    public function pagarParcelas(PagarParcelaRequest $request, Movimentacao $movimentacao, MovimentacaoService $movimentacaoService): RedirectResponse
+    {
+        if ($movimentacao->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $movimentacaoService->pagarParcelas($movimentacao, $request->validated());
+
+        return redirect()->back()->with('success', 'Pagamento realizado com sucesso!');
+    }
+
+    /**
+     * Processa o pagamento de parcelas de várias movimentações.
+     *
+     * @param PagarParcelasMassaRequest $request
+     * @param MovimentacaoService $movimentacaoService
+     * @return RedirectResponse
+     */
+    public function pagarParcelasMassa(PagarParcelasMassaRequest $request, MovimentacaoService $movimentacaoService): RedirectResponse
+    {
+        $movimentacaoService->pagarParcelasMassa($request->validated('movimentacao_ids'), $request->validated());
+
+        return redirect()->back()->with('success', 'Pagamentos realizados com sucesso!');
     }
 }

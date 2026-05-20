@@ -43,8 +43,21 @@ class StoreMovimentacaoRequest extends FormRequest
             'data_vencimento' => [
                 Rule::requiredIf($this->input('tipo') === TipoMovimentacaoEnum::GASTO_FUTURO->value),
                 'nullable',
-                'date'
+                'date',
+                'after_or_equal:data_movimentacao'
             ],
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'data_vencimento.after_or_equal' => 'A data de vencimento da primeira parcela não pode ser anterior à data da compra.',
         ];
     }
 }

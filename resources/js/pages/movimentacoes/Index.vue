@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import ConfirmarExclusaoModal from '@/components/modals/ConfirmarExclusaoModal.vue';
+import PagamentoParcelaModal from '@/components/modals/PagamentoParcelaModal.vue';
+import PagamentoMassaModal from '@/components/modals/PagamentoMassaModal.vue';
 import TabelaMovimentacoes from '@/components/movimentacoes/TabelaMovimentacoes.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -120,6 +122,30 @@ const totalPendente = computed(() => {
 
 const isModalExclusaoAberto = ref(false);
 const movimentacaoParaExcluir = ref<Movimentacao | null>(null);
+
+const isModalPagamentoAberto = ref(false);
+const movimentacaoParaPagar = ref<Movimentacao | null>(null);
+
+const isModalPagamentoMassaAberto = ref(false);
+const movimentacoesParaPagarMassa = ref<Movimentacao[]>([]);
+
+function handlePay(movimentacao: Movimentacao) {
+  movimentacaoParaPagar.value = movimentacao;
+  isModalPagamentoAberto.value = true;
+}
+
+function handlePayMany(ids: number[]) {
+  // Se estivermos na aba 'gasto futuro', as movimentações estão dentro do objeto parcela
+  if (abaAtiva.value === 'gasto futuro') {
+    movimentacoesParaPagarMassa.value = props.parcelasFuturas
+      .filter(p => ids.includes(p.movimentacao.id))
+      .map(p => p.movimentacao);
+  } else {
+    // Caso contrário, busca no array de movimentações normal
+    movimentacoesParaPagarMassa.value = props.movimentacoes.filter(m => ids.includes(m.id));
+  }
+  isModalPagamentoMassaAberto.value = true;
+}
 
 function requestDelete(movimentacao: Movimentacao) {
   movimentacaoParaExcluir.value = movimentacao;
@@ -377,11 +403,11 @@ const limparFiltros = () => {
               <TabelaMovimentacoes v-if="!isMediumScreen"
                 :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
                 :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
-                @delete="requestDelete" @delete:selected="requestDeleteMany" />
+                @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany" />
               <MovimentacoesCardList v-else-if="isMediumScreen"
                 :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
                 :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
-                @delete="requestDelete" @delete:selected="requestDeleteMany" />
+                @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany" />
             </div>
           </div>
         </div>
@@ -396,6 +422,9 @@ const limparFiltros = () => {
       message="As movimentações selecionadas serão removidas permanentemente."
       description="Essa ação não pode ser desfeita." confirm-text="Excluir" @confirm="confirmDeleteMany"
       @cancel="isModalExclusaoMassaAberto = false" />
+
+    <PagamentoParcelaModal v-model:open="isModalPagamentoAberto" :movimentacao="movimentacaoParaPagar" />
+    <PagamentoMassaModal v-model:open="isModalPagamentoMassaAberto" :movimentacoes="movimentacoesParaPagarMassa" />
 
     <!-- Floating Action Button para Telas Pequenas -->
     <div v-if="isMediumScreen" class="fixed bottom-4 right-4 z-50">

@@ -37,6 +37,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::delete('/', [MovimentacaoController::class, 'destroyMany'])
             ->name('destroyMany');
+
+        Route::post('{movimentacao}/pagar', [MovimentacaoController::class, 'pagarParcelas'])
+            ->name('pagar');
+
+        Route::post('pagar-massa', [MovimentacaoController::class, 'pagarParcelasMassa'])
+            ->name('pagarMassa');
     });
 
     Route::prefix('movimentacoes/categorias')->name('movimentacoes.categorias.')->group(function () {

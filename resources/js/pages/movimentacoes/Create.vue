@@ -5,11 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue';
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue';
+import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue';
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import movimentacoes from '@/routes/movimentacoes';
 import { type BreadcrumbItem, type Categoria } from '@/types';
 import { formatBRL, handleValorKeydown } from '@/utils/masks';
 import { Head, router, useForm } from '@inertiajs/vue3';
+import { Info } from 'lucide-vue-next';
 import { computed, ref, type PropType, watch } from 'vue';
 
 const props = defineProps({
@@ -107,6 +112,13 @@ watch([valor, () => form.parcelas], () => {
 
 
 function submit() {
+    if (form.tipo === 'gasto futuro' && form.data_vencimento && form.data_movimentacao) {
+        if (form.data_vencimento < form.data_movimentacao) {
+            form.setError('data_vencimento', 'A data de vencimento da primeira parcela não pode ser anterior à data da compra.');
+            return;
+        }
+    }
+
     form.post(movimentacoes.store().url, {
         onSuccess: () => {
             form.reset('descricao', 'valor', 'data_movimentacao', 'parcelas', 'valor_parcelas', 'data_vencimento');
@@ -197,7 +209,7 @@ function refreshCategories() {
                             </div>
 
                             <div class="sm:col-span-3">
-                                <Label for="valor">Valor</Label>
+                                <Label for="valor">Valor da Compra</Label>
                                 <Input id="valor" v-model="valorFormatado" name="valor" type="tel"
                                     @keydown="handleValorKeydown" />
                                 <InputError class="mt-2" :message="form.errors.valor" />
@@ -218,7 +230,19 @@ function refreshCategories() {
                                 </div>
 
                                 <div class="sm:col-span-2">
-                                    <Label for="data_vencimento">Data de Vencimento</Label>
+                                    <div class="flex items-center gap-1.5">
+                                        <Label for="quantidade" class="text-sm font-medium">Data de Vencimento</Label>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                            <TooltipTrigger as-child>
+                                                <Info class="h-3.5 w-3.5 text-gray-400 cursor-help mb-2" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Data de vencimento da primeira parcela</p>
+                                            </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        </div>
                                     <Input id="data_vencimento" v-model="form.data_vencimento" name="data_vencimento" type="date" />
                                     <InputError class="mt-2" :message="form.errors.data_vencimento" />
                                 </div>

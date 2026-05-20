@@ -24,9 +24,9 @@ class MovimentacaoService
 		$user = Auth::user();
 
 		$categorias = Categoria::where(function ($query) use ($user) {
-				$query->where('user_id', $user->id)
-					->orWhereNull('user_id');
-			})
+			$query->where('user_id', $user->id)
+				->orWhereNull('user_id');
+		})
 			->orderBy('nome')
 			->get();
 
@@ -109,6 +109,7 @@ class MovimentacaoService
 		}
 
 		return $query->with('categoria')
+			->withCount(['parcelas as parcelas_pagas' => fn($q) => $q->where('pago', true)])
 			->orderByDesc('data')
 			->get();
 	}
@@ -277,5 +278,90 @@ class MovimentacaoService
 		Movimentacao::whereIn('id', $movimentacoesIds)
 			->where('user_id', Auth::id())
 			->delete();
+	}
+
+	public function pagarParcelas(Movimentacao $movimentacao, array $data): void
+	{
+		\Illuminate\Support\Facades\DB::transaction(function () use ($movimentacao, $data) {
+			$quantidade = $data['quantidade_parcelas'];
+			$dataPagamento = $data['data_pagamento'];
+			$valorTotalPago = (float) $data['valor_total_pago'];
+
+			// 1. Marca as próximas parcelas pendentes como pagas
+			$parcelasAPagar = $movimentacao->parcelas()
+				->where('pago', false)
+				->orderBy('numero')
+				->take($quantidade)
+				->get();
+
+			foreach ($parcelasAPagar as $parcela) {
+				$parcela->update([
+					'pago' => true,
+					'data_pagamento' => $dataPagamento,
+				]);
+			}
+
+			// 2. Cria uma nova movimentação de GASTO para representar a saída de caixa
+			// Não criamos uma entrada na tabela 'parcelas' aqui, pois para GASTO/GANHO
+			// a movimentação já é a entidade principal e o sistema não exige entrada na tabela parcelas.
+			Movimentacao::create([
+				'user_id'      => $movimentacao->user_id,
+				'categoria_id' => $movimentacao->categoria_id,
+				'data'         => $dataPagamento,
+				'descricao'    => "Pagamento de {$quantidade} parcela(s) de: " . $movimentacao->descricao,
+				'valor'        => $valorTotalPago,
+				'tipo'         => TipoMovimentacaoEnum::GASTO->value,
+				'parcelas'     => 1,
+			]);
+		});
+	}
+
+	/**
+	 * Processa o pagamento de parcelas para múltiplas movimentações.
+	 *
+	 * @param array $movimentacaoIds IDs das movimentações a serem pagas.
+	 * @param array $data Dados do pagamento (quantidade, data).
+	 */
+	public function pagarParcelasMassa(array $movimentacaoIds, array $data): void
+	{
+		\Illuminate\Support\Facades\DB::transaction(function () use ($movimentacaoIds, $data) {
+			$quantidade = $data['quantidade_parcelas'];
+			$dataPagamento = $data['data_pagamento'];
+
+			$movimentacoes = Movimentacao::whereIn('id', $movimentacaoIds)
+				->where('user_id', Auth::id())
+				->get();
+
+			foreach ($movimentacoes as $movimentacao) {
+				// 1. Marca as próximas parcelas pendentes como pagas
+				$parcelasAPagar = $movimentacao->parcelas()
+					->where('pago', false)
+					->orderBy('numero')
+					->take($quantidade)
+					->get();
+
+				$valorPagoNestaMovimentacao = 0;
+				foreach ($parcelasAPagar as $parcela) {
+					$parcela->update([
+						'pago' => true,
+						'data_pagamento' => $dataPagamento,
+					]);
+					$valorPagoNestaMovimentacao += $parcela->valor;
+				}
+
+				if ($valorPagoNestaMovimentacao > 0) {
+					// 2. Cria uma nova movimentação de GASTO para representar a saída de caixa
+					Movimentacao::create([
+						'user_id'      => $movimentacao->user_id,
+						'categoria_id' => $movimentacao->categoria_id,
+						'data'         => $dataPagamento,
+						'descricao'    => "Pagamento de {$quantidade} parcela(s) de: " . $movimentacao->descricao,
+						'valor'        => $valorPagoNestaMovimentacao,
+						'tipo'         => TipoMovimentacaoEnum::GASTO->value,
+						'parcelas'     => 1,
+					]);
+				}
+			}
+		});
 	}
 }
