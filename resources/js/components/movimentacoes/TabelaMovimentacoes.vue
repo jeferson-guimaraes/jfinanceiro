@@ -25,7 +25,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const emit = defineEmits(['delete', 'delete:selected']);
+const emit = defineEmits(['delete', 'delete:selected', 'pay']);
 
 const selectedMovimentacoes = ref<number[]>([]);
 
@@ -159,6 +159,36 @@ const getValorPrefix = (tipo: string) => {
   return tipo === 'gasto' ? '-' : '+';
 };
 
+const getParcelaStatus = (parcela: ParcelaComMovimentacao): 'paga' | 'vencida' | 'vence-hoje' | 'pendente' => {
+  if (parcela.pago) return 'paga';
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const dataVencimento = new Date(parcela.data_vencimento + 'T00:00:00');
+
+  if (dataVencimento < hoje) return 'vencida';
+  if (dataVencimento.getTime() === hoje.getTime()) return 'vence-hoje';
+
+  return 'pendente';
+};
+
+const getStatusRowClass = (parcela: ParcelaComMovimentacao) => {
+  if (selectedMovimentacoes.value.includes(parcela.movimentacao.id)) return 'bg-blue-100 dark:bg-blue-900/40';
+
+  const status = getParcelaStatus(parcela);
+  switch (status) {
+    case 'paga':
+      return 'bg-green-100/50 dark:bg-green-900/20 hover:bg-green-100/90 dark:hover:bg-green-900/30';
+    case 'vencida':
+      return 'bg-red-100/70 dark:bg-red-900/20 hover:bg-red-100/90 dark:hover:bg-red-900/30';
+    case 'vence-hoje':
+      return 'bg-yellow-100/50 dark:bg-yellow-900/20 hover:bg-yellow-100/90 dark:hover:bg-yellow-900/30';
+    default:
+      return '';
+  }
+};
+
 function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
   emit('delete', movimentacao);
 }
@@ -166,12 +196,34 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
 
 <template>
   <div class="space-y-4">
-    <div v-if="selectedMovimentacoes.length > 0" class="flex justify-end">
-        <Button class="bg-red-500/10 text-red-500 font-semibold hover:bg-red-200" @click="requestDeleteMany">
-          <Trash2 class="text-red-500 font-semibold h-4 w-4 mr-2" />
-          Excluir selecionados ({{ selectedMovimentacoes.length }})
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <!-- Legenda -->
+      <div v-if="activeTab === 'gasto futuro'" class="flex flex-wrap gap-4 text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded-sm bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800"></div>
+          <span>Paga</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded-sm bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800"></div>
+          <span>Vence Hoje</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded-sm bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800"></div>
+          <span>Vencida</span>
+        </div>
+      </div>
+      <div v-else></div>
+
+      <div v-if="selectedMovimentacoes.length > 0" class="flex gap-2">
+        <Button class="bg-green-500/10 text-green-600 font-semibold hover:bg-green-200 h-8" @click="emit('pay:selected', selectedMovimentacoes)">
+          Pagar ({{ selectedMovimentacoes.length }})
+        </Button>
+        <Button class="bg-red-500/10 text-red-500 font-semibold hover:bg-red-200 h-8" @click="requestDeleteMany">
+          <Trash2 class="text-red-500 font-semibold h-3.5 w-3.5 mr-2" />
+          Excluir ({{ selectedMovimentacoes.length }})
         </Button>
       </div>
+    </div>
     <Table>
       <TableHeader class="bg-[#5B92EA] dark:bg-blue-950">
           <TableHead class="w-10"></TableHead>
@@ -239,7 +291,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
 
       <TableBody class="text-center">
         <template v-if="activeTab === 'gasto futuro'">
-          <TableRow v-for="parcela in sortedParcelas" :key="parcela.id" :class="selectedMovimentacoes.includes(parcela.movimentacao.id) ? 'bg-blue-100' : ''">
+          <TableRow v-for="parcela in sortedParcelas" :key="parcela.id" :class="getStatusRowClass(parcela)">
             <TableCell>
               <Checkbox :checked="selectedMovimentacoes.includes(parcela.movimentacao.id)" @update:modelValue="(val) => toggleSelection(parcela.movimentacao.id, Boolean(val))" />
             </TableCell>
@@ -269,6 +321,11 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
             </TableCell>
             <TableCell>
               <div class="flex items-center justify-end gap-2">
+                <Button v-if="(parcela.movimentacao.parcelas_pagas || 0) < parcela.movimentacao.parcelas"
+                  size="sm" variant="outline" @click="emit('pay', parcela.movimentacao)"
+                  class="border-green-600 text-green-600 hover:bg-green-600/10 hover:text-green-600 dark:border-green-400 dark:text-green-400">
+                  Pagar
+                </Button>
                 <Link :href="movimentacoesRoute.edit({
                   movimentacao:
                     parcela.movimentacao_id,
@@ -287,7 +344,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
           </TableRow>
         </template>
         <template v-else>
-          <TableRow v-for="movimentacao in sortedMovimentacoes" :key="movimentacao.id" :class="selectedMovimentacoes.includes(movimentacao.id) ? 'bg-blue-100' : ''">
+          <TableRow v-for="movimentacao in sortedMovimentacoes" :key="movimentacao.id" :class="selectedMovimentacoes.includes(movimentacao.id) ? 'bg-blue-100 dark:bg-blue-900/40' : ''">
             <TableCell>
               <Checkbox :checked="selectedMovimentacoes.includes(movimentacao.id)" @update:modelValue="(val) => toggleSelection(movimentacao.id, Boolean(val))" />
             </TableCell>
@@ -313,6 +370,11 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
             </TableCell>
             <TableCell>
               <div class="flex items-center justify-end gap-2">
+                <Button v-if="movimentacao.tipo === 'gasto futuro' && (movimentacao.parcelas_pagas || 0) < movimentacao.parcelas"
+                  size="sm" variant="outline" @click="emit('pay', movimentacao)"
+                  class="border-green-600 text-green-600 hover:bg-green-600/10 hover:text-green-600 dark:border-green-400 dark:text-green-400">
+                  Pagar
+                </Button>
                 <Link :href="movimentacoesRoute.edit({
                   movimentacao: movimentacao.id,
                 }).url

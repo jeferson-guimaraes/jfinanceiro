@@ -15,7 +15,7 @@ defineProps<{
   activeTab: string;
 }>();
 
-const emit = defineEmits(['delete', 'update:selection', 'delete:selected']);
+const emit = defineEmits(['delete', 'update:selection', 'delete:selected', 'pay']);
 
 const selectedMovimentacoes = ref<number[]>([]);
 
@@ -69,13 +69,6 @@ const statusBorderColors: Record<string, string> = {
   pendente: 'border-gray-200 dark:border-gray-700',
 };
 
-const statusBgColors: Record<string, string> = {
-  paga: 'bg-green-500/5',
-  vencida: 'bg-red-500/5',
-  'vence-hoje': 'bg-yellow-500/5',
-  pendente: 'bg-white',
-};
-
 const getStatusBorderClass = (parcela: ParcelaComMovimentacao) => {
   const status = getParcelaStatus(parcela);
   return statusBorderColors[status];
@@ -83,7 +76,18 @@ const getStatusBorderClass = (parcela: ParcelaComMovimentacao) => {
 
 const getStatusBgClass = (parcela: ParcelaComMovimentacao) => {
   const status = getParcelaStatus(parcela);
-  return statusBgColors[status];
+  if (selectedMovimentacoes.value.includes(parcela.movimentacao.id)) return 'bg-blue-100 dark:bg-blue-900/40';
+  
+  switch (status) {
+    case 'paga':
+      return 'bg-green-50/50 dark:bg-green-900/10';
+    case 'vencida':
+      return 'bg-red-50/50 dark:bg-red-900/10';
+    case 'vence-hoje':
+      return 'bg-yellow-50/50 dark:bg-yellow-900/10';
+    default:
+      return 'bg-white dark:bg-gray-800';
+  }
 };
 
 const getTipoLabel = (tipo: string) => {
@@ -102,11 +106,32 @@ const getTipoLabel = (tipo: string) => {
 
 <template>
   <div class="space-y-4">
-    <div v-if="selectedMovimentacoes.length > 0" class="flex justify-end">
-      <Button class="bg-red-500/10 text-red-500 font-semibold hover:bg-red-200" @click="requestDeleteMany">
-        <Trash2 class="text-red-500 font-semibold h-4 w-4 mr-2" />
-        Excluir selecionados ({{ selectedMovimentacoes.length }})
-      </Button>
+    <div class="flex flex-col gap-4">
+      <!-- Legenda -->
+      <div v-if="activeTab === 'gasto futuro'" class="flex flex-wrap gap-4 text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded-sm bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800"></div>
+          <span>Paga</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded-sm bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800"></div>
+          <span>Vence Hoje</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded-sm bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800"></div>
+          <span>Vencida</span>
+        </div>
+      </div>
+
+      <div v-if="selectedMovimentacoes.length > 0" class="flex justify-end gap-2">
+        <Button class="bg-green-500/10 text-green-600 font-semibold hover:bg-green-200 h-8" @click="emit('pay:selected', selectedMovimentacoes)">
+          Pagar ({{ selectedMovimentacoes.length }})
+        </Button>
+        <Button class="bg-red-500/10 text-red-500 font-semibold hover:bg-red-200 h-8" @click="requestDeleteMany">
+          <Trash2 class="text-red-500 font-semibold h-3.5 w-3.5 mr-2" />
+          Excluir ({{ selectedMovimentacoes.length }})
+        </Button>
+      </div>
     </div>
     <div v-if="activeTab === 'gasto futuro'">
       <div v-for="parcela in parcelas" :key="parcela.id"
@@ -166,6 +191,11 @@ const getTipoLabel = (tipo: string) => {
                 </div>
               </div>
               <div class="mt-6 grid grid-cols-2 gap-3">
+                <Button v-if="parcela.movimentacao.tipo === 'gasto futuro' && (parcela.movimentacao.parcelas_pagas || 0) < parcela.movimentacao.parcelas"
+                  @click="emit('pay', parcela.movimentacao)"
+                  class="col-span-2 bg-green-600/10 text-green-600 font-semibold hover:bg-green-600/20">
+                  Pagar Parcelas
+                </Button>
                 <Link :href="movimentacoesRoute.edit({
                   movimentacao:
                     parcela.movimentacao.id,
@@ -211,6 +241,11 @@ const getTipoLabel = (tipo: string) => {
           </div>
         </div>
         <div class="mt-8 grid grid-cols-2 gap-3">
+          <Button v-if="movimentacao.tipo === 'gasto futuro' && (movimentacao.parcelas_pagas || 0) < movimentacao.parcelas"
+            @click="emit('pay', movimentacao)"
+            class="col-span-2 bg-green-600/10 text-green-600 font-semibold hover:bg-green-600/20">
+            Pagar Parcelas
+          </Button>
           <Link :href="movimentacoesRoute.edit({
             movimentacao:
               movimentacao.id,

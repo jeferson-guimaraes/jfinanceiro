@@ -62,7 +62,7 @@ export interface Movimentacao {
     created_at: string;
     updated_at: string;
     categoria?: Categoria;
-    parcelas?: Parcela[];
+    lista_parcelas?: Parcela[];
 }
 
 export interface Parcela {
