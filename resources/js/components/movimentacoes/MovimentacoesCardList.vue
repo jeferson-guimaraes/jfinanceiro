@@ -226,7 +226,7 @@ const getTipoLabel = (tipo: string) => {
           <div>
             <p class="text-gray-400 text-sm font-bold mb-0">{{ formatDate(movimentacao.data) }}</p>
             <p class="font-semibold text-lg">{{ movimentacao.descricao }}</p>
-            <p class="text-sm text-blue-500 font-bold dark:text-gray-400 bg-blue-500/10 w-fit py-1 px-2 rounded-lg">{{
+            <p class="text-sm text-blue-500 font-bold dark:text-gray-400 bg-blue-500/10 w-fit py-1 px-2 rounded-lg mt-2">{{
               movimentacao.categoria?.nome }}</p>
           </div>
           <div class="text-right">

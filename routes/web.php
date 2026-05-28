@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MovimentacaoController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -13,7 +14,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', fn () => Inertia::render('Dashboard'))
+    Route::get('dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
     Route::prefix('movimentacoes')->name('movimentacoes.')->group(function () {
