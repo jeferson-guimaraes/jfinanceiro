@@ -9,58 +9,38 @@ import { type BreadcrumbItem } from '@/types';
 import { formataDinheiroBRL } from '@/utils/formataDinheiro';
 import { Head } from '@inertiajs/vue3';
 
+interface Props {
+    stats: Array<{
+        title: string;
+        value: number;
+        icon: string;
+        color: string;
+        description: string;
+    }>;
+    recentTransactions: Array<{
+        id: number;
+        description: string;
+        category: string;
+        value: number;
+        type: 'GANHO' | 'GASTO';
+        date: string;
+        status: string;
+    }>;
+    categoriesSummary: Array<{
+        name: string;
+        percentage: number;
+        color: string;
+        value: number;
+    }>;
+}
+
+defineProps<Props>();
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
         href: dashboard().url,
     },
-];
-
-// Dados fictícios para demonstração
-const stats = [
-    {
-        title: 'Saldo Atual',
-        value: 2450.00,
-        icon: 'wallet',
-        color: 'text-emerald-600',
-        description: 'Disponível em conta'
-    },
-    {
-        title: 'Ganhos (Maio)',
-        value: 5000.00,
-        icon: 'trendingUp',
-        color: 'text-blue-600',
-        description: 'Total recebido este mês'
-    },
-    {
-        title: 'Gastos (Maio)',
-        value: 2550.00,
-        icon: 'trendingDown',
-        color: 'text-rose-600',
-        description: 'Total de despesas pagas'
-    },
-    {
-        title: 'A Pagar (Futuro)',
-        value: 1200.00,
-        icon: 'calendar',
-        color: 'text-amber-600',
-        description: 'Parcelas pendentes'
-    }
-];
-
-const recentTransactions = [
-    { id: 1, description: 'Supermercado Mensal', category: 'Alimentação', value: 450.00, type: 'GASTO', date: '28/05/2026', status: 'Pago' },
-    { id: 2, description: 'Salário Mensal', category: 'Trabalho', value: 5000.00, type: 'GANHO', date: '05/05/2026', status: 'Recebido' },
-    { id: 3, description: 'Aluguel Apartamento', category: 'Moradia', value: 1200.00, type: 'GASTO', date: '10/05/2026', status: 'Pago' },
-    { id: 4, description: 'Assinatura Netflix', category: 'Lazer', value: 55.90, type: 'GASTO', date: '15/05/2026', status: 'Pago' },
-    { id: 5, description: 'Jantar Restaurante', category: 'Alimentação', value: 120.00, type: 'GASTO', date: '20/05/2026', status: 'Pago' },
-];
-
-const categoriesSummary = [
-    { name: 'Alimentação', percentage: 45, color: 'bg-rose-500', value: 1147.50 },
-    { name: 'Moradia', percentage: 30, color: 'bg-blue-500', value: 765.00 },
-    { name: 'Lazer', percentage: 15, color: 'bg-amber-500', value: 382.50 },
-    { name: 'Outros', percentage: 10, color: 'bg-slate-500', value: 255.00 },
 ];
 </script>
 
@@ -167,18 +147,6 @@ const categoriesSummary = [
                                 </div>
                                 <div class="h-2 w-full overflow-hidden rounded-full bg-secondary">
                                     <div class="h-full rounded-full transition-all" :class="cat.color" :style="{ width: `${cat.percentage}%` }" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-8 rounded-lg bg-muted p-4">
-                            <div class="flex items-center gap-3">
-                                <div class="rounded-full bg-primary/10 p-2">
-                                    <Icon name="lightbulb" class="text-primary" size="20" />
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium">Dica de hoje</p>
-                                    <p class="text-xs text-muted-foreground">Seu gasto com <strong>Alimentação</strong> está 10% maior que no mês passado. Que tal cozinhar mais em casa esta semana?</p>
                                 </div>
                             </div>
                         </div>
