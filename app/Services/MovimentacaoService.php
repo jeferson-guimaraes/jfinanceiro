@@ -79,8 +79,18 @@ class MovimentacaoService
 	 */
 	private function getGanhosGastosMovimentacoes(int $userId, ?string $tipo = null): Collection
 	{
-		$dataInicio = request('data_inicio') ? Carbon::parse(request('data_inicio')) : null;
-		$dataFim = request('data_fim') ? Carbon::parse(request('data_fim')) : null;
+		$dataInicioReq = request('data_inicio');
+		$dataFimReq = request('data_fim');
+
+		// Se não houver filtros de data, usa o mês atual por padrão para performance
+		if (!$dataInicioReq && !$dataFimReq) {
+			$dataInicio = Carbon::now()->startOfMonth();
+			$dataFim = Carbon::now()->endOfMonth();
+		} else {
+			$dataInicio = $dataInicioReq ? Carbon::parse($dataInicioReq) : null;
+			$dataFim = $dataFimReq ? Carbon::parse($dataFimReq) : null;
+		}
+
 		$busca = request('busca');
 
 		$query = Movimentacao::query()
@@ -122,8 +132,8 @@ class MovimentacaoService
 	 */
 	private function getParcelasFuturasMovimentacoes(int $userId): Collection
 	{
-		$mes = request('mes');
-		$ano = request('ano');
+		$mes = request('mes') ?: Carbon::now()->month;
+		$ano = request('ano') ?: Carbon::now()->year;
 		$busca = request('busca');
 
 		if ($mes && $ano) {
