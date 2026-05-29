@@ -40,7 +40,7 @@ jobs:
           REMOTE_USER: ${{ secrets.USERNAME }}
           SOURCE: "./"
           TARGET: "/home1/jfinan85/jfinanceiro.com.br"
-          ARGS: "-rlptgoDzvO -e 'ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no'"
+          ARGS: "-rlptgoDzvO -e 'ssh -o IdentitiesOnly=yes'"
           EXCLUDE: >
             node_modules/,
             .git/,
