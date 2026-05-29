@@ -8,7 +8,7 @@
  * - Entradas -> ganho (usando categoria "Outros")
  * - Saídas -> gasto
  * - Contas a Pagar -> gasto futuro (com parcelas)
- * - Mantém duplicidade entre saídas e parcelas pagas conforme solicitado
+ * - Mantém duplicidade entre saídas e parcelas pagas conforme solicitado (Gasto Futuro + Gasto para cada pagamento)
  */
 
 $oldDbConfig = [
@@ -86,25 +86,29 @@ try {
     echo "Migrando entradas...\n";
     $entradas = $oldPdo->query("SELECT * FROM entradas")->fetchAll(PDO::FETCH_ASSOC);
     $insertMov = $newPdo->prepare("INSERT INTO movimentacoes (id, user_id, categoria_id, data, descricao, valor, tipo, parcelas, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $insertPar = $newPdo->prepare("INSERT INTO parcelas (movimentacao_id, numero, valor, data_vencimento, data_pagamento, pago, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    // Nota: Removi a inserção automática de parcelas para entradas e saídas aqui, 
+    // pois apenas Gasto Futuro deve ter registros na tabela 'parcelas' conforme a regra de domínio.
     
     $currentMovId = 1;
     foreach ($entradas as $e) {
         $date = sanitizeDate($e['data']);
         $insertMov->execute([$currentMovId, $e['idusuario'], $defaultGanhoCatId, $e['data'], $e['descricao'], $e['valor'], 'ganho', 1, $date, $date]);
-        $insertPar->execute([$currentMovId, 1, $e['valor'], $e['data'], $e['data'], 1, $date, $date]);
         $currentMovId++;
     }
 
     // 4. Contas a Pagar
     echo "Migrando contas a pagar...\n";
+    $insertPar = $newPdo->prepare("INSERT INTO parcelas (movimentacao_id, numero, valor, data_vencimento, data_pagamento, pago, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    
     $contas = $oldPdo->query("SELECT * FROM contas_a_pagar")->fetchAll(PDO::FETCH_ASSOC);
     $oldContaToNewMov = [];
+    
     foreach ($contas as $cp) {
         $date = sanitizeDate($cp['data']);
         $newCatId = $catMapping[$cp['fk_idcategoria']]['gasto futuro'] ?? null;
         
         $insertMov->execute([$currentMovId, $cp['id_usuario'], $newCatId, $cp['data'], $cp['descricao'], $cp['valor'], 'gasto futuro', $cp['parcelas'], $date, $date]);
+        
         $oldContaToNewMov[$cp['id']] = $currentMovId;
         $currentMovId++;
     }
@@ -112,8 +116,10 @@ try {
     // 5. Parcelas
     echo "Migrando parcelas...\n";
     $parcelas = $oldPdo->query("SELECT * FROM parcela")->fetchAll(PDO::FETCH_ASSOC);
+
     foreach ($parcelas as $p) {
         if (!isset($oldContaToNewMov[$p['idcontapagar']])) continue;
+        
         $movId = $oldContaToNewMov[$p['idcontapagar']];
         $pago = ($p['data_pagamento'] && $p['data_pagamento'] != '0000-00-00');
         $date = sanitizeDate($p['data_vencimento']);
@@ -134,7 +140,6 @@ try {
         $newCatId = $catMapping[$s['fk_idcategoria']]['gasto'] ?? null;
         
         $insertMov->execute([$currentMovId, $s['idusuario'], $newCatId, $s['data'], $s['descricao'], $s['valor'], 'gasto', 1, $date, $date]);
-        $insertPar->execute([$currentMovId, 1, $s['valor'], $s['data'], $s['data'], 1, $date, $date]);
         $currentMovId++;
     }
 
