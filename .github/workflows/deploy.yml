@@ -40,7 +40,7 @@ jobs:
           REMOTE_USER: ${{ secrets.USERNAME }}
           SOURCE: "./"
           TARGET: "/home1/jfinan85/jfinanceiro.com.br"
-          ARGS: "-rlptgoDzvO" # Garante que os links simbólicos existentes no servidor sejam preservados e não recriados como pastas/arquivos vazios
+          ARGS: "-rlptgoDzvO -e 'ssh -o IdentitiesOnly=yes'"
           EXCLUDE: >
             node_modules/,
             .git/,
