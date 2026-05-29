@@ -19,46 +19,40 @@ jobs:
           php-version: 8.3
 
       - name: Instalar dependências PHP
-        run: composer install --no-dev --prefer-dist --optimize-autoloader
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Instalar dependências Node
-        run: npm ci
+        run: npm install
 
       - name: Build frontend
         run: npm run build
 
-      - name: Copiar arquivos para servidor
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          source: "."
-          target: "/home1/jfinan85/jfinanceiro.com.br"
-
-          rm: false
-          overwrite: true
-
-          strip_components: 0
-
-          exclude: |
-            .git
-            .github
-            node_modules
-            tests
-            storage/logs
-            storage/framework/cache
-            storage/framework/sessions
-            storage/framework/views
+      - name: Deploy para servidor (Rsync)
+        uses: easingthemes/ssh-deploy@v5.1.0
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOST }}
+          REMOTE_USER: ${{ secrets.USERNAME }}
+          SOURCE: "./"
+          TARGET: "/home1/jfinan85/jfinanceiro.com.br"
+          ARGS: "-rlptgoDzvO" # Garante que os links simbólicos existentes no servidor sejam preservados e não recriados como pastas/arquivos vazios
+          EXCLUDE: >
+            node_modules/,
+            .git/,
+            .github/,
+            vendor/,
+            storage/logs/,
+            storage/framework/cache/,
+            storage/framework/sessions/,
+            storage/framework/views/,
             .env
 
-      - name: Executar comandos Laravel
+      - name: Otimizar Laravel
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -66,16 +60,6 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /home1/jfinan85/jfinanceiro.com.br
-
-            /opt/cpanel/composer/bin/composer install \
-              --no-dev \
-              --prefer-dist \
-              --optimize-autoloader
-
+            /opt/cpanel/composer/bin/composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
             php artisan optimize:clear
-
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-
             php artisan optimize
