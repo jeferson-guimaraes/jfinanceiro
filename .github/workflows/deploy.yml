@@ -19,7 +19,7 @@ jobs:
           php-version: 8.3
 
       - name: Instalar dependências PHP
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -32,7 +32,7 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Deploy para servidor (Rsync)
+      - name: Deploy para servidor
         uses: easingthemes/ssh-deploy@v5.1.0
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
@@ -40,7 +40,6 @@ jobs:
           REMOTE_USER: ${{ secrets.USERNAME }}
           SOURCE: "./"
           TARGET: "/home1/jfinan85/jfinanceiro.com.br"
-          ARGS: "-rlptgoDzvO" # Garante que os links simbólicos existentes no servidor sejam preservados e não recriados como pastas/arquivos vazios
           EXCLUDE: >
             node_modules/,
             .git/,
@@ -49,8 +48,7 @@ jobs:
             storage/logs/,
             storage/framework/cache/,
             storage/framework/sessions/,
-            storage/framework/views/,
-            .env
+            storage/framework/views/
 
       - name: Otimizar Laravel
         uses: appleboy/ssh-action@v1.0.3
