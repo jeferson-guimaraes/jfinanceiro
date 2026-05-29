@@ -33,26 +33,29 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Deploy arquivos
-        uses: easingthemes/ssh-deploy@v5.1.0
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.HOST }}
-          REMOTE_USER: ${{ secrets.USERNAME }}
-          SOURCE: "./"
-          TARGET: "/home1/jfinan85/jfinanceiro.com.br"
+      - name: Copiar arquivos para servidor
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "."
+          target: "/home1/jfinan85/jfinanceiro.com.br"
 
-          SSH_CMD_ARGS: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes"
+          rm: false
+          overwrite: true
 
-          EXCLUDE: >
-            .git/,
-            .github/,
-            node_modules/,
-            tests/,
-            storage/logs/,
-            storage/framework/cache/,
-            storage/framework/sessions/,
-            storage/framework/views/,
+          strip_components: 0
+
+          exclude: |
+            .git
+            .github
+            node_modules
+            tests
+            storage/logs
+            storage/framework/cache
+            storage/framework/sessions
+            storage/framework/views
             .env
 
       - name: Executar comandos Laravel
