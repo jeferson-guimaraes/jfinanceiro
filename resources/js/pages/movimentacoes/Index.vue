@@ -2,9 +2,9 @@
 import ConfirmarExclusaoModal from '@/components/modals/ConfirmarExclusaoModal.vue';
 import PagamentoParcelaModal from '@/components/modals/PagamentoParcelaModal.vue';
 import PagamentoMassaModal from '@/components/modals/PagamentoMassaModal.vue';
+import DetalhesMovimentacaoModal from '@/components/modals/DetalhesMovimentacaoModal.vue';
 import TabelaMovimentacoes from '@/components/movimentacoes/TabelaMovimentacoes.vue';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TotalCard from '@/components/movimentacoes/ValorCard.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -12,7 +12,7 @@ import movimentacoesRoutes from '@/routes/movimentacoes';
 import type { BreadcrumbItem, Movimentacao, ParcelaComMovimentacao } from '@/types';
 import { Head, router, Link } from '@inertiajs/vue3';
 import { Check, Hourglass, Wallet, X, Plus, ArrowUp, ArrowDown, CircleDollarSign } from 'lucide-vue-next';
-import MovimentacoesCardList from '@/components/movimentacoes/MovimentacoesCardList.vue';
+import MovimentacoesMobileList from '@/components/movimentacoes/MovimentacoesMobileList.vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import isValidDate from '@/utils/validaData';
 import { Button } from '@/components/ui/button';
@@ -128,6 +128,14 @@ const movimentacaoParaPagar = ref<Movimentacao | null>(null);
 
 const isModalPagamentoMassaAberto = ref(false);
 const movimentacoesParaPagarMassa = ref<Movimentacao[]>([]);
+
+const isModalDetalhesAberto = ref(false);
+const itemParaDetalhes = ref<Movimentacao | ParcelaComMovimentacao | null>(null);
+
+function handleShowDetails(item: Movimentacao | ParcelaComMovimentacao) {
+  itemParaDetalhes.value = item;
+  isModalDetalhesAberto.value = true;
+}
 
 function handlePay(movimentacao: Movimentacao) {
   movimentacaoParaPagar.value = movimentacao;
@@ -278,65 +286,69 @@ const limparFiltros = () => {
 
   <Head title="Movimentações" />
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-      <div class="space-y-2 xl:px-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-base leading-7 font-semibold text-gray-900 dark:text-gray-100">
+    <div class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div class="flex flex-col gap-8">
+        <!-- Header Minimalista -->
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div class="space-y-1">
+            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
               Movimentações
-            </h2>
-            <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
-              Visualize todas as suas movimentações financeiras.
+            </h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Gerencie seu fluxo financeiro e acompanhe seus gastos futuros de forma simples.
             </p>
           </div>
 
-          <div class="hidden md:block">
+          <div class="hidden sm:block">
             <Link :href="movimentacoesRoutes.create({ query: { tipo: abaAtiva !== 'todos' ? abaAtiva : 'ganho' } }).url">
-              <Button class="w-full md:w-auto">
+              <Button class="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all px-6">
+                <Plus class="mr-2 h-4 w-4" />
                 Nova Movimentação
               </Button>
             </Link>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-x-6 gap-y-4">
-          <div>
-            <div class="border-b border-gray-200 dark:border-gray-700">
-              <ul class="-mb-px flex text-sm font-medium text-gray-500 dark:text-gray-400">
-                <li v-for="tab in tabs" :key="tab.tipo">
-                  <button class="border-b-2 p-4 hover:cursor-pointer" :class="[
-                    abaAtiva === tab.tipo
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent hover:border-gray-300 hover:text-gray-600']" @click="changeTab(tab.tipo)">
-                    {{ tab.title }}
-                  </button>
-                </li>
-              </ul>
-            </div>
+        <div class="space-y-6">
+          <!-- Tabs Elegantes -->
+          <div class="border-b border-gray-200 dark:border-gray-800">
+            <nav class="-mb-px flex space-x-8 overflow-x-auto pb-px">
+              <button
+                v-for="tab in tabs"
+                :key="tab.tipo"
+                @click="changeTab(tab.tipo)"
+                class="whitespace-nowrap border-b-2 py-4 text-sm font-medium transition-all duration-200"
+                :class="[
+                  abaAtiva === tab.tipo
+                    ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ]"
+              >
+                {{ tab.title }}
+              </button>
+            </nav>
+          </div>
 
-            <div class="rounded-b-lg bg-gray-50 p-4 dark:bg-sidebar">
-              <div class="mb-4 grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div class="space-y-6">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                 <!-- Filtros e Busca -->
-                <div class="flex flex-col gap-4">
-                  <!-- Filtro de data (Invisível apenas na aba 'gasto futuro') -->
-                  <div v-if="abaAtiva === 'todos' || abaAtiva === 'ganho' || abaAtiva === 'gasto'"
-                    class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div class="flex flex-col gap-1">
-                        <Label for="dataInicio">De:</Label>
-                        <Input v-model="dataInicio" type="date" id="dataInicio" />
+                <div class="flex flex-1 flex-col gap-4 max-w-2xl">
+                  <div class="flex flex-col sm:flex-row gap-3">
+                    <!-- Filtro de data (Invisível apenas na aba 'gasto futuro') -->
+                    <div v-if="abaAtiva === 'todos' || abaAtiva === 'ganho' || abaAtiva === 'gasto'"
+                      class="flex flex-1 gap-2">
+                      <div class="flex-1">
+                        <Input v-model="dataInicio" type="date" id="dataInicio" class="h-9 text-xs" />
                       </div>
-                      <div class="flex flex-col gap-1">
-                        <Label for="dataFim">Até:</Label>
-                        <Input v-model="dataFim" type="date" id="dataFim" />
+                      <div class="flex-1">
+                        <Input v-model="dataFim" type="date" id="dataFim" class="h-9 text-xs" />
                       </div>
-                  </div>
+                    </div>
 
-                  <!-- Filtro mês/ano para gastos futuros -->
-                  <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-col gap-2">
-                    <Label>Período:</Label>
-                    <div class="flex gap-2">
+                    <!-- Filtro mês/ano para gastos futuros -->
+                    <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-1 gap-2">
                       <Select v-model="mesSelecionado">
-                        <SelectTrigger>
+                        <SelectTrigger class="h-9 text-xs">
                           <SelectValue placeholder="Mês" />
                         </SelectTrigger>
                         <SelectContent>
@@ -345,74 +357,77 @@ const limparFiltros = () => {
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      <Input type="text" v-model="anoSelecionado" placeholder="Ano" />
+                      <Input type="text" v-model="anoSelecionado" placeholder="Ano" class="h-9 text-xs w-20" />
                     </div>
-                  </div>
 
-                  <!-- Filtro de Busca por Texto -->
-                  <div class="flex items-end gap-2">
-                    <Input v-model="buscaTexto" placeholder="Buscar por descrição..." class="flex-1" />
-                    <button type="button" @click="limparFiltros"
-                      class="border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2">
-                      <X class="w-5 h-5" />
-                      <span class="text-sm">Limpar</span>
-                    </button>
+                    <!-- Filtro de Busca por Texto -->
+                    <div class="flex flex-[1.5] items-center gap-2">
+                      <div class="relative flex-1">
+                        <Input v-model="buscaTexto" placeholder="Buscar descrição..." class="h-9 pl-3 text-xs" />
+                      </div>
+                      <Button variant="outline" size="sm" @click="limparFiltros" class="h-9 px-2 text-xs">
+                        <X class="mr-1 h-3 w-3" />
+                        Limpar
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
                 <!-- Totais -->
-                <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                <div class="grid grid-cols-3 gap-2 sm:gap-3 lg:w-1/3 min-w-[320px]">
                   <!-- Caso 'gasto futuro' -->
                   <template v-if="abaAtiva === 'gasto futuro'">
-                    <TotalCard :icon="CircleDollarSign" :icon-classes="'text-red-700'" title="Total" :value="total" />
-                    <TotalCard :icon="Check" :icon-classes="'text-green-500'" title="Pago" :value="totalPago" />
-                    <TotalCard :icon="Hourglass" :icon-classes="'text-yellow-500'" title="Pendente" :value="totalPendente" />
+                    <TotalCard :icon="CircleDollarSign" :icon-classes="'text-red-600'" title="Total" :value="total" />
+                    <TotalCard :icon="Check" :icon-classes="'text-green-600'" title="Pago" :value="totalPago" />
+                    <TotalCard :icon="Hourglass" :icon-classes="'text-yellow-600'" title="Pendente" :value="totalPendente" />
                   </template>
                   
                   <!-- Caso 'todos' -->
                   <template v-else-if="abaAtiva === 'todos'">
                     <TotalCard :icon="ArrowUp" title="Ganhos" :value="totalGanhos" icon-classes="text-green-600" />
                     <TotalCard :icon="ArrowDown" title="Despesas" :value="totalDespesas" icon-classes="text-red-600" />
-                    <TotalCard :icon="Wallet" title="Disponível" :value="totalDisponivel" 
+                    <TotalCard :icon="Wallet" title="Saldo" :value="totalDisponivel" 
                       :valueColorClass="totalDisponivel >= 0 ? 'text-green-600' : 'text-red-600'" />
                   </template>
 
                   <!-- Caso simples (ganho/gasto) -->
                   <template v-else>
+                    <div class="col-span-2 hidden lg:block"></div>
                     <TotalCard 
                       v-if="abaAtiva === 'ganho'" 
                       :icon="ArrowUp" 
-                      title="Total" 
+                      title="Total Ganhos" 
                       :value="total" 
                       icon-classes="text-green-600" 
-                      class="col-start-2 lg:col-start-3"
                     />
                     <TotalCard 
                       v-else-if="abaAtiva === 'gasto'" 
                       :icon="ArrowDown" 
-                      title="Total" 
+                      title="Total Despesas" 
                       :value="total" 
                       icon-classes="text-red-600" 
-                      class="col-start-2 lg:col-start-3"
                     />
                   </template>
                 </div>
-              </div>
-
-              <!-- Tabelas de Movimentações/Parcelas -->
-              <TabelaMovimentacoes v-if="!isMediumScreen"
-                :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
-                :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
-                @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany" />
-              <MovimentacoesCardList v-else-if="isMediumScreen"
-                :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
-                :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
-                @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany" />
             </div>
+
+            <!-- Tabelas de Movimentações/Parcelas -->
+            <TabelaMovimentacoes v-if="!isMediumScreen"
+              :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
+              :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
+              @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
+              @show-details="handleShowDetails" />
+            <MovimentacoesMobileList v-else-if="isMediumScreen"
+              :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
+              :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
+              @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
+              @show-details="handleShowDetails" />
           </div>
         </div>
       </div>
     </div>
+
+    <DetalhesMovimentacaoModal v-model:open="isModalDetalhesAberto" :item="itemParaDetalhes" />
 
     <ConfirmarExclusaoModal v-model:open="isModalExclusaoAberto" title="Excluir movimentação"
       message="Esta movimentação será removida permanentemente." description="Essa ação não pode ser desfeita."

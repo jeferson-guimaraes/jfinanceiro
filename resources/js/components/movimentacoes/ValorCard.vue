@@ -10,7 +10,7 @@ const props = defineProps({
   },
   iconClasses: {
     type: String,
-    default: 'text-[#6F4E37] w-8 h-8',
+    default: 'text-blue-900',
   },
   title: {
     type: String,
@@ -34,15 +34,13 @@ const formattedValue = computed(() => formataDinheiroBRL(props.value));
 </script>
 
 <template>
-  <div class="rounded-lg border bg-white p-4 space-y-2 shadow-sm dark:border-gray-700 dark:bg-gray-800 flex items-center gap-3 w-full">		
-    <div>
-      <div class="flex gap-2 items-center">
-        <component :is="props.icon" :class="props.iconClasses" />
-        <h3 class="md:block text-sm font-medium text-gray-500 dark:text-gray-400">{{ title }}</h3>
-      </div>
-      <div :class="`mt-2 ${props.valueClasses} ${props.valueColorClass}`">
-        {{ formattedValue }}
-      </div>
+  <div class="rounded-xl border bg-white p-2 sm:p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col justify-between min-h-[70px] sm:min-h-[80px] w-full">		
+    <div class="flex items-center justify-between">
+      <h3 class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ title }}</h3>
+      <component :is="props.icon" :class="props.iconClasses" class="w-4 h-4 opacity-70" />
+    </div>
+    <div :class="`text-sm sm:text-base font-bold ${props.valueColorClass}`">
+      {{ formattedValue }}
     </div>
   </div>
 </template>
