@@ -9,6 +9,7 @@ import { create } from '@/routes/movimentacoes/categorias';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 import { Categoria, Paginated, Filter } from '@/types/movimentacoes/categorias';
+import { Plus } from 'lucide-vue-next';
 
 const props = defineProps<{
 	listaCategorias: Paginated<Categoria>;
@@ -25,7 +26,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 const localSearch = ref(props.filters.search);
 const localTipo = ref(props.filters.tipo);
 const localPerPage = ref(props.filters.per_page || 10);
-
 
 const searchData = () => {
 	router.get('/movimentacoes/categorias', {
@@ -60,40 +60,44 @@ watch(localTipo, (newTipo) => {
 watch(localPerPage, () => {
 	searchData();
 });
-
 </script>
 
 <template>
-
 	<Head title="Minhas Categorias" />
 
 	<AppLayout :breadcrumbs="breadcrumbs">
-		<div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-			<div class="space-y-2 xl:px-8">
-				<div class="flex gap-4 justify-between">
-					<div>
-						<h2 class="text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">Categoria</h2>
-						<p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
-							Consulte todas as suas categorias para suas movimentações.
+		<div class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+			<div class="flex flex-col gap-8">
+				<!-- Header Minimalista -->
+				<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+					<div class="space-y-1">
+						<h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
+							Categorias
+						</h1>
+						<p class="text-sm text-gray-500 dark:text-gray-400">
+							Consulte e gerencie todas as suas categorias para organizar suas movimentações.
 						</p>
 					</div>
 
-					<div>
+					<div class="hidden sm:block">
 						<Link :href="create({ query: { tipo: localTipo } }).url">
-						<Button class="w-30">
-							Nova Categoria
-						</Button>
+							<Button class="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all px-6">
+								<Plus class="mr-2 h-4 w-4" />
+								Nova Categoria
+							</Button>
 						</Link>
 					</div>
-
 				</div>
 
-				<div class="grid grid-cols-1 gap-x-6 gap-y-4">
-
-					<TabsListCategories :categorias="listaCategorias" :filters="filters"
-						@update:search="localSearch = $event" @update:tipo="localTipo = $event"
-						@update:per_page="localPerPage = $event" />
-
+				<!-- Conteúdo principal -->
+				<div class="space-y-6">
+					<TabsListCategories 
+						:categorias="listaCategorias" 
+						:filters="filters"
+						@update:search="localSearch = $event" 
+						@update:tipo="localTipo = $event"
+						@update:per_page="localPerPage = $event" 
+					/>
 				</div>
 			</div>
 		</div>

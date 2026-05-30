@@ -21,27 +21,28 @@ interface Props {
   movimentacoes?: Movimentacao[];
   parcelas?: ParcelaComMovimentacao[];
   activeTab: string;
+  selectedMovimentacoes: number[];
 }
 
 const props = defineProps<Props>();
 
-const emit = defineEmits(['delete', 'delete:selected', 'pay', 'show-details']);
-
-const selectedMovimentacoes = ref<number[]>([]);
+const emit = defineEmits(['delete', 'delete:selected', 'pay', 'show-details', 'update:selectedMovimentacoes', 'pay:selected']);
 
 const toggleSelection = (id: number, checked: boolean) => {
+  let newValue = [...props.selectedMovimentacoes];
   if (checked) {
-    if (!selectedMovimentacoes.value.includes(id)) {
-      selectedMovimentacoes.value.push(id);
+    if (!newValue.includes(id)) {
+      newValue.push(id);
     }
   } else {
-    selectedMovimentacoes.value = selectedMovimentacoes.value.filter(item => item !== id);
+    newValue = newValue.filter(item => item !== id);
   }
+  emit('update:selectedMovimentacoes', newValue);
 };
 
 const requestDeleteMany = () => {
-  emit('delete:selected', selectedMovimentacoes.value);
-  selectedMovimentacoes.value = [];
+  emit('delete:selected', props.selectedMovimentacoes);
+  emit('update:selectedMovimentacoes', []);
 };
 
 const sortKey = ref<string>('data');
@@ -174,7 +175,9 @@ const getParcelaStatus = (parcela: ParcelaComMovimentacao): 'paga' | 'vencida' |
 };
 
 const getStatusRowClass = (parcela: ParcelaComMovimentacao) => {
-  if (selectedMovimentacoes.value.includes(parcela.movimentacao.id)) return 'bg-blue-100 dark:bg-blue-900/40';
+  if (parcela.movimentacao && props.selectedMovimentacoes?.includes(parcela.movimentacao.id)) {
+    return 'bg-blue-100 dark:bg-blue-900/40';
+  }
 
   const status = getParcelaStatus(parcela);
   switch (status) {
@@ -214,13 +217,13 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
       </div>
       <div v-else></div>
 
-      <div v-if="selectedMovimentacoes.length > 0" class="flex gap-2">
-        <Button class="bg-green-500/10 text-green-600 font-semibold hover:bg-green-200 h-8" @click="emit('pay:selected', selectedMovimentacoes)">
-          Pagar ({{ selectedMovimentacoes.length }})
+      <div v-if="props.selectedMovimentacoes && props.selectedMovimentacoes.length > 0" class="flex gap-2">
+        <Button class="bg-green-500/10 text-green-600 font-semibold hover:bg-green-200 h-8" @click="emit('pay:selected', props.selectedMovimentacoes)">
+          Pagar ({{ props.selectedMovimentacoes.length }})
         </Button>
         <Button class="bg-red-500/10 text-red-500 font-semibold hover:bg-red-200 h-8" @click="requestDeleteMany">
           <Trash2 class="text-red-500 font-semibold h-3.5 w-3.5 mr-2" />
-          Excluir ({{ selectedMovimentacoes.length }})
+          Excluir ({{ props.selectedMovimentacoes.length }})
         </Button>
       </div>
     </div>
@@ -342,10 +345,10 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
         </template>
         <template v-else>
           <TableRow v-for="movimentacao in sortedMovimentacoes" :key="movimentacao.id" 
-            :class="[selectedMovimentacoes.includes(movimentacao.id) ? 'bg-blue-50/50 dark:bg-blue-900/20' : '', 'cursor-pointer transition-colors duration-150 border-b border-gray-50 dark:border-gray-800/50']" 
+            :class="[props.selectedMovimentacoes && props.selectedMovimentacoes.includes(movimentacao.id) ? 'bg-blue-50/50 dark:bg-blue-900/20' : '', 'cursor-pointer transition-colors duration-150 border-b border-gray-50 dark:border-gray-800/50']" 
             @click="emit('show-details', movimentacao)">
             <TableCell @click.stop>
-              <Checkbox :checked="selectedMovimentacoes.includes(movimentacao.id)" @update:modelValue="(val) => toggleSelection(movimentacao.id, Boolean(val))" />
+              <Checkbox :checked="props.selectedMovimentacoes && props.selectedMovimentacoes.includes(movimentacao.id)" @update:modelValue="(val) => toggleSelection(movimentacao.id, Boolean(val))" />
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-medium">
               {{ formatDate(movimentacao.data) }}

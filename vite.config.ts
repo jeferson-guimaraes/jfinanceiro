@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 import os from 'os';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 function getLocalIp() {
     const interfaces = os.networkInterfaces();
@@ -38,6 +39,11 @@ export default defineConfig({
                 },
             },
         }),
+        visualizer({
+            open: true,
+            gzipSize: true,
+            brotliSize: true,
+        })
     ],
     server: {
         host: '0.0.0.0',

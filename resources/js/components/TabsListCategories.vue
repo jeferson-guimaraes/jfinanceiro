@@ -4,30 +4,10 @@ import { router, Link } from '@inertiajs/vue3'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-
 import ConfirmarExclusaoModal from './modals/ConfirmarExclusaoModal.vue'
 import type { Categoria, Paginated, Filter } from '@/types/movimentacoes/categorias'
 import { AcceptableValue } from 'reka-ui'
-
-/* -------------------------------------------------------------------------- */
-/* Props / Emits                                                               */
-/* -------------------------------------------------------------------------- */
+import { Pencil, Trash2 } from 'lucide-vue-next'
 
 const props = defineProps<{
   categorias: Paginated<Categoria>
@@ -36,53 +16,10 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:search', 'update:tipo', 'update:per_page'])
 
-/* -------------------------------------------------------------------------- */
-/* State                                                                      */
-/* -------------------------------------------------------------------------- */
-
 const selectedItems = ref<number[]>([])
 const isModalConfirmarExclusaoAberto = ref(false)
 
-type DeleteContext = {
-  type: 'single' | 'multiple'
-  count: number
-}
-
-const deleteContext = ref<DeleteContext | null>(null)
-
-/* -------------------------------------------------------------------------- */
-/* Tabs                                                                       */
-/* -------------------------------------------------------------------------- */
-
-const tabs = [
-  { title: 'Ganhos', tipo: 'ganho' },
-  { title: 'Despesas', tipo: 'gasto' },
-  { title: 'Futuras', tipo: 'gasto futuro' },
-  ];
-
-/* -------------------------------------------------------------------------- */
-/* Selection logic                                                            */
-/* -------------------------------------------------------------------------- */
-
-const allIds = computed(() =>
-  props.categorias.data.map(item => item.id)
-)
-
-const isAllSelected = computed(() =>
-  allIds.value.length > 0 &&
-  allIds.value.every(id => selectedItems.value.includes(id))
-)
-
-const isIndeterminate = computed(() =>
-  selectedItems.value.length > 0 && !isAllSelected.value
-)
-
-const allSelectedProxy = computed({
-  get: () => isAllSelected.value,
-  set: (value: boolean) => {
-    selectedItems.value = value ? [...allIds.value] : []
-  },
-})
+const deleteContext = ref<{ type: 'single' | 'multiple', count: number } | null>(null)
 
 function toggleItem(id: number) {
   if (selectedItems.value.includes(id)) {
@@ -91,10 +28,6 @@ function toggleItem(id: number) {
     selectedItems.value.push(id)
   }
 }
-
-/* -------------------------------------------------------------------------- */
-/* Filters                                                                    */
-/* -------------------------------------------------------------------------- */
 
 function handleSearch(event: Event) {
   emit('update:search', (event.target as HTMLInputElement).value)
@@ -105,14 +38,8 @@ function selectTab(tipo: string) {
 }
 
 function handlePerPageChange(value: AcceptableValue) {
-  if (value) {
-    emit('update:per_page', value)
-  }
+  if (value) emit('update:per_page', value)
 }
-
-/* -------------------------------------------------------------------------- */
-/* Delete flow                                                                */
-/* -------------------------------------------------------------------------- */
 
 function requestDeleteSingle(id: number) {
   selectedItems.value = [id]
@@ -121,10 +48,7 @@ function requestDeleteSingle(id: number) {
 }
 
 function requestDeleteMultiple() {
-  deleteContext.value = {
-    type: 'multiple',
-    count: selectedItems.value.length,
-  }
+  deleteContext.value = { type: 'multiple', count: selectedItems.value.length }
   isModalConfirmarExclusaoAberto.value = true
 }
 
@@ -140,138 +64,93 @@ function confirmDelete() {
   })
 }
 
-/* -------------------------------------------------------------------------- */
-/* Modal texts                                                                */
-/* -------------------------------------------------------------------------- */
+const modalTitle = computed(() => deleteContext.value ? (deleteContext.value.type === 'single' ? 'Excluir categoria' : `Excluir ${deleteContext.value.count} categorias`) : '')
+const modalMessage = computed(() => deleteContext.value ? (deleteContext.value.type === 'single' ? 'Essa categoria será removida permanentemente.' : 'As categorias selecionadas serão removidas permanentemente.') : '')
 
-const modalTitle = computed(() => {
-  if (!deleteContext.value) return ''
-
-  return deleteContext.value.type === 'single'
-    ? 'Excluir categoria'
-    : `Excluir ${deleteContext.value.count} categorias`
-})
-
-const modalMessage = computed(() => {
-  if (!deleteContext.value) return ''
-
-  return deleteContext.value.type === 'single'
-    ? 'Essa categoria será removida permanentemente.'
-    : 'As categorias selecionadas serão removidas permanentemente.'
-})
+const tabs = [
+  { title: 'Ganhos', tipo: 'ganho' },
+  { title: 'Despesas', tipo: 'gasto' },
+  { title: 'Futuras', tipo: 'gasto futuro' },
+];
 </script>
 
 <template>
-  <div>
+  <div class="space-y-4">
     <!-- Tabs -->
-    <div class="border-b border-gray-200 dark:border-gray-700">
-      <ul class="flex -mb-px text-sm font-medium text-gray-500 dark:text-gray-400">
-        <li v-for="tab in tabs" :key="tab.tipo" class="mr-2">
-          <button class="hover:cursor-pointer" @click="selectTab(tab.tipo)" :class="[
-            'p-4 border-b-2',
-            filters.tipo === tab.tipo
-              ? 'text-blue-600 border-blue-600'
-              : 'border-transparent hover:text-gray-600 hover:border-gray-300',
-          ]">
-            {{ tab.title }}
-          </button>
-        </li>
-      </ul>
-    </div>
+    <nav class="-mb-px flex space-x-8 overflow-x-auto border-b border-gray-200 dark:border-gray-800">
+      <button
+        v-for="tab in tabs"
+        :key="tab.tipo"
+        @click="selectTab(tab.tipo)"
+        class="whitespace-nowrap border-b-2 py-4 text-sm font-medium transition-all duration-200 hover:cursor-pointer"
+        :class="[
+          filters.tipo === tab.tipo
+            ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+        ]"
+      >
+        {{ tab.title }}
+      </button>
+    </nav>
 
-    <!-- Content -->
-    <div class="p-4 bg-gray-50 dark:bg-sidebar rounded-b-lg">
-      <div class="mb-4 flex justify-between gap-2">
-        <Input :model-value="filters.search" @input="handleSearch" placeholder="Buscar categoria..." class="max-w-sm" />
+    <!-- Header de Ações e Busca -->
+    <div class="relative flex items-center gap-2 px-1 mb-2 mt-4 min-h-[36px]">
+      <div class="flex-1 w-full" :class="{ 'opacity-0 pointer-events-none': selectedItems.length > 0 }">
+        <Input :model-value="filters.search" @input="handleSearch" placeholder="Buscar categoria..." class="h-9 text-xs w-full" />
+      </div>
 
-        <Button v-if="selectedItems.length > 0" variant="destructive" size="sm" @click="requestDeleteMultiple">
-          Excluir selecionados
+      <div v-if="selectedItems.length > 0" class="absolute inset-0 bg-blue-50 dark:bg-blue-900/20 p-1.5 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm">
+        <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 ml-2 uppercase">
+          {{ selectedItems.length }} selecionados
+        </span>
+        <Button size="sm" variant="destructive" class="h-7 px-3 text-[10px] font-bold uppercase" @click="requestDeleteMultiple">
+          <Trash2 class="h-3.5 w-3.5 mr-1" />
+          Excluir
         </Button>
       </div>
+    </div>
 
-      <div class="border rounded-md">
-        <Table>
-          <TableHeader class="bg-[#5B92EA] dark:bg-blue-950">
-            <TableHead class="pr-0 w-1">
-              <Checkbox v-model="allSelectedProxy" :indeterminate="isIndeterminate" />
-            </TableHead>
-            <TableHead class="text-gray-100">Nome</TableHead>
-            <TableHead class="text-right text-gray-100 pr-[15%] md:pr-[10%] xl:pr-[4%]">Ações</TableHead>
-          </TableHeader>
+    <!-- Lista de Categorias -->
+    <div class="divide-y divide-gray-100 dark:divide-gray-800 border-y border-gray-100 dark:border-gray-800">
+      <div v-for="item in categorias.data" :key="item.id" 
+        class="flex items-center gap-3 py-3 px-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        
+        <Checkbox :model-value="selectedItems.includes(item.id)" @update:modelValue="() => toggleItem(item.id)" />
+        
+        <div class="flex-1 font-medium text-sm text-gray-900 dark:text-gray-100">
+          {{ item.nome }}
+        </div>
 
-          <TableBody>
-            <TableRow v-for="item in categorias.data" :key="item.id">
-              <TableCell class="pr-0">
-                <Checkbox :model-value="selectedItems.includes(item.id)"
-                  @update:modelValue="() => toggleItem(item.id)" />
-              </TableCell>
-
-              <TableCell>
-                {{ item.nome }}
-              </TableCell>
-
-              <TableCell class="text-right">
-                <Link :href="`/movimentacoes/categorias/${item.id}/edit`">
-                  <Button size="sm" variant="outline" class="mr-2 border-[#5B92EA] text-[#5B92EA] hover:bg-[#5B92EA]/10 hover:text-[#5B92EA] dark:border-[#5894f3] dark:hover:bg-[#5B92EA]/30">
-                    Editar
-                  </Button>
-                </Link>
-                <Button size="sm" variant="destructive" @click="requestDeleteSingle(item.id)">
-                  Excluir
-                </Button>
-              </TableCell>
-            </TableRow>
-
-            <TableRow v-if="categorias.data.length === 0">
-              <TableCell colspan="3" class="h-24 text-center">
-                Nenhum resultado.
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+        <div class="flex gap-1">
+          <Link :href="`/movimentacoes/categorias/${item.id}/edit`">
+            <Button size="icon" variant="ghost" class="h-8 w-8 text-gray-400 hover:text-blue-600">
+              <Pencil class="h-4 w-4" />
+            </Button>
+          </Link>
+          <Button size="icon" variant="ghost" class="h-8 w-8 text-gray-400 hover:text-red-600" @click="requestDeleteSingle(item.id)">
+            <Trash2 class="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
       </div>
 
-      <!-- Pagination -->
-      <div class="lg:flex justify-between items-center py-4">
-        <div class="text-sm text-center text-gray-700 dark:text-gray-400">
-          Mostrando {{ categorias.from }} a {{ categorias.to }} de {{ categorias.total }} resultados
-        </div>
+      <div v-if="categorias.data.length === 0" class="py-8 text-center text-sm text-gray-500">
+        Nenhuma categoria encontrada.
+      </div>
+    </div>
 
-        <div class="lg:flex items-center gap-4">
-          <div class="flex items-center justify-center gap-2 my-4">
-            <Select :model-value="String(categorias.per_page)" @update:model-value="handlePerPageChange">
-              <SelectTrigger class="w-auto text-gray-600">
-                <SelectValue placeholder="Itens por página" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="10" class="text-gray-600">
-                    10 por página
-                  </SelectItem>
-                  <SelectItem value="25" class="text-gray-600">
-                    25 por página
-                  </SelectItem>
-                  <SelectItem value="50" class="text-gray-600">
-                    50 por página
-                  </SelectItem>
-                  <SelectItem value="50" class="text-gray-600">
-                    100 por página
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div class="flex items-center justify-center">
-            <Link v-for="link in categorias.links" :key="link.label" :href="link.url || '#'"
-              preserve-scroll class="px-3 py-2 text-sm" :class="{
-                'bg-blue-500 text-white rounded-md': link.active,
-                'text-gray-500': !link.url,
-              }">
-              <span v-html="link.label" />
-            </Link>
-          </div>
-        </div>
+    <!-- Pagination -->
+    <div class="flex items-center justify-between pt-4">
+      <div class="text-[10px] text-gray-500 uppercase">
+        {{ categorias.from }} - {{ categorias.to }} de {{ categorias.total }}
+      </div>
+      <div class="flex items-center gap-2">
+        <Link v-for="link in categorias.links" :key="link.label" :href="link.url || '#'"
+          preserve-scroll class="px-2 py-1 text-xs border rounded hover:bg-gray-50" :class="{
+            'bg-blue-600 text-white border-blue-600': link.active,
+            'text-gray-500': !link.url,
+          }">
+          <span v-html="link.label" />
+        </Link>
       </div>
     </div>
   </div>

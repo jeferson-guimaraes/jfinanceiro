@@ -223,6 +223,7 @@ function changeTab(newAba: string) {
   if (abaAtiva.value === newAba) return;
 
   abaAtiva.value = newAba;
+  selectedMovimentacoes.value = []; // Limpa seleção ao trocar de aba
 
   if (newAba === 'gasto futuro') {
     dataInicio.value = '';
@@ -317,7 +318,7 @@ const limparFiltros = () => {
                 v-for="tab in tabs"
                 :key="tab.tipo"
                 @click="changeTab(tab.tipo)"
-                class="whitespace-nowrap border-b-2 py-4 text-sm font-medium transition-all duration-200"
+                class="whitespace-nowrap border-b-2 py-4 text-sm font-medium transition-all duration-200 hover:cursor-pointer"
                 :class="[
                   abaAtiva === tab.tipo
                     ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
@@ -413,11 +414,13 @@ const limparFiltros = () => {
 
             <!-- Tabelas de Movimentações/Parcelas -->
             <TabelaMovimentacoes v-if="!isMediumScreen"
+              :key="abaAtiva"
               :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
               :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
               @show-details="handleShowDetails" />
             <MovimentacoesMobileList v-else-if="isMediumScreen"
+              :key="abaAtiva"
               :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
               :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
