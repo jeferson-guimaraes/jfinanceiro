@@ -260,12 +260,6 @@ class MovimentacaoService
 		}
 
 		$dataVencimento = Carbon::parse($dataVencimentoInicial);
-		Log::info([
-			'numParcelas' => $numParcelas,
-			'valorParcela' => $valorParcela,
-			'dataVencimentoInicial' => $dataVencimentoInicial,
-			'dataVencimento' => $dataVencimento->format('Y-m-d')
-		]);
 		for ($parcelaNum = 1; $parcelaNum <= $numParcelas; $parcelaNum++) {
 			Parcela::create([
 				'movimentacao_id' => $movimentacao->id,
