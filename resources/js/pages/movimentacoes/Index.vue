@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import TotalCard from '@/components/movimentacoes/ValorCard.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import movimentacoesRoutes from '@/routes/movimentacoes';
-import type { BreadcrumbItem, Movimentacao, ParcelaComMovimentacao } from '@/types';
+import type { BreadcrumbItem, Movimentacao, ParcelaComMovimentacao, Paginated } from '@/types';
 import { Head, router, Link } from '@inertiajs/vue3';
 import { Check, Hourglass, Wallet, X, Plus, ArrowUp, ArrowDown, CircleDollarSign } from 'lucide-vue-next';
 import MovimentacoesMobileList from '@/components/movimentacoes/MovimentacoesMobileList.vue';
@@ -33,8 +33,24 @@ onUnmounted(() => {
 });
 
 const props = defineProps<{
-  movimentacoes: Movimentacao[];
-  parcelasFuturas: ParcelaComMovimentacao[];
+  movimentacoes: Paginated<Movimentacao>;
+  parcelasFuturas: Paginated<ParcelaComMovimentacao>;
+  totais: {
+    total: number;
+    ganhos: number;
+    despesas: number;
+    pago: number;
+    pendente: number;
+  };
+  filters: {
+    busca: string;
+    data_inicio: string;
+    data_fim: string;
+    mes: string;
+    ano: string;
+    per_page: number;
+    tipo: string;
+  };
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -48,13 +64,14 @@ const tabs = [
   { title: 'Futuras', tipo: 'gasto futuro' },
 ];
 
-const abaAtiva = ref('todos');
+const abaAtiva = ref(props.filters.tipo || 'todos');
 
-const dataInicio = ref('');
-const dataFim = ref('');
-const buscaTexto = ref('');
-const mesSelecionado = ref('');
-const anoSelecionado = ref('');
+const dataInicio = ref(props.filters.data_inicio || '');
+const dataFim = ref(props.filters.data_fim || '');
+const buscaTexto = ref(props.filters.busca || '');
+const mesSelecionado = ref(props.filters.mes || '');
+const anoSelecionado = ref(props.filters.ano || '');
+const perPage = ref(props.filters.per_page || 10);
 
 const meses = [
   { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' }, { value: '3', label: 'Março' },
@@ -64,61 +81,30 @@ const meses = [
 ];
 
 const currentDate = new Date();
-// Inicializa com mês/ano atual
+// Inicializa com mês/ano atual se não vier da prop
 onMounted(() => {
-  const now = new Date();
-  const primeiroDia = new Date(now.getFullYear(), now.getMonth(), 1);
-  const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-  dataInicio.value = primeiroDia.toISOString().split('T')[0];
-  dataFim.value = ultimoDia.toISOString().split('T')[0];
-
   if (abaAtiva.value === 'gasto futuro' || (!mesSelecionado.value && !anoSelecionado.value)) {
-    mesSelecionado.value = String(currentDate.getMonth() + 1);
-    anoSelecionado.value = String(currentDate.getFullYear());
+    if (!mesSelecionado.value) mesSelecionado.value = String(currentDate.getMonth() + 1);
+    if (!anoSelecionado.value) anoSelecionado.value = String(currentDate.getFullYear());
   }
-  triggerSearch();
-});
 
-const total = computed(() => {
-  if (abaAtiva.value === 'gasto futuro') {
-    return props.parcelasFuturas.reduce((acc, parcela) => acc + Number(parcela.valor), 0);
+  if ((abaAtiva.value === 'todos' || abaAtiva.value === 'ganho' || abaAtiva.value === 'gasto') && !dataInicio.value && !dataFim.value) {
+    const now = new Date();
+    const primeiroDia = new Date(now.getFullYear(), now.getMonth(), 1);
+    const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    dataInicio.value = primeiroDia.toISOString().split('T')[0];
+    dataFim.value = ultimoDia.toISOString().split('T')[0];
+    triggerSearch();
   }
-  return props.movimentacoes.reduce((acc, movimentacao) => acc + Number(movimentacao.valor), 0);
 });
 
-const totalGanhos = computed(() => {
-  if (abaAtiva.value !== 'todos') return 0;
-  return props.movimentacoes
-    .filter(m => m.tipo === 'ganho')
-    .reduce((acc, m) => acc + Number(m.valor), 0);
-});
-
-const totalDespesas = computed(() => {
-  if (abaAtiva.value !== 'todos') return 0;
-  return props.movimentacoes
-    .filter(m => m.tipo === 'gasto')
-    .reduce((acc, m) => acc + Number(m.valor), 0);
-});
-
-const totalDisponivel = computed(() => {
-  if (abaAtiva.value !== 'todos') return 0;
-  return totalGanhos.value - totalDespesas.value;
-});
-
-const totalPago = computed(() => {
-  if (abaAtiva.value !== 'gasto futuro') return 0;
-  return props.parcelasFuturas.reduce((total, parcela) => {
-    if (!parcela.pago) return total;
-    const valor = Number(parcela.valor);
-    return total + (isNaN(valor) ? 0 : valor);
-  }, 0);
-});
-
-const totalPendente = computed(() => {
-  if (abaAtiva.value !== 'gasto futuro') return 0;
-  return total.value - totalPago.value;
-});
+const total = computed(() => props.totais.total);
+const totalGanhos = computed(() => props.totais.ganhos);
+const totalDespesas = computed(() => props.totais.despesas);
+const totalDisponivel = computed(() => props.totais.ganhos - props.totais.despesas);
+const totalPago = computed(() => props.totais.pago);
+const totalPendente = computed(() => props.totais.pendente);
 
 const isModalExclusaoAberto = ref(false);
 const movimentacaoParaExcluir = ref<Movimentacao | null>(null);
@@ -145,12 +131,12 @@ function handlePay(movimentacao: Movimentacao) {
 function handlePayMany(ids: number[]) {
   // Se estivermos na aba 'gasto futuro', as movimentações estão dentro do objeto parcela
   if (abaAtiva.value === 'gasto futuro') {
-    movimentacoesParaPagarMassa.value = props.parcelasFuturas
+    movimentacoesParaPagarMassa.value = props.parcelasFuturas.data
       .filter(p => ids.includes(p.movimentacao.id))
       .map(p => p.movimentacao);
   } else {
     // Caso contrário, busca no array de movimentações normal
-    movimentacoesParaPagarMassa.value = props.movimentacoes.filter(m => ids.includes(m.id));
+    movimentacoesParaPagarMassa.value = props.movimentacoes.data.filter(m => ids.includes(m.id));
   }
   isModalPagamentoMassaAberto.value = true;
 }
@@ -212,6 +198,7 @@ const triggerSearch = () => {
     params.busca = buscaTexto.value;
   }
   params.tipo = abaAtiva.value;
+  params.per_page = perPage.value;
 
   router.get(movimentacoesRoutes.index().url, params, {
     preserveState: true,
@@ -250,11 +237,13 @@ watch([dataInicio, dataFim], () => {
   }
 });
 
-watch([mesSelecionado, anoSelecionado], () => {
+watch([mesSelecionado, anoSelecionado, perPage], () => {
   if (abaAtiva.value === 'gasto futuro') {
     if (anoSelecionado.value.length === 4 || (!mesSelecionado.value && !anoSelecionado.value)) {
       triggerSearch();
     }
+  } else {
+    triggerSearch();
   }
 });
 
@@ -281,13 +270,51 @@ const limparFiltros = () => {
   buscaTexto.value = '';
   triggerSearch();
 };
+
+const paginacao = computed(() => {
+  return abaAtiva.value === 'gasto futuro' ? props.parcelasFuturas : props.movimentacoes;
+});
+
+const paginasVisiveis = computed(() => {
+  const total = paginacao.value.last_page;
+  const atual = paginacao.value.current_page;
+  const delta = 1; // Páginas ao redor da atual
+  
+  const range: (number | string)[] = [];
+  
+  for (let i = 1; i <= total; i++) {
+    if (
+      i === 1 || 
+      i === total || 
+      (i >= atual - delta && i <= atual + delta)
+    ) {
+      range.push(i);
+    } else if (
+      (i === atual - delta - 1) || 
+      (i === atual + delta + 1)
+    ) {
+      range.push('...');
+    }
+  }
+  
+  // Remove elipses duplicadas
+  return range.filter((item, pos) => range.indexOf(item) === pos);
+});
+
+const getPageUrl = (page: number | string) => {
+  if (page === '...') return '#';
+  const url = new URL(paginacao.value.path, window.location.origin);
+  const params = new URLSearchParams(window.location.search);
+  params.set('page', String(page));
+  return `${url.pathname}?${params.toString()}`;
+};
 </script>
 
 <template>
 
   <Head title="Movimentações" />
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mx-auto w-full max-w-7xl px-4 py-8 pb-32 sm:px-6 lg:px-8 sm:pb-8">
       <div class="flex flex-col gap-8">
         <!-- Header Minimalista -->
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -414,17 +441,85 @@ const limparFiltros = () => {
 
             <!-- Tabelas de Movimentações/Parcelas -->
             <TabelaMovimentacoes v-if="!isMediumScreen"
-              :key="abaAtiva"
-              :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
-              :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
+              :key="'desktop-' + abaAtiva"
+              :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes.data"
+              :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas.data : []" :active-tab="abaAtiva"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
-              @show-details="handleShowDetails" />
+              @show-details="handleShowDetails" v-model:selectedMovimentacoes="selectedMovimentacoes" />
             <MovimentacoesMobileList v-else-if="isMediumScreen"
-              :key="abaAtiva"
-              :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes"
-              :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas : []" :active-tab="abaAtiva"
+              :key="'mobile-' + abaAtiva"
+              :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes.data"
+              :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas.data : []" :active-tab="abaAtiva"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
               @show-details="handleShowDetails" />
+
+            <!-- Paginação Responsiva -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-100 dark:border-gray-800">
+              <!-- Info e Itens por Página -->
+              <div class="flex items-center justify-between w-full sm:w-auto gap-6">
+                <div class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+                  {{ paginacao.from || 0 }} - {{ paginacao.to || 0 }} de {{ paginacao.total || 0 }} registros
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-gray-400 uppercase font-bold hidden sm:inline">Exibir:</span>
+                  <Select v-model="perPage">
+                    <SelectTrigger class="h-8 text-[10px] w-16 bg-transparent border-gray-200 dark:border-gray-800">
+                      <SelectValue :placeholder="String(perPage)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <!-- Navegação Inteligente -->
+              <div class="flex items-center justify-center w-full sm:w-auto gap-1">
+                <!-- Anterior -->
+                <Link 
+                  :href="paginacao.links[0].url || '#'"
+                  preserve-scroll 
+                  preserve-state
+                  class="h-9 flex items-center justify-center px-2 text-[10px] font-bold uppercase border rounded-md transition-all"
+                  :class="paginacao.links[0].url ? 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:border-blue-300' : 'text-gray-300 dark:text-gray-700 border-gray-100 dark:border-gray-900 opacity-50 cursor-not-allowed'"
+                >
+                  <span class="text-[7pt] sm:inline">« Anterior</span>
+                </Link>
+
+                <!-- Páginas -->
+                <div class="flex items-center gap-1">
+                  <template v-for="(page, index) in paginasVisiveis" :key="index">
+                    <span v-if="page === '...'" class="px-1 text-gray-400 text-xs font-bold">...</span>
+                    <Link v-else
+                      :href="getPageUrl(page)"
+                      preserve-scroll 
+                      preserve-state 
+                      class="min-w-[32px] sm:min-w-[36px] h-9 flex items-center justify-center px-2 text-[10px] font-black border rounded-md transition-all duration-200" 
+                      :class="{
+                        'bg-blue-600 text-white border-blue-600 shadow-sm z-10': page === paginacao.current_page,
+                        'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-blue-300': page !== paginacao.current_page,
+                      }">
+                      {{ page }}
+                    </Link>
+                  </template>
+                </div>
+
+                <!-- Próximo -->
+                <Link 
+                  :href="paginacao.links[paginacao.links.length - 1].url || '#'"
+                  preserve-scroll 
+                  preserve-state
+                  class="h-9 flex items-center justify-center px-2 text-[10px] font-bold uppercase border rounded-md transition-all"
+                  :class="paginacao.links[paginacao.links.length - 1].url ? 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:border-blue-300' : 'text-gray-300 dark:text-gray-700 border-gray-100 dark:border-gray-900 opacity-50 cursor-not-allowed'"
+                >
+                  <span class="text-[7pt] sm:inline">Próximo »</span>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

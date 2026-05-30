@@ -171,7 +171,7 @@ const getTipoColorClass = (tipo: string) => {
 
     <!-- Lista de Gastos Futuros (Parcelas) -->
     <div v-if="activeTab === 'gasto futuro'" key="lista-parcelas" class="divide-y divide-gray-100 dark:divide-gray-800 border-y border-gray-100 dark:border-gray-800">
-      <div v-for="parcela in sortedParcelas" :key="parcela.id" 
+      <div v-for="parcela in sortedParcelas" :key="'mobile-parcela-' + parcela.id" 
         class="relative flex items-center gap-3 py-2 px-2 bg-white dark:bg-gray-900 transition-all cursor-pointer"
         :class="selectedMovimentacoes.includes(parcela.movimentacao.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''"
         @click="emit('show-details', parcela)">
@@ -234,7 +234,7 @@ const getTipoColorClass = (tipo: string) => {
 
     <!-- Lista de Movimentações Normais (Ganhos/Gastos) -->
     <div v-else key="lista-movimentacoes" class="divide-y divide-gray-100 dark:divide-gray-800 border-y border-gray-100 dark:border-gray-800">
-      <div v-for="mov in sortedMovimentacoes" :key="mov.id" 
+      <div v-for="mov in sortedMovimentacoes" :key="'mobile-movimentacao-' + mov.id" 
         class="relative flex items-center gap-3 py-2 px-2 bg-white dark:bg-gray-900 transition-all cursor-pointer"
         :class="selectedMovimentacoes.includes(mov.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''"
         @click="emit('show-details', mov)">

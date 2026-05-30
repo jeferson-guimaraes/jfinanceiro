@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { debounce } from 'lodash';
+import debounce from 'lodash-es/debounce';
 import TabsListCategories from '@/components/TabsListCategories.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -66,7 +66,7 @@ watch(localPerPage, () => {
 	<Head title="Minhas Categorias" />
 
 	<AppLayout :breadcrumbs="breadcrumbs">
-		<div class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+		<div class="mx-auto w-full max-w-7xl px-4 py-8 pb-32 sm:px-6 lg:px-8 sm:pb-8">
 			<div class="flex flex-col gap-8">
 				<!-- Header Minimalista -->
 				<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

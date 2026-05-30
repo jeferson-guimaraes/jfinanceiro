@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import ConfirmarExclusaoModal from './modals/ConfirmarExclusaoModal.vue'
 import type { Categoria, Paginated, Filter } from '@/types/movimentacoes/categorias'
-import { AcceptableValue } from 'reka-ui'
 import { Pencil, Trash2 } from 'lucide-vue-next'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const props = defineProps<{
   categorias: Paginated<Categoria>
@@ -18,6 +18,8 @@ const emit = defineEmits(['update:search', 'update:tipo', 'update:per_page'])
 
 const selectedItems = ref<number[]>([])
 const isModalConfirmarExclusaoAberto = ref(false)
+
+const localPerPage = ref(String(props.filters.per_page || 10));
 
 const deleteContext = ref<{ type: 'single' | 'multiple', count: number } | null>(null)
 
@@ -37,8 +39,9 @@ function selectTab(tipo: string) {
   emit('update:tipo', tipo)
 }
 
-function handlePerPageChange(value: AcceptableValue) {
-  if (value) emit('update:per_page', value)
+function handlePerPageChange(value: string) {
+  localPerPage.value = value;
+  emit('update:per_page', Number(value))
 }
 
 function requestDeleteSingle(id: number) {
@@ -72,6 +75,43 @@ const tabs = [
   { title: 'Despesas', tipo: 'gasto' },
   { title: 'Futuras', tipo: 'gasto futuro' },
 ];
+
+const paginasVisiveis = computed(() => {
+  const total = props.categorias.last_page;
+  const atual = props.categorias.current_page;
+  const delta = 1;
+  
+  const range: (number | string)[] = [];
+  
+  for (let i = 1; i <= total; i++) {
+    if (
+      i === 1 || 
+      i === total || 
+      (i >= atual - delta && i <= atual + delta)
+    ) {
+      range.push(i);
+    } else if (
+      (i === atual - delta - 1) || 
+      (i === atual + delta + 1)
+    ) {
+      range.push('...');
+    }
+  }
+  
+  return range.filter((item, pos) => range.indexOf(item) === pos);
+});
+
+const getPageUrl = (page: number | string) => {
+  if (page === '...') return '#';
+  const url = new URL(props.categorias.path, window.location.origin);
+  const params = new URLSearchParams(window.location.search);
+  params.set('page', String(page));
+  // Mantém outros filtros se existirem
+  if (props.filters.search) params.set('search', props.filters.search);
+  if (props.filters.tipo) params.set('tipo', props.filters.tipo);
+  if (props.filters.per_page) params.set('per_page', String(props.filters.per_page));
+  return `${url.pathname}?${params.toString()}`;
+};
 </script>
 
 <template>
@@ -138,18 +178,70 @@ const tabs = [
       </div>
     </div>
 
-    <!-- Pagination -->
-    <div class="flex items-center justify-between pt-4">
-      <div class="text-[10px] text-gray-500 uppercase">
-        {{ categorias.from }} - {{ categorias.to }} de {{ categorias.total }}
+    <!-- Paginação Responsiva -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
+      <!-- Info e Itens por Página -->
+      <div class="flex items-center justify-between w-full sm:w-auto gap-6">
+        <div class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+          {{ categorias.from || 0 }} - {{ categorias.to || 0 }} de {{ categorias.total || 0 }} registros
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-gray-400 uppercase font-bold hidden sm:inline">Exibir:</span>
+          <Select :model-value="localPerPage" @update:model-value="handlePerPageChange">
+            <SelectTrigger class="h-8 text-[10px] w-16 bg-transparent border-gray-200 dark:border-gray-800">
+              <SelectValue :placeholder="localPerPage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <Link v-for="link in categorias.links" :key="link.label" :href="link.url || '#'"
-          preserve-scroll class="px-2 py-1 text-xs border rounded hover:bg-gray-50" :class="{
-            'bg-blue-600 text-white border-blue-600': link.active,
-            'text-gray-500': !link.url,
-          }">
-          <span v-html="link.label" />
+
+      <!-- Navegação Inteligente -->
+      <div class="flex items-center justify-center w-full sm:w-auto gap-1">
+        <!-- Anterior -->
+        <Link 
+          :href="categorias.links[0].url || '#'"
+          preserve-scroll 
+          preserve-state
+          class="h-9 flex items-center justify-center px-2 text-[10px] font-bold uppercase border rounded-md transition-all"
+          :class="categorias.links[0].url ? 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:border-blue-300' : 'text-gray-300 dark:text-gray-700 border-gray-100 dark:border-gray-900 opacity-50 cursor-not-allowed'"
+        >
+          <span class="text-[7pt] sm:inline">« Anterior</span>
+        </Link>
+
+        <!-- Páginas -->
+        <div class="flex items-center gap-1">
+          <template v-for="(page, index) in paginasVisiveis" :key="index">
+            <span v-if="page === '...'" class="px-1 text-gray-400 text-xs font-bold">...</span>
+            <Link v-else
+              :href="getPageUrl(page)"
+              preserve-scroll 
+              preserve-state 
+              class="min-w-[32px] sm:min-w-[36px] h-9 flex items-center justify-center px-2 text-[10px] font-black border rounded-md transition-all duration-200" 
+              :class="{
+                'bg-blue-600 text-white border-blue-600 shadow-sm z-10': page === categorias.current_page,
+                'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-blue-300': page !== categorias.current_page,
+              }">
+              {{ page }}
+            </Link>
+          </template>
+        </div>
+
+        <!-- Próximo -->
+        <Link 
+          :href="categorias.links[categorias.links.length - 1].url || '#'"
+          preserve-scroll 
+          preserve-state
+          class="h-9 flex items-center justify-center px-2 text-[10px] font-bold uppercase border rounded-md transition-all"
+          :class="categorias.links[categorias.links.length - 1].url ? 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:border-blue-300' : 'text-gray-300 dark:text-gray-700 border-gray-100 dark:border-gray-900 opacity-50 cursor-not-allowed'"
+        >
+          <span class="text-[7pt] sm:inline">Próximo »</span>
         </Link>
       </div>
     </div>

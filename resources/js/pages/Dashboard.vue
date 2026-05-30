@@ -8,6 +8,7 @@ import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { formataDinheiroBRL } from '@/utils/formataDinheiro';
 import { Head } from '@inertiajs/vue3';
+import { Wallet, TrendingUp, CreditCard, DollarSign, type Component } from 'lucide-vue-next';
 
 interface Props {
     stats: Array<{
@@ -36,6 +37,13 @@ interface Props {
 
 defineProps<Props>();
 
+const iconMap: Record<string, typeof Component> = {
+    wallet: Wallet,
+    trendingUp: TrendingUp,
+    creditCard: CreditCard,
+    dollarSign: DollarSign,
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -60,7 +68,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <Card v-for="stat in stats" :key="stat.title" class="overflow-hidden">
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle class="text-sm font-medium">{{ stat.title }}</CardTitle>
-                        <Icon :name="stat.icon" :class="stat.color" size="20" />
+                        <Icon :icon="iconMap[stat.icon]" :class="stat.color" size="20" />
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold" :class="stat.title === 'Saldo Atual' ? 'text-emerald-600' : ''">

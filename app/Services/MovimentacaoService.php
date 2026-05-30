@@ -8,8 +8,7 @@ use App\Models\Movimentacao;
 use App\Models\Parcela;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Collection; // Para tipagem de retorno de coleções
-use Illuminate\Support\Facades\Log; // Para logs
+use Illuminate\Support\Facades\Log;
 
 class MovimentacaoService
 {
@@ -46,43 +45,68 @@ class MovimentacaoService
 	{
 		$userId = Auth::id();
 		$tipo = request('tipo') ?? 'todos';
+		$perPage = (int) request('per_page', 10);
 
-		$ganhosGastos = collect();
-		$parcelasFuturas = collect();
+		$ganhosGastos = null;
+		$parcelasFuturas = null;
+		$totais = [
+			'total' => 0,
+			'ganhos' => 0,
+			'despesas' => 0,
+			'pago' => 0,
+			'pendente' => 0,
+		];
 
 		switch ($tipo) {
 			case 'ganho':
 			case 'gasto':
 				$ganhosGastos = $this->getGanhosGastosMovimentacoes($userId, $tipo);
+				$parcelasFuturas = Parcela::whereRaw('1 = 0')->paginate($perPage);
+				$totais['total'] = $this->getGanhosGastosQuery($userId, $tipo)->sum('valor');
 				break;
 			case 'gasto futuro':
 				$parcelasFuturas = $this->getParcelasFuturasMovimentacoes($userId);
+				$ganhosGastos = Movimentacao::whereRaw('1 = 0')->paginate($perPage);
+				$queryParcelas = $this->getParcelasFuturasQuery($userId);
+				$totais['total'] = (clone $queryParcelas)->sum('valor');
+				$totais['pago'] = (clone $queryParcelas)->where('pago', true)->sum('valor');
+				$totais['pendente'] = $totais['total'] - $totais['pago'];
 				break;
 			case 'todos':
 			default:
-				// Busca ganhos e gastos normais
 				$ganhosGastos = $this->getGanhosGastosMovimentacoes($userId);
+				$parcelasFuturas = Parcela::whereRaw('1 = 0')->paginate($perPage);
+				$queryGanhosGastos = $this->getGanhosGastosQuery($userId);
+				$totais['ganhos'] = (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GANHO->value)->sum('valor');
+				$totais['despesas'] = (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GASTO->value)->sum('valor');
+				$totais['total'] = $totais['ganhos'] - $totais['despesas'];
 				break;
 		}
 
 		return [
 			'movimentacoes' => $ganhosGastos,
 			'parcelasFuturas' => $parcelasFuturas,
+			'totais' => $totais,
+			'filters' => [
+				'busca' => request('busca'),
+				'data_inicio' => request('data_inicio'),
+				'data_fim' => request('data_fim'),
+				'mes' => request('mes'),
+				'ano' => request('ano'),
+				'per_page' => (int) request('per_page', 10),
+				'tipo' => $tipo,
+			]
 		];
 	}
 
 	/**
-	 * Obtém as movimentações de ganhos e gastos filtradas por data.
-	 *
-	 * @param int $userId O ID do usuário.
-	 * @return Collection Retorna uma coleção de movimentações.
+	 * Retorna a query base para ganhos e gastos.
 	 */
-	private function getGanhosGastosMovimentacoes(int $userId, ?string $tipo = null): Collection
+	private function getGanhosGastosQuery(int $userId, ?string $tipo = null)
 	{
 		$dataInicioReq = request('data_inicio');
 		$dataFimReq = request('data_fim');
 
-		// Se não houver filtros de data, usa o mês atual por padrão para performance
 		if (!$dataInicioReq && !$dataFimReq) {
 			$dataInicio = Carbon::now()->startOfMonth();
 			$dataFim = Carbon::now()->endOfMonth();
@@ -105,61 +129,77 @@ class MovimentacaoService
 			]);
 		}
 
-		// Filtro por período de datas
-		if ($dataInicio) {
-			$query->whereDate('data', '>=', $dataInicio);
-		}
-		if ($dataFim) {
-			$query->whereDate('data', '<=', $dataFim);
-		}
+		if ($dataInicio) $query->whereDate('data', '>=', $dataInicio);
+		if ($dataFim) $query->whereDate('data', '<=', $dataFim);
+		if ($busca) $query->where('descricao', 'like', '%' . $busca . '%');
 
-		// Filtro por busca de texto
+		return $query;
+	}
+
+	/**
+	 * Retorna a query base para parcelas futuras.
+	 */
+	private function getParcelasFuturasQuery(int $userId)
+	{
+		$mes = request('mes') ?: Carbon::now()->month;
+		$ano = request('ano') ?: Carbon::now()->year;
+		$busca = request('busca');
+
+		$inicioMes = Carbon::create($ano, $mes)->startOfMonth();
+		$fimMes = $inicioMes->copy()->endOfMonth();
+
+		$query = Parcela::query()
+			->whereBetween('data_vencimento', [$inicioMes, $fimMes])
+			->whereHas('movimentacao', fn($q) => $q->where('user_id', $userId));
+
 		if ($busca) {
-			$query->where('descricao', 'like', '%' . $busca . '%');
+			$query->whereHas('movimentacao', fn($q) => $q->where('descricao', 'like', '%' . $busca . '%'));
 		}
 
-		return $query->with('categoria')
-			->withCount(['parcelas as parcelas_pagas' => fn($q) => $q->where('pago', true)])
+		return $query;
+	}
+
+	/**
+	 * Obtém as movimentações de ganhos e gastos filtradas por data.
+	 *
+	 * @param int $userId O ID do usuário.
+	 * @param string|null $tipo O tipo de movimentação.
+	 * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator Retorna um paginador de movimentações.
+	 */
+	private function getGanhosGastosMovimentacoes(int $userId, ?string $tipo = null)
+	{
+		$perPage = request('per_page', 10);
+
+		return $this->getGanhosGastosQuery($userId, $tipo)
+			->select(['id', 'categoria_id', 'data', 'descricao', 'valor', 'tipo', 'parcelas', 'user_id'])
+			->with('categoria:id,nome')
 			->orderByDesc('data')
-			->get();
+			->paginate($perPage)
+			->withQueryString();
 	}
 
 	/**
 	 * Obtém as parcelas futuras para um mês e ano específicos.
 	 *
 	 * @param int $userId O ID do usuário.
-	 * @return Collection Retorna uma coleção de parcelas futuras.
+	 * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator Retorna um paginador de parcelas futuras.
 	 */
-	private function getParcelasFuturasMovimentacoes(int $userId): Collection
+	private function getParcelasFuturasMovimentacoes(int $userId)
 	{
-		$mes = request('mes') ?: Carbon::now()->month;
-		$ano = request('ano') ?: Carbon::now()->year;
-		$busca = request('busca');
+		$perPage = request('per_page', 10);
 
-		if ($mes && $ano) {
-			$inicioMes = Carbon::create($ano, $mes)->startOfMonth();
-			$fimMes = $inicioMes->copy()->endOfMonth();
-
-			$query = Parcela::query()
-				->whereBetween('data_vencimento', [$inicioMes, $fimMes])
-				->whereHas('movimentacao', fn($q) => $q->where('user_id', $userId));
-
-			if ($busca) {
-				$query->whereHas('movimentacao', fn($q) => $q->where('descricao', 'like', '%' . $busca . '%'));
-			}
-
-			$query->with([
+		return $this->getParcelasFuturasQuery($userId)
+			->select(['id', 'movimentacao_id', 'numero', 'valor', 'data_vencimento', 'pago'])
+			->with([
 				'movimentacao' => function ($q) {
-					$q->with('categoria')
+					$q->select(['id', 'categoria_id', 'data', 'descricao', 'valor', 'tipo', 'parcelas', 'user_id'])
+						->with('categoria:id,nome')
 						->withCount(['parcelas as parcelas_pagas' => fn($q) => $q->where('pago', true)]);
 				}
 			])
-				->orderBy('data_vencimento');
-
-			return $query->get();
-		}
-
-		return collect();
+			->orderBy('data_vencimento')
+			->paginate($perPage)
+			->withQueryString();
 	}
 
 
