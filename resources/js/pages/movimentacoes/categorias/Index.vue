@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { debounce } from 'lodash';
+import debounce from 'lodash-es/debounce';
 import TabsListCategories from '@/components/TabsListCategories.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
