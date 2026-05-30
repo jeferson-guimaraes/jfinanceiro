@@ -292,7 +292,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
 
       <TableBody class="text-center">
         <template v-if="activeTab === 'gasto futuro'">
-          <TableRow v-for="parcela in sortedParcelas" :key="parcela.id" 
+          <TableRow v-for="parcela in sortedParcelas" :key="'parcela-' + parcela.id" 
             :class="[getStatusRowClass(parcela), 'cursor-pointer transition-colors duration-150']" 
             @click="emit('show-details', parcela)">
             <TableCell @click.stop>
@@ -344,7 +344,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
           </TableRow>
         </template>
         <template v-else>
-          <TableRow v-for="movimentacao in sortedMovimentacoes" :key="movimentacao.id" 
+          <TableRow v-for="movimentacao in sortedMovimentacoes" :key="'movimentacao-' + movimentacao.id" 
             :class="[props.selectedMovimentacoes && props.selectedMovimentacoes.includes(movimentacao.id) ? 'bg-blue-50/50 dark:bg-blue-900/20' : '', 'cursor-pointer transition-colors duration-150 border-b border-gray-50 dark:border-gray-800/50']" 
             @click="emit('show-details', movimentacao)">
             <TableCell @click.stop>
