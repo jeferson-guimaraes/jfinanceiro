@@ -64,14 +64,14 @@ class MovimentacaoService
 			case 'gasto':
 				$ganhosGastos = $this->getGanhosGastosMovimentacoes($userId, $tipo);
 				$parcelasFuturas = Parcela::whereRaw('1 = 0')->paginate($perPage);
-				$totais['total'] = $this->getGanhosGastosQuery($userId, $tipo)->sum('valor');
+				$totais['total'] = (float) $this->getGanhosGastosQuery($userId, $tipo)->sum('valor');
 				break;
 			case 'gasto futuro':
 				$parcelasFuturas = $this->getParcelasFuturasMovimentacoes($userId);
 				$ganhosGastos = Movimentacao::whereRaw('1 = 0')->paginate($perPage);
 				$queryParcelas = $this->getParcelasFuturasQuery($userId);
-				$totais['total'] = (clone $queryParcelas)->sum('valor');
-				$totais['pago'] = (clone $queryParcelas)->where('pago', true)->sum('valor');
+				$totais['total'] = (float) (clone $queryParcelas)->sum('valor');
+				$totais['pago'] = (float) (clone $queryParcelas)->where('pago', true)->sum('valor');
 				$totais['pendente'] = $totais['total'] - $totais['pago'];
 				break;
 			case 'todos':
@@ -79,8 +79,8 @@ class MovimentacaoService
 				$ganhosGastos = $this->getGanhosGastosMovimentacoes($userId);
 				$parcelasFuturas = Parcela::whereRaw('1 = 0')->paginate($perPage);
 				$queryGanhosGastos = $this->getGanhosGastosQuery($userId);
-				$totais['ganhos'] = (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GANHO->value)->sum('valor');
-				$totais['despesas'] = (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GASTO->value)->sum('valor');
+				$totais['ganhos'] = (float) (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GANHO->value)->sum('valor');
+				$totais['despesas'] = (float) (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GASTO->value)->sum('valor');
 				$totais['total'] = $totais['ganhos'] - $totais['despesas'];
 				break;
 		}
@@ -112,16 +112,8 @@ class MovimentacaoService
 	{
 		$dataInicioReq = request('data_inicio');
 		$dataFimReq = request('data_fim');
-
-		if (!$dataInicioReq && !$dataFimReq) {
-			$dataInicio = Carbon::now()->startOfMonth();
-			$dataFim = Carbon::now()->endOfMonth();
-		} else {
-			$dataInicio = $dataInicioReq ? Carbon::parse($dataInicioReq) : null;
-			$dataFim = $dataFimReq ? Carbon::parse($dataFimReq) : null;
-		}
-
-		$busca = request('busca');
+		$mes = request('mes');
+		$ano = request('ano');
 
 		$query = Movimentacao::doUsuario($userId);
 
@@ -136,8 +128,18 @@ class MovimentacaoService
 			]);
 		}
 
-		if ($dataInicio) $query->whereDate('data', '>=', $dataInicio);
-		if ($dataFim) $query->whereDate('data', '<=', $dataFim);
+		if ($dataInicioReq || $dataFimReq) {
+			$dataInicio = $dataInicioReq ? Carbon::parse($dataInicioReq) : null;
+			$dataFim = $dataFimReq ? Carbon::parse($dataFimReq) : null;
+			if ($dataInicio) $query->whereDate('data', '>=', $dataInicio);
+			if ($dataFim) $query->whereDate('data', '<=', $dataFim);
+		} else {
+			$mes = $mes ?: Carbon::now()->month;
+			$ano = $ano ?: Carbon::now()->year;
+			$query->doMes($mes, $ano);
+		}
+
+		$busca = request('busca');
 		if ($busca) $query->where('descricao', 'like', '%' . $busca . '%');
 
 		return $query;
@@ -155,7 +157,7 @@ class MovimentacaoService
 		$ano = request('ano') ?: Carbon::now()->year;
 		$busca = request('busca');
 
-		$inicioMes = Carbon::create($ano, $mes)->startOfMonth();
+		$inicioMes = Carbon::create($ano, $mes, 1)->startOfMonth();
 		$fimMes = $inicioMes->copy()->endOfMonth();
 
 		$query = Parcela::query()

@@ -106,7 +106,7 @@ class MovimentacaoController extends Controller
 
         $movimentacaoService->updateMovimentacao($movimentacao, $request->validated());
 
-        return redirect()->route('movimentacoes.index')->with('success', 'Movimentação atualizada com sucesso!');
+        return redirect()->back()->with('success', 'Movimentação atualizada com sucesso!');
     }
 
     /**
@@ -124,7 +124,7 @@ class MovimentacaoController extends Controller
 
         $movimentacaoService->destroyMovimentacao($movimentacao);
 
-        return redirect()->route('movimentacoes.index')->with('success', 'Movimentação excluída com sucesso!');
+        return redirect()->back()->with('success', 'Movimentação excluída com sucesso!');
     }
 
     /**
@@ -143,7 +143,7 @@ class MovimentacaoController extends Controller
 
         $movimentacaoService->destroyManyMovimentacoes($validated['movimentacoes_ids']);
 
-        return redirect()->route('movimentacoes.index')->with('success', 'Movimentações excluídas com sucesso!');
+        return redirect()->back()->with('success', 'Movimentações excluídas com sucesso!');
     }
 
     /**

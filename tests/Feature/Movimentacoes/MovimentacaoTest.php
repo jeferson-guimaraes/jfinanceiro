@@ -239,17 +239,36 @@ class MovimentacaoTest extends TestCase
 
     public function test_exclui_varias_movimentacoes_com_sucesso(): void
     {
-        $movimentacao1 = \App\Models\Movimentacao::factory()->create(['user_id' => $this->user->id]);
-        $movimentacao2 = \App\Models\Movimentacao::factory()->create(['user_id' => $this->user->id]);
-
-        $response = $this->actingAs($this->user)->delete(route('movimentacoes.destroyMany'), [
-            'movimentacoes_ids' => [$movimentacao1->id, $movimentacao2->id],
+        $movimentacao1 = \App\Models\Movimentacao::factory()->create([
+            'user_id' => $this->user->id
         ]);
 
-        $response->assertRedirect(route('movimentacoes.index'));
-        $response->assertSessionHas('success', 'Movimentações excluídas com sucesso!');
+        $movimentacao2 = \App\Models\Movimentacao::factory()->create([
+            'user_id' => $this->user->id
+        ]);
 
-        $this->assertDatabaseMissing('movimentacoes', ['id' => $movimentacao1->id]);
-        $this->assertDatabaseMissing('movimentacoes', ['id' => $movimentacao2->id]);
+        $response = $this->from(route('movimentacoes.index'))
+            ->actingAs($this->user)
+            ->delete(route('movimentacoes.destroyMany'), [
+                'movimentacoes_ids' => [
+                    $movimentacao1->id,
+                    $movimentacao2->id,
+                ],
+            ]);
+
+        $response->assertRedirect(route('movimentacoes.index'));
+
+        $response->assertSessionHas(
+            'success',
+            'Movimentações excluídas com sucesso!'
+        );
+
+        $this->assertDatabaseMissing('movimentacoes', [
+            'id' => $movimentacao1->id,
+        ]);
+
+        $this->assertDatabaseMissing('movimentacoes', [
+            'id' => $movimentacao2->id,
+        ]);
     }
 }

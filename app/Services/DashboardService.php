@@ -40,17 +40,17 @@ class DashboardService
      */
     private function getStats(User $user, Carbon $now): array
     {
-        $ganhosMes = Movimentacao::doUsuario($user->id)
+        $ganhosMes = (float) Movimentacao::doUsuario($user->id)
             ->ganhos()
             ->doMes($now->month, $now->year)
             ->sum('valor');
 
-        $gastosMes = Movimentacao::doUsuario($user->id)
+        $gastosMes = (float) Movimentacao::doUsuario($user->id)
             ->gastos()
             ->doMes($now->month, $now->year)
             ->sum('valor');
 
-        $aPagarFuturo = Parcela::whereHas('movimentacao', function ($query) use ($user) {
+        $aPagarFuturo = (float) Parcela::whereHas('movimentacao', function ($query) use ($user) {
             $query->doUsuario($user->id)->gastosFuturos();
         })
             ->where('pago', false)
@@ -84,7 +84,7 @@ class DashboardService
                     'id' => $m->id,
                     'description' => $m->descricao,
                     'category' => $m->categoria->nome,
-                    'value' => $m->valor,
+                    'value' => (float) $m->valor,
                     'type' => $isGanho ? 'GANHO' : 'GASTO',
                     'date' => Carbon::parse($m->data)->format('d/m/Y'),
                     'status' => $isGanho ? 'Recebido' : 'Pago'
@@ -102,7 +102,7 @@ class DashboardService
      */
     private function getCategoriesSummary(User $user, Carbon $now): array
     {
-        $gastosTotaisMes = Movimentacao::doUsuario($user->id)
+        $gastosTotaisMes = (float) Movimentacao::doUsuario($user->id)
             ->gastos()
             ->doMes($now->month, $now->year)
             ->sum('valor');
@@ -115,10 +115,11 @@ class DashboardService
             ->with('categoria')
             ->get()
             ->map(function ($c) use ($gastosTotaisMes) {
+                $total = (float) $c->total;
                 return [
                     'name' => $c->categoria->nome,
-                    'value' => $c->total,
-                    'percentage' => $gastosTotaisMes > 0 ? round(($c->total / $gastosTotaisMes) * 100) : 0,
+                    'value' => $total,
+                    'percentage' => $gastosTotaisMes > 0 ? round(($total / $gastosTotaisMes) * 100) : 0,
                     'color' => 'bg-slate-500'
                 ];
             })
