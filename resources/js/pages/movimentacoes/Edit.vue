@@ -21,7 +21,7 @@ import {
 } from '@/types';
 import { formatBRL, handleValorKeydown } from '@/utils/masks';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { Info, Save, Wallet, Calendar, Tag, CreditCard, Edit } from 'lucide-vue-next';
+import { Info, Save, Wallet, Calendar, Tag, CreditCard, Edit, PlusCircle } from 'lucide-vue-next';
 import { computed, ref, type PropType } from 'vue';
 
 const props = defineProps({
