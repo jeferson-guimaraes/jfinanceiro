@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Enums\TipoMovimentacaoEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 /**
  * @property int $id
@@ -35,6 +37,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao whereValor($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao doUsuario($userId)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao doMes($mes, $ano)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao ganhos()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao gastos()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao gastosFuturos()
  */
 class Movimentacao extends Model
 {
@@ -57,6 +64,32 @@ class Movimentacao extends Model
         'data' => 'date:Y-m-d',
     ];
 
+    public function scopeDoUsuario(Builder $query, int $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    public function scopeDoMes(Builder $query, int $mes, int $ano)
+    {
+        return $query->whereMonth('data', $mes)
+            ->whereYear('data', $ano);
+    }
+
+    public function scopeGanhos(Builder $query)
+    {
+        return $query->where('tipo', TipoMovimentacaoEnum::GANHO);
+    }
+
+    public function scopeGastos(Builder $query)
+    {
+        return $query->where('tipo', TipoMovimentacaoEnum::GASTO);
+    }
+
+    public function scopeGastosFuturos(Builder $query)
+    {
+        return $query->where('tipo', TipoMovimentacaoEnum::GASTO_FUTURO);
+    }
+
     public function categoria(): BelongsTo
     {
         return $this->belongsTo(Categoria::class);
@@ -71,5 +104,4 @@ class Movimentacao extends Model
     {
         return $this->hasMany(Parcela::class);
     }
-
 }

@@ -42,7 +42,6 @@ const toggleSelection = (id: number, checked: boolean) => {
 
 const requestDeleteMany = () => {
   emit('delete:selected', props.selectedMovimentacoes);
-  emit('update:selectedMovimentacoes', []);
 };
 
 const sortKey = ref<string>('data');
@@ -218,7 +217,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
       <div v-else></div>
 
       <div v-if="props.selectedMovimentacoes && props.selectedMovimentacoes.length > 0" class="flex gap-2">
-        <Button class="bg-green-500/10 text-green-600 font-semibold hover:bg-green-200 h-8" @click="emit('pay:selected', props.selectedMovimentacoes)">
+        <Button v-if="activeTab === 'gasto futuro'" class="bg-green-500/10 text-green-600 font-semibold hover:bg-green-200 h-8" @click="emit('pay:selected', props.selectedMovimentacoes)">
           Pagar ({{ props.selectedMovimentacoes.length }})
         </Button>
         <Button class="bg-red-500/10 text-red-500 font-semibold hover:bg-red-200 h-8" @click="requestDeleteMany">

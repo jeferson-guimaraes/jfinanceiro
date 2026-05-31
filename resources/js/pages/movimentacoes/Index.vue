@@ -99,12 +99,12 @@ onMounted(() => {
   }
 });
 
-const total = computed(() => props.totais.total);
-const totalGanhos = computed(() => props.totais.ganhos);
-const totalDespesas = computed(() => props.totais.despesas);
-const totalDisponivel = computed(() => props.totais.ganhos - props.totais.despesas);
-const totalPago = computed(() => props.totais.pago);
-const totalPendente = computed(() => props.totais.pendente);
+const total = computed(() => Number(props.totais.total));
+const totalGanhos = computed(() => Number(props.totais.ganhos));
+const totalDespesas = computed(() => Number(props.totais.despesas));
+const totalDisponivel = computed(() => Number(props.totais.ganhos) - Number(props.totais.despesas));
+const totalPago = computed(() => Number(props.totais.pago));
+const totalPendente = computed(() => Number(props.totais.pendente));
 
 const isModalExclusaoAberto = ref(false);
 const movimentacaoParaExcluir = ref<Movimentacao | null>(null);
@@ -213,16 +213,20 @@ function changeTab(newAba: string) {
   selectedMovimentacoes.value = []; // Limpa seleção ao trocar de aba
 
   if (newAba === 'gasto futuro') {
-    dataInicio.value = '';
-    dataFim.value = '';
     if (!mesSelecionado.value || !anoSelecionado.value) {
       const now = new Date();
       mesSelecionado.value = String(now.getMonth() + 1);
       anoSelecionado.value = String(now.getFullYear());
     }
   } else {
-    mesSelecionado.value = '';
-    anoSelecionado.value = '';
+    if (!dataInicio.value || !dataFim.value) {
+      const now = new Date();
+      const primeiroDia = new Date(now.getFullYear(), now.getMonth(), 1);
+      const ultimoDia = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      dataInicio.value = primeiroDia.toISOString().split('T')[0];
+      dataFim.value = ultimoDia.toISOString().split('T')[0];
+    }
   }
 
   triggerSearch();
@@ -231,15 +235,29 @@ function changeTab(newAba: string) {
 // Watchers para disparar a busca quando os filtros mudam
 watch([dataInicio, dataFim], () => {
   if (abaAtiva.value === 'todos' || abaAtiva.value === 'ganho' || abaAtiva.value === 'gasto') {
-    if ((isValidDate(dataInicio.value) && isValidDate(dataFim.value)) || (!dataInicio.value && !dataFim.value)) {
+    // Só dispara se ambas estiverem vazias (limpeza) ou se ambas forem válidas e a ordem estiver correta
+    const inicioValido = isValidDate(dataInicio.value);
+    const fimValido = isValidDate(dataFim.value);
+
+    if (!dataInicio.value && !dataFim.value) {
       triggerSearch();
+      return;
+    }
+
+    if (inicioValido && fimValido) {
+      if (new Date(dataInicio.value) <= new Date(dataFim.value)) {
+        triggerSearch();
+      }
     }
   }
 });
 
 watch([mesSelecionado, anoSelecionado, perPage], () => {
   if (abaAtiva.value === 'gasto futuro') {
-    if (anoSelecionado.value.length === 4 || (!mesSelecionado.value && !anoSelecionado.value)) {
+    const ano = parseInt(anoSelecionado.value);
+    const anoValido = !isNaN(ano) && ano >= 2000 && ano <= new Date().getFullYear() + 10;
+    
+    if (mesSelecionado.value && anoValido) {
       triggerSearch();
     }
   } else {
@@ -364,12 +382,14 @@ const getPageUrl = (page: number | string) => {
                   <div class="flex flex-col sm:flex-row gap-3">
                     <!-- Filtro de data (Invisível apenas na aba 'gasto futuro') -->
                     <div v-if="abaAtiva === 'todos' || abaAtiva === 'ganho' || abaAtiva === 'gasto'"
-                      class="flex flex-1 gap-2">
-                      <div class="flex-1">
-                        <Input v-model="dataInicio" type="date" id="dataInicio" class="h-9 text-xs" />
+                      class="space-y-2 sm:space-y-0 sm:flex sm:flex-1 sm:gap-2 relative">
+                      <div class="flex">
+                        <Input v-model="dataInicio" type="date" id="dataInicio" class="h-9 text-xs" 
+                          :class="{'border-red-500 focus-visible:ring-red-500': dataInicio && !isValidDate(dataInicio)}" />
                       </div>
-                      <div class="flex-1">
-                        <Input v-model="dataFim" type="date" id="dataFim" class="h-9 text-xs" />
+                      <div class="flex">
+                        <Input v-model="dataFim" type="date" id="dataFim" class="h-9 text-xs" 
+                          :class="{'border-red-500 focus-visible:ring-red-500': (dataFim && !isValidDate(dataFim)) || (dataInicio && dataFim && new Date(dataInicio) > new Date(dataFim))}" />
                       </div>
                     </div>
 
@@ -385,7 +405,8 @@ const getPageUrl = (page: number | string) => {
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      <Input type="text" v-model="anoSelecionado" placeholder="Ano" class="h-9 text-xs w-20" />
+                      <Input type="text" v-model="anoSelecionado" placeholder="Ano" class="h-9 text-xs w-20" 
+                        :class="{'border-red-500 focus-visible:ring-red-500': anoSelecionado && (isNaN(parseInt(anoSelecionado)) || parseInt(anoSelecionado) < 2000 || parseInt(anoSelecionado) > new Date().getFullYear() + 10)}" />
                     </div>
 
                     <!-- Filtro de Busca por Texto -->
