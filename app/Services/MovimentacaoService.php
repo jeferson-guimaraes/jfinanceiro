@@ -7,6 +7,8 @@ use App\Models\Categoria;
 use App\Models\Movimentacao;
 use App\Models\Parcela;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -16,7 +18,7 @@ class MovimentacaoService
 	 * Obtém os dados necessários para a criação de uma movimentação.
 	 * Inclui categorias de ganhos, gastos e gastos futuros.
 	 *
-	 * @return array Retorna um array com as categorias separadas por tipo.
+	 * @return array{categoriasGanhos: \Illuminate\Support\Collection, categoriasGastos: \Illuminate\Support\Collection, categoriasGastosFuturos: \Illuminate\Support\Collection}
 	 */
 	public function getCreateMovimentacaoData(): array
 	{
@@ -39,7 +41,7 @@ class MovimentacaoService
 	/**
 	 * Busca movimentações (ganhos e gastos) e parcelas futuras com base em parâmetros da requisição.
 	 *
-	 * @return array Retorna um array contendo as movimentações e as parcelas futuras.
+	 * @return array{movimentacoes: LengthAwarePaginator|null, parcelasFuturas: LengthAwarePaginator|null, totais: array, filters: array}
 	 */
 	public function getMovimentacoes(): array
 	{
@@ -101,6 +103,10 @@ class MovimentacaoService
 
 	/**
 	 * Retorna a query base para ganhos e gastos.
+	 *
+	 * @param int $userId ID do usuário.
+	 * @param string|null $tipo Tipo de movimentação (ganho, gasto ou null para ambos).
+	 * @return Builder|Movimentacao
 	 */
 	private function getGanhosGastosQuery(int $userId, ?string $tipo = null)
 	{
@@ -117,15 +123,16 @@ class MovimentacaoService
 
 		$busca = request('busca');
 
-		$query = Movimentacao::query()
-			->where('user_id', $userId);
+		$query = Movimentacao::doUsuario($userId);
 
-		if ($tipo && $tipo !== 'todos') {
-			$query->where('tipo', $tipo);
+		if ($tipo === TipoMovimentacaoEnum::GANHO->value) {
+			$query->ganhos();
+		} elseif ($tipo === TipoMovimentacaoEnum::GASTO->value) {
+			$query->gastos();
 		} else {
 			$query->whereIn('tipo', [
-				TipoMovimentacaoEnum::GANHO->value,
-				TipoMovimentacaoEnum::GASTO->value
+				TipoMovimentacaoEnum::GANHO,
+				TipoMovimentacaoEnum::GASTO
 			]);
 		}
 
@@ -138,6 +145,9 @@ class MovimentacaoService
 
 	/**
 	 * Retorna a query base para parcelas futuras.
+	 *
+	 * @param int $userId ID do usuário.
+	 * @return Builder|Parcela
 	 */
 	private function getParcelasFuturasQuery(int $userId)
 	{
@@ -150,7 +160,7 @@ class MovimentacaoService
 
 		$query = Parcela::query()
 			->whereBetween('data_vencimento', [$inicioMes, $fimMes])
-			->whereHas('movimentacao', fn($q) => $q->where('user_id', $userId));
+			->whereHas('movimentacao', fn($q) => $q->doUsuario($userId));
 
 		if ($busca) {
 			$query->whereHas('movimentacao', fn($q) => $q->where('descricao', 'like', '%' . $busca . '%'));
@@ -164,9 +174,9 @@ class MovimentacaoService
 	 *
 	 * @param int $userId O ID do usuário.
 	 * @param string|null $tipo O tipo de movimentação.
-	 * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator Retorna um paginador de movimentações.
+	 * @return LengthAwarePaginator Retorna um paginador de movimentações.
 	 */
-	private function getGanhosGastosMovimentacoes(int $userId, ?string $tipo = null)
+	private function getGanhosGastosMovimentacoes(int $userId, ?string $tipo = null): LengthAwarePaginator
 	{
 		$perPage = request('per_page', 10);
 
@@ -182,9 +192,9 @@ class MovimentacaoService
 	 * Obtém as parcelas futuras para um mês e ano específicos.
 	 *
 	 * @param int $userId O ID do usuário.
-	 * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator Retorna um paginador de parcelas futuras.
+	 * @return LengthAwarePaginator Retorna um paginador de parcelas futuras.
 	 */
-	private function getParcelasFuturasMovimentacoes(int $userId)
+	private function getParcelasFuturasMovimentacoes(int $userId): LengthAwarePaginator
 	{
 		$perPage = request('per_page', 10);
 
@@ -207,9 +217,9 @@ class MovimentacaoService
 	 * Armazena uma nova movimentação, incluindo a criação de parcelas se for gasto futuro.
 	 *
 	 * @param array $validated Dados validados da requisição.
-	 * @throws \Exception Em caso de erro na criação.
+	 * @return void
 	 */
-	public function storeMovimentacao(array $validated)
+	public function storeMovimentacao(array $validated): void
 	{
 		$userId = Auth::id();
 
@@ -243,7 +253,7 @@ class MovimentacaoService
 	 *
 	 * @param Movimentacao $movimentacao A movimentação para a qual criar as parcelas.
 	 * @param array $validated Dados validados contendo informações das parcelas.
-	 * @throws \Exception Em caso de erro na criação das parcelas.
+	 * @return void
 	 */
 	private function createParcelasForMovimentacao(Movimentacao $movimentacao, array $validated): void
 	{
@@ -279,6 +289,7 @@ class MovimentacaoService
 	 *
 	 * @param Movimentacao $movimentacao A movimentação a ser atualizada.
 	 * @param array $validated Dados validados.
+	 * @return void
 	 */
 	public function updateMovimentacao(Movimentacao $movimentacao, array $validated): void
 	{
@@ -306,6 +317,7 @@ class MovimentacaoService
 	 * Deleta uma movimentação.
 	 *
 	 * @param Movimentacao $movimentacao A movimentação a ser deletada.
+	 * @return void
 	 */
 	public function destroyMovimentacao(Movimentacao $movimentacao): void
 	{
@@ -316,14 +328,22 @@ class MovimentacaoService
 	 * Deleta várias movimentações.
 	 *
 	 * @param array $movimentacoesIds Array com os IDs das movimentações a serem deletadas.
+	 * @return void
 	 */
 	public function destroyManyMovimentacoes(array $movimentacoesIds): void
 	{
-		Movimentacao::whereIn('id', $movimentacoesIds)
-			->where('user_id', Auth::id())
+		Movimentacao::doUsuario(Auth::id())
+			->whereIn('id', $movimentacoesIds)
 			->delete();
 	}
 
+	/**
+	 * Paga parcelas de uma movimentação de gasto futuro.
+	 *
+	 * @param Movimentacao $movimentacao A movimentação de gasto futuro.
+	 * @param array $data Dados do pagamento (quantidade, data, valor).
+	 * @return void
+	 */
 	public function pagarParcelas(Movimentacao $movimentacao, array $data): void
 	{
 		\Illuminate\Support\Facades\DB::transaction(function () use ($movimentacao, $data) {
@@ -346,8 +366,6 @@ class MovimentacaoService
 			}
 
 			// 2. Cria uma nova movimentação de GASTO para representar a saída de caixa
-			// Não criamos uma entrada na tabela 'parcelas' aqui, pois para GASTO/GANHO
-			// a movimentação já é a entidade principal e o sistema não exige entrada na tabela parcelas.
 			Movimentacao::create([
 				'user_id'      => $movimentacao->user_id,
 				'categoria_id' => $movimentacao->categoria_id,
@@ -365,6 +383,7 @@ class MovimentacaoService
 	 *
 	 * @param array $movimentacaoIds IDs das movimentações a serem pagas.
 	 * @param array $data Dados do pagamento (quantidade, data).
+	 * @return void
 	 */
 	public function pagarParcelasMassa(array $movimentacaoIds, array $data): void
 	{
