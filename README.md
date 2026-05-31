@@ -1,145 +1,215 @@
+<p align="center">
+  <img src="./public/images/logo.png" alt="JFinanceiro" width="180">
+</p>
+
 # JFinanceiro 💰
 
-Sistema web para **controle financeiro pessoal**, desenvolvido com foco em **organização, clareza de domínio e boas práticas de desenvolvimento backend e full stack**.
+Sistema web para controle financeiro pessoal com foco em organização financeira, planejamento de despesas futuras e previsibilidade de saldo.
 
-Este projeto é a **reescrita completa** de um sistema antigo criado inicialmente em PHP puro, agora utilizando uma stack moderna com **Laravel, Vue.js e Inertia.js**, aplicando conceitos atuais de arquitetura, modelagem de dados e experiência do usuário.
-
----
-
-## 🚀 Objetivo do Projeto
-
-O JFinanceiro tem como objetivo permitir que usuários:
-
-- Registrem ganhos e despesas
-- Registrem gastos futuros
-- Organizem movimentações por categorias
-- Acompanhem saldo e histórico financeiro
-- Tenham uma visão clara e simples da sua vida financeira
-
-Além do produto em si, o projeto também serve como **laboratório prático** para aplicar boas práticas de desenvolvimento web moderno.
+🌐 **Produção:** https://jfinanceiro.com.br
 
 ---
 
-## 🧱 Stack Tecnológica
+## Sobre o Projeto
+
+O JFinanceiro é uma aplicação web desenvolvida para ajudar pessoas que desejam ter maior controle sobre sua vida financeira, registrando ganhos, despesas e compromissos futuros de forma simples e intuitiva.
+
+O principal diferencial do sistema é a gestão de movimentações futuras, permitindo que o usuário visualize antecipadamente o impacto financeiro das contas que ainda serão pagas.
+
+O projeto surgiu a partir da reescrita completa de um sistema legado desenvolvido originalmente em PHP puro, sendo reconstruído utilizando tecnologias modernas e boas práticas de desenvolvimento de software.
+
+---
+
+<p align="center">
+  <img src="https://img.shields.io/badge/status-online-success">
+  <img src="https://img.shields.io/badge/licença-gratuito-blue">
+  <img src="https://img.shields.io/badge/Laravel-12-red">
+  <img src="https://img.shields.io/badge/Vue-3-green">
+</p>
+
+## Funcionalidades
+
+### 💵 Controle Financeiro
+
+- Cadastro de ganhos
+- Cadastro de despesas
+- Cadastro de gastos futuros
+- Controle de parcelas
+- Pagamento individual de parcelas
+- Pagamento em massa de parcelas
+- Histórico completo de movimentações
+- Edição de movimentações
+- Exclusão de movimentações
+
+### 📂 Organização
+
+- Cadastro de categorias personalizadas
+- Classificação por tipo de movimentação
+- Filtros de pesquisa
+- Visualização simplificada das movimentações
+
+### 📈 Planejamento Financeiro
+
+- Controle de contas futuras
+- Acompanhamento de parcelas pendentes
+- Dashboard com indicadores financeiros
+- Resumo financeiro mensal
+
+### 🔒 Segurança
+
+- Autenticação de usuários
+- Recuperação de senha
+- Verificação de e-mail
+- Autenticação em dois fatores (2FA)
+
+---
+
+## Stack Tecnológica
 
 ### Backend
-- **PHP 8+**
-- **Laravel**
+
+- PHP 8+
+- Laravel
 - Eloquent ORM
-- Migrations e Seeders
-- Validações e regras de negócio no backend
+- MySQL
+- Migrations
+- Seeders
 
 ### Frontend
-- **Vue.js 3**
-- **Inertia.js** (arquitetura monolítica moderna, sem API separada)
-- Componentização
-- Formulários reativos e validações
 
-### Banco de Dados
-- **MySQL / SQLite** (ambiente de desenvolvimento)
-- Modelagem relacional
-- Controle de integridade dos dados
+- Vue.js 3
+- Inertia.js
+- TypeScript
+- Tailwind CSS
+- Shadcn Vue
 
-### Testes
+### Qualidade e Ferramentas
+
 - PHPUnit
-
-### Ferramentas e Outros
-- Git e GitHub
-- Composer
-- NPM
 - Vite
-- Padrão MVC
-- Boas práticas de organização de código
+- Git
+- GitHub
+- Git flow
+- CI/CD
 
 ---
 
-## 🧠 Arquitetura
+## Arquitetura
 
-O projeto utiliza uma abordagem **monolítica moderna**, com Laravel no backend e Vue.js no frontend, integrados via **Inertia.js**, evitando a complexidade de uma API REST separada quando não necessária.
+O projeto utiliza uma arquitetura monolítica moderna baseada em Laravel + Vue.js através do Inertia.js.
 
-Essa decisão traz benefícios como:
+Essa abordagem proporciona:
+
 - Menor complexidade arquitetural
-- Melhor produtividade
-- Código mais coeso
+- Maior produtividade
+- Melhor integração entre frontend e backend
 - Facilidade de manutenção
+- Evolução simplificada do produto
 
 ---
 
-## 📌 Funcionalidades (em desenvolvimento)
+## Qualidade de Código
 
-- [x] Autenticação de usuários
-- [x] Cadastro de categorias
-- [x] Registro de movimentações financeiras
-- [x] Classificação entre ganhos e despesas
-- [x] Cálculo de saldo
-- [x] Testes automatizados
-- [ ] Listagem de movimentações financeiras
-- [ ] Edição de movimentações financeiras
-- [ ] Exclusão de movimentações financeiras
-- [ ] Filtros por período
-- [ ] Dashboard com resumo financeiro
-- [ ] Notificação de contas próximas ao vencimento
+O desenvolvimento segue princípios e práticas como:
+
+- SOLID
+- Clean Code
+- Separação de responsabilidades
+- Testes automatizados
+- Validações centralizadas
+- Boas práticas do ecossistema Laravel
 
 ---
 
-## 📷 Demonstração
+## Testes Automatizados
 
-> *(Em breve: screenshots ou GIFs do sistema em funcionamento)*
+O sistema possui cobertura para regras de negócio críticas, incluindo:
 
----
-
-## 🛠️ Como rodar o projeto localmente
-
-```bash
-# Clonar o repositório
-git clone https://github.com/seu-usuario/jfinanceiro.git
-
-# Entrar no projeto
-cd jfinanceiro
-
-# Instalar dependências do backend
-composer install
-
-# Instalar dependências do frontend
-npm install
-
-# Configurar variáveis de ambiente
-cp .env.example .env
-php artisan key:generate
-
-# Rodar migrations
-php artisan migrate
-
-# Iniciar o projeto
-npm run dev
-php artisan serve
-```
-
-## 🧪 Testes Automatizados
-
-O projeto possui **testes automatizados utilizando o framework de testes do Laravel**, com foco nas **regras de negócio**, garantindo maior confiabilidade e segurança na evolução do sistema.
-
-Os testes atuais cobrem:
-- Criação de movimentações financeiras (ganhos, despesas e despesas futuras)
-- Validação de dados
-- Cálculo de saldo
+- Cadastro de movimentações
+- Cadastro de gastos futuros
+- Pagamento de parcelas
+- Exclusão de movimentações
+- Validações de formulários
+- Regras financeiras
 
 ### Executando os testes
 
 ```bash
 php artisan test
 ```
-## 👨‍💻 Sobre o desenvolvimento
 
-Este projeto está em evolução contínua. Ele reflete meu processo de aprendizado e amadurecimento como desenvolvedor, aplicando conceitos de:
+---
 
-- Organização de código
-- Separação de responsabilidades
-- Regras de negócio no backend
-- Integração eficiente entre frontend e backend
+## Executando o Projeto Localmente
 
-## 📫 Contato
+```bash
+# Clonar o repositório
+git clone https://github.com/jeferson-guimaraes/jfinanceiro.git
 
-- Portfólio: https://jeferson-guimaraes.github.io/portfolio/
+# Entrar no projeto
+cd jfinanceiro
 
-- GitHub: https://github.com/jeferson-guimaraes
+# Instalar dependências PHP
+composer install
+
+# Instalar dependências JavaScript
+npm install
+
+# Configurar ambiente
+cp .env.example .env
+
+php artisan key:generate
+
+# Executar migrations
+php artisan migrate
+
+# Iniciar aplicação
+php artisan serve
+npm run dev
+```
+
+---
+
+## Screenshots
+
+### Dashboard
+
+![Dashboard](./public/images/jfinanceiro-dashboard.png)
+
+### Movimentações
+
+![Movimentações](./public/images/movimentacoes.png)
+
+### Cadastro de Movimentação
+
+![Cadastro de Movimentação](./public/images/cadastro-movimentacao.png)
+
+---
+
+## Roadmap
+
+Próximas funcionalidades planejadas:
+
+- [ ] Notificações de contas próximas ao vencimento
+- [ ] Progressive Web App (PWA)
+- [ ] Push Notifications
+- [ ] Relatórios avançados
+- [ ] Exportação de dados
+
+---
+
+## Demonstração
+
+Acesse a versão em produção:
+
+👉 **https://jfinanceiro.com.br**
+
+---
+
+## Desenvolvedor
+
+Desenvolvido por **Jeferson Guimarães**.
+
+🌐 Portfólio: https://jeferson-guimaraes.github.io/portfolio/
+
+💻 GitHub: https://github.com/jeferson-guimaraes
