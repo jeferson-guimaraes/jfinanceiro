@@ -364,11 +364,11 @@ const getPageUrl = (page: number | string) => {
                   <div class="flex flex-col sm:flex-row gap-3">
                     <!-- Filtro de data (Invisível apenas na aba 'gasto futuro') -->
                     <div v-if="abaAtiva === 'todos' || abaAtiva === 'ganho' || abaAtiva === 'gasto'"
-                      class="flex flex-1 gap-2">
-                      <div class="flex-1">
+                      class="space-y-2 sm:space-y-0 sm:flex sm:flex-1 sm:gap-2 relative">
+                      <div class="flex">
                         <Input v-model="dataInicio" type="date" id="dataInicio" class="h-9 text-xs" />
                       </div>
-                      <div class="flex-1">
+                      <div class="flex">
                         <Input v-model="dataFim" type="date" id="dataFim" class="h-9 text-xs" />
                       </div>
                     </div>
