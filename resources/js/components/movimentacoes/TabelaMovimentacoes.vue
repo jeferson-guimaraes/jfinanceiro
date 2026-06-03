@@ -309,13 +309,13 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
               </span>
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-medium">
-              {{ formatBRL(parcela.movimentacao.valor) }}
+              {{ formatBRL(Number(parcela.movimentacao.valor)) }}
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs">
               <span class="font-bold text-blue-600 dark:text-blue-400">{{ parcela.numero }}</span><span class="text-gray-400">/{{ parcela.movimentacao.parcelas }}</span>
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-bold text-red-600 dark:text-red-400">
-              {{ formatBRL(parcela.valor) }}
+              {{ formatBRL(Number(parcela.valor)) }}
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-medium">
               {{ formatDate(parcela.data_vencimento) }}
@@ -367,7 +367,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
             </TableCell>
             <TableCell class="whitespace-nowrap">
               <span class="text-sm font-bold" :class="getTipoClass(movimentacao.tipo)">
-                {{ getValorPrefix(movimentacao.tipo) }}{{ formatBRL(movimentacao.valor) }}
+                {{ getValorPrefix(movimentacao.tipo) }}{{ formatBRL(Number(movimentacao.valor)) }}
               </span>
             </TableCell>
             <TableCell @click.stop>

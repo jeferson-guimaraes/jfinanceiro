@@ -83,7 +83,7 @@ const categoriasDisponiveis = computed(() => {
     }
 });
 
-const valor = ref((props.movimentacao?.valor || 0) * 100);
+const valor = ref(props.movimentacao?.valor || 0);
 
 const valorFormatado = computed({
     get() {
@@ -91,8 +91,8 @@ const valorFormatado = computed({
     },
     set(value: string) {
         const digits = Number(value.replace(/[^\d]/g, ''));
-        valor.value = digits;
-        form.valor = digits / 100;
+        valor.value = digits / 100;
+        form.valor = valor.value;
     },
 });
 

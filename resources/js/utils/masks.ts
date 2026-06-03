@@ -1,17 +1,13 @@
 export const formatBRL = (value: string | number): string => {
-    const stringValue = String(value);
-    // 1. Remove tudo que não for dígito
-    let numericValue = stringValue.replace(/\D/g, '');
-
-    // If no numbers are left, treat it as 0
-    if (!numericValue) {
-        numericValue = '0';
+    let amount: number;
+    
+    if (typeof value === 'number') {
+        amount = value;
+    } else {
+        const numericValue = value.replace(/\D/g, '');
+        amount = numericValue ? parseFloat(numericValue) / 100 : 0;
     }
 
-    // 2. Converte para número e divide por 100 para ter as casas decimais
-    const amount = parseFloat(numericValue) / 100;
-
-    // 3. Formata para o padrão BRL
     return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL',

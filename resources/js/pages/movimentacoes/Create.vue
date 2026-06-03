@@ -102,8 +102,8 @@ const valorFormatado = computed({
     },
     set(value: string) {
         const digits = Number(value.replace(/[^\d]/g, ''));
-        valor.value = digits;
-        form.valor = digits / 100;
+        valor.value = digits / 100;
+        form.valor = valor.value;
     }
 })
 
@@ -115,17 +115,16 @@ const valorParcelasFormatado = computed({
     },
     set(value: string) {
         const digits = Number(value.replace(/[^\d]/g, ''));
-        valorParcelas.value = digits;
-        form.valor_parcelas = (digits / 100).toFixed(2);
+        valorParcelas.value = digits / 100;
+        form.valor_parcelas = valorParcelas.value.toFixed(2);
     }
 })
 
 watch([valor, () => form.parcelas], () => {
     if (form.parcelas > 0 && valor.value > 0) {
         const calculatedValue = valor.value / form.parcelas;
-        const roundedValue = Math.round(calculatedValue);
-        valorParcelas.value = roundedValue;
-        form.valor_parcelas = (roundedValue / 100).toFixed(2);
+        valorParcelas.value = Number(calculatedValue.toFixed(2));
+        form.valor_parcelas = valorParcelas.value.toFixed(2);
     }
 });
 

@@ -68,8 +68,8 @@ const valorFormatado = computed({
   },
   set(value: string) {
     const digits = Number(value.replace(/[^\d]/g, ''));
-    valorInterno.value = digits;
-    form.valor_total_pago = digits / 100;
+    valorInterno.value = digits / 100;
+    form.valor_total_pago = valorInterno.value;
   }
 });
 
@@ -83,9 +83,10 @@ const opcoesQuantidade = computed(() => {
 
 // Atualiza o valor total pago quando a quantidade muda
 watch(() => form.quantidade_parcelas, (newQty) => {
-  const novoValor = Number((Number(newQty) * valorParcela.value).toFixed(2));
+  const valorUnitarioArredondado = Number(valorParcela.value.toFixed(2));
+  const novoValor = Number((Number(newQty) * valorUnitarioArredondado).toFixed(2));
   form.valor_total_pago = novoValor;
-  valorInterno.value = Math.round(novoValor * 100);
+  valorInterno.value = novoValor;
 });
 
 // Inicializa o valor total quando o modal abre ou a movimentação muda
@@ -93,11 +94,12 @@ const inicializarForm = (mov: Movimentacao | null) => {
   if (mov) {
     const total = Number(mov.parcelas || 0);
     const vParcela = total > 0 ? Number(mov.valor) / total : 0;
+    const valorUnitarioArredondado = Number(vParcela.toFixed(2));
     
-    const valorInicial = Number((1 * vParcela).toFixed(2));
+    const valorInicial = Number((1 * valorUnitarioArredondado).toFixed(2));
     form.quantidade_parcelas = '1';
     form.valor_total_pago = valorInicial;
-    valorInterno.value = Math.round(valorInicial * 100);
+    valorInterno.value = valorInicial;
     form.data_pagamento = new Date().toISOString().split('T')[0];
   }
 };
