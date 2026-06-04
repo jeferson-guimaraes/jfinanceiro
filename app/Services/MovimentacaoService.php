@@ -47,7 +47,7 @@ class MovimentacaoService
 	{
 		$userId = Auth::id();
 		$tipo = request('tipo') ?? 'todos';
-		$perPage = (int) request('per_page', 10);
+		$perPage = (int) request('per_page', 50);
 
 		$ganhosGastos = null;
 		$parcelasFuturas = null;
@@ -95,7 +95,7 @@ class MovimentacaoService
 				'data_fim' => request('data_fim'),
 				'mes' => request('mes'),
 				'ano' => request('ano'),
-				'per_page' => (int) request('per_page', 10),
+				'per_page' => (int) request('per_page', 50),
 				'tipo' => $tipo,
 			]
 		];
@@ -180,7 +180,7 @@ class MovimentacaoService
 	 */
 	private function getGanhosGastosMovimentacoes(int $userId, ?string $tipo = null): LengthAwarePaginator
 	{
-		$perPage = request('per_page', 10);
+		$perPage = request('per_page', 50);
 
 		return $this->getGanhosGastosQuery($userId, $tipo)
 			->select(['id', 'categoria_id', 'data', 'descricao', 'valor', 'tipo', 'parcelas', 'user_id'])
@@ -198,7 +198,7 @@ class MovimentacaoService
 	 */
 	private function getParcelasFuturasMovimentacoes(int $userId): LengthAwarePaginator
 	{
-		$perPage = request('per_page', 10);
+		$perPage = request('per_page', 50);
 
 		return $this->getParcelasFuturasQuery($userId)
 			->select(['id', 'movimentacao_id', 'numero', 'valor', 'data_vencimento', 'pago'])

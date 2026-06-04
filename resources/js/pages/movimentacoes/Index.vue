@@ -71,7 +71,7 @@ const dataFim = ref(props.filters.data_fim || '');
 const buscaTexto = ref(props.filters.busca || '');
 const mesSelecionado = ref(props.filters.mes || '');
 const anoSelecionado = ref(props.filters.ano || '');
-const perPage = ref(props.filters.per_page || 10);
+const perPage = ref(props.filters.per_page || 50);
 
 const meses = [
   { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' }, { value: '3', label: 'Março' },
