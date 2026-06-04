@@ -22,6 +22,7 @@ interface Props {
   parcelas?: ParcelaComMovimentacao[];
   activeTab: string;
   selectedMovimentacoes: number[];
+  filters?: Record<string, any>;
 }
 
 const props = defineProps<Props>();
@@ -194,6 +195,24 @@ const getStatusRowClass = (parcela: ParcelaComMovimentacao) => {
 function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
   emit('delete', movimentacao);
 }
+
+const totalSelecionado = computed(() => {
+  if (props.selectedMovimentacoes.length === 0) return 0;
+  
+  if (props.activeTab === 'gasto futuro' && props.parcelas) {
+    return props.parcelas
+      .filter(parcela => props.selectedMovimentacoes.includes(parcela.movimentacao.id))
+      .reduce((acc, parcela) => acc + Number(parcela.valor), 0);
+  }
+  
+  if (props.movimentacoes) {
+    return props.movimentacoes
+      .filter(movimentacao => props.selectedMovimentacoes.includes(movimentacao.id))
+      .reduce((acc, movimentacao) => acc + Number(movimentacao.valor), 0);
+  }
+  
+  return 0;
+});
 </script>
 
 <template>
@@ -216,14 +235,24 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
       </div>
       <div v-else></div>
 
-      <div v-if="props.selectedMovimentacoes && props.selectedMovimentacoes.length > 0" class="flex gap-2">
-        <Button v-if="activeTab === 'gasto futuro'" class="bg-green-500/10 text-green-600 font-semibold hover:bg-green-200 h-8" @click="emit('pay:selected', props.selectedMovimentacoes)">
-          Pagar ({{ props.selectedMovimentacoes.length }})
-        </Button>
-        <Button class="bg-red-500/10 text-red-500 font-semibold hover:bg-red-200 h-8" @click="requestDeleteMany">
-          <Trash2 class="text-red-500 font-semibold h-3.5 w-3.5 mr-2" />
-          Excluir ({{ props.selectedMovimentacoes.length }})
-        </Button>
+      <div v-if="props.selectedMovimentacoes && props.selectedMovimentacoes.length > 0" class="flex items-center gap-4 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-800 animate-in fade-in slide-in-from-top-1">
+        <div class="flex flex-col">
+          <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight">
+            {{ props.selectedMovimentacoes.length }} selecionados
+          </span>
+          <span class="text-xs font-black text-blue-900 dark:text-blue-100">
+            {{ formatBRL(totalSelecionado) }}
+          </span>
+        </div>
+        <div class="flex gap-2">
+          <Button v-if="activeTab === 'gasto futuro'" class="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-bold uppercase px-4 shadow-sm" @click="emit('pay:selected', props.selectedMovimentacoes)">
+            Pagar Selecionados
+          </Button>
+          <Button variant="ghost" class="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 text-[10px] font-bold uppercase" @click="requestDeleteMany">
+            <Trash2 class="h-3.5 w-3.5 mr-2" />
+            Excluir
+          </Button>
+        </div>
       </div>
     </div>
     <Table class="border-collapse">
@@ -309,13 +338,13 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
               </span>
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-medium">
-              {{ formatBRL(parcela.movimentacao.valor) }}
+              {{ formatBRL(Number(parcela.movimentacao.valor)) }}
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs">
               <span class="font-bold text-blue-600 dark:text-blue-400">{{ parcela.numero }}</span><span class="text-gray-400">/{{ parcela.movimentacao.parcelas }}</span>
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-bold text-red-600 dark:text-red-400">
-              {{ formatBRL(parcela.valor) }}
+              {{ formatBRL(Number(parcela.valor)) }}
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-medium">
               {{ formatDate(parcela.data_vencimento) }}
@@ -330,7 +359,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
                   class="h-8 w-8 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
                   <CheckCircle2 class="h-4 w-4" />
                 </Button>
-                <Link :href="movimentacoesRoute.edit({ movimentacao: parcela.movimentacao_id }).url">
+                <Link :href="movimentacoesRoute.edit({ movimentacao: parcela.movimentacao_id }, { query: props.filters }).url">
                   <Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                     <Pencil class="h-4 w-4" />
                   </Button>
@@ -367,7 +396,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
             </TableCell>
             <TableCell class="whitespace-nowrap">
               <span class="text-sm font-bold" :class="getTipoClass(movimentacao.tipo)">
-                {{ getValorPrefix(movimentacao.tipo) }}{{ formatBRL(movimentacao.valor) }}
+                {{ getValorPrefix(movimentacao.tipo) }}{{ formatBRL(Number(movimentacao.valor)) }}
               </span>
             </TableCell>
             <TableCell @click.stop>
@@ -377,7 +406,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
                   class="h-8 w-8 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
                   <CheckCircle2 class="h-4 w-4" />
                 </Button>
-                <Link :href="movimentacoesRoute.edit({ movimentacao: movimentacao.id }).url">
+                <Link :href="movimentacoesRoute.edit({ movimentacao: movimentacao.id }, { query: props.filters }).url">
                   <Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                     <Pencil class="h-4 w-4" />
                   </Button>

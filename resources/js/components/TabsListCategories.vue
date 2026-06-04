@@ -39,9 +39,10 @@ function selectTab(tipo: string) {
   emit('update:tipo', tipo)
 }
 
-function handlePerPageChange(value: string) {
-  localPerPage.value = value;
-  emit('update:per_page', Number(value))
+function handlePerPageChange(value: any) {
+  const strValue = String(value);
+  localPerPage.value = strValue;
+  emit('update:per_page', Number(strValue));
 }
 
 function requestDeleteSingle(id: number) {

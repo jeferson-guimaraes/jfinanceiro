@@ -26,8 +26,9 @@ import {
 import { useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 import { type Movimentacao } from '@/types';
-import { Info, Calendar, CreditCard, Tag } from 'lucide-vue-next';
+import { Info, Calendar, CreditCard, Tag, DollarSign } from 'lucide-vue-next';
 import movimentacoesRoutes from '@/routes/movimentacoes';
+import { formatBRL } from '@/utils/masks';
 
 const props = defineProps<{
   open: boolean;
@@ -35,6 +36,28 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(['update:open', 'success']);
+
+const form = useForm({
+  movimentacao_ids: [] as number[],
+  quantidade_parcelas: '1',
+  data_pagamento: new Date().toISOString().split('T')[0],
+});
+
+const valorTotal = computed(() => {
+  if (!props.movimentacoes || props.movimentacoes.length === 0) {
+    return 0;
+  }
+  
+  let somaTotal = 0;
+  props.movimentacoes.forEach(mov => {
+    const v = parseFloat(String(mov.valor || 0));
+    const p = parseInt(String(mov.parcelas || 1));
+    somaTotal += (v / p);
+  });
+  
+  const qtd = parseInt(form.quantidade_parcelas) || 1;
+  return somaTotal * qtd;
+});
 
 const parcelasDisponiveis = computed(() => {
   if (props.movimentacoes.length === 0) return 0;
@@ -45,12 +68,6 @@ const parcelasDisponiveis = computed(() => {
     const pagas = Number(m.parcelas_pagas || 0);
     return total - pagas;
   }));
-});
-
-const form = useForm({
-  movimentacao_ids: [] as number[],
-  quantidade_parcelas: '1',
-  data_pagamento: new Date().toISOString().split('T')[0],
 });
 
 const opcoesQuantidade = computed(() => {
@@ -78,6 +95,8 @@ watch(() => props.movimentacoes, () => {
 
 const submit = () => {
   form.post(movimentacoesRoutes.pagarMassa().url, {
+    preserveState: true,
+    preserveScroll: true,
     onSuccess: () => {
       emit('update:open', false);
       emit('success');
@@ -155,6 +174,24 @@ const handleOpenChange = (value: boolean) => {
               Data Pagamento
             </Label>
             <Input id="data_pagamento" v-model="form.data_pagamento" type="date" required class="h-11 bg-white dark:bg-gray-800" />
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <Label for="valor_total" class="text-sm font-medium flex items-center gap-2">
+            <DollarSign class="h-4 w-4 text-gray-400" />
+            Valor Total a Pagar
+          </Label>
+          <div class="relative">
+            <input 
+              id="valor_total" 
+              :value="formatBRL(valorTotal)" 
+              readonly 
+              class="flex h-12 w-full rounded-md border border-blue-100 bg-blue-50/50 px-3 py-2 text-lg font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 font-mono text-right pr-4 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" 
+            />
+            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <span class="text-blue-400 dark:text-blue-600 text-xs font-bold uppercase tracking-wider">Total</span>
+            </div>
           </div>
         </div>
 
