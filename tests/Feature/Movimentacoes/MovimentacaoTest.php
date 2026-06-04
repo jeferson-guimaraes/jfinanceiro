@@ -51,7 +51,7 @@ class MovimentacaoTest extends TestCase
 
         $response = $this->actingAs($this->user)->post(route('movimentacoes.store'), $movimentacao);
 
-        $response->assertRedirect(route('movimentacoes.create'));
+        $response->assertRedirect(route('movimentacoes.create', ['tipo' => TipoMovimentacaoEnum::GANHO->value]));
         $response->assertSessionHas('success', 'Movimentação criada com sucesso!');
 
         $this->assertDatabaseHas('movimentacoes', [
@@ -76,7 +76,7 @@ class MovimentacaoTest extends TestCase
 
         $response = $this->actingAs($this->user)->post(route('movimentacoes.store'), $movimentacao);
 
-        $response->assertRedirect(route('movimentacoes.create'));
+        $response->assertRedirect(route('movimentacoes.create', ['tipo' => TipoMovimentacaoEnum::GASTO->value]));
         $response->assertSessionHas('success', 'Movimentação criada com sucesso!');
 
         $this->assertDatabaseHas('movimentacoes', [
@@ -104,7 +104,7 @@ class MovimentacaoTest extends TestCase
 
         $response = $this->actingAs($this->user)->post(route('movimentacoes.store'), $movimentacao);
 
-        $response->assertRedirect(route('movimentacoes.create'));
+        $response->assertRedirect(route('movimentacoes.create', ['tipo' => TipoMovimentacaoEnum::GASTO_FUTURO->value]));
         $response->assertSessionHas('success', 'Movimentação criada com sucesso!');
 
         $this->assertDatabaseHas('movimentacoes', [

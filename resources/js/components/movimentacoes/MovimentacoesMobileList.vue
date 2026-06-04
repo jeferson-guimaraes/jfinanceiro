@@ -120,6 +120,20 @@ const getTipoColorClass = (tipo: string) => {
     default: return 'bg-blue-500';
   }
 };
+
+const totalSelecionado = computed(() => {
+  if (selectedMovimentacoes.value.length === 0) return 0;
+  
+  if (props.activeTab === 'gasto futuro') {
+    return props.parcelas
+      .filter(p => selectedMovimentacoes.value.includes(p.movimentacao.id))
+      .reduce((acc, p) => acc + Number(p.valor), 0);
+  }
+  
+  return props.movimentacoes
+    .filter(m => selectedMovimentacoes.value.includes(m.id))
+    .reduce((acc, m) => acc + Number(m.valor), 0);
+});
 </script>
 
 <template>
@@ -155,15 +169,20 @@ const getTipoColorClass = (tipo: string) => {
         </Button>
       </div>
 
-      <div v-if="selectedMovimentacoes.length > 0" class="flex-1 bg-blue-50 dark:bg-blue-900/20 p-1.5 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm">
-        <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 ml-2 uppercase">
-          {{ selectedMovimentacoes.length }} selecionados
-        </span>
-        <div class="flex gap-2">
-          <Button size="sm" class="h-7 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase" @click="emit('pay:selected', selectedMovimentacoes)">
+      <div v-if="selectedMovimentacoes.length > 0" class="flex-1 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm animate-in fade-in zoom-in-95">
+        <div class="flex flex-col ml-1">
+          <span class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight">
+            {{ selectedMovimentacoes.length }} selecionados
+          </span>
+          <span class="text-xs font-black text-blue-900 dark:text-blue-100">
+            {{ formataDinheiroBRL(totalSelecionado) }}
+          </span>
+        </div>
+        <div class="flex gap-1.5">
+          <Button size="sm" class="h-8 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase shadow-sm" @click="emit('pay:selected', selectedMovimentacoes)">
             Pagar
           </Button>
-          <Button size="sm" variant="destructive" class="h-7 px-2" @click="emit('delete:selected', selectedMovimentacoes)">
+          <Button size="sm" variant="ghost" class="h-8 px-2 text-red-600 hover:bg-red-50" @click="emit('delete:selected', selectedMovimentacoes)">
             <Trash2 class="h-3.5 w-3.5" />
           </Button>
         </div>
