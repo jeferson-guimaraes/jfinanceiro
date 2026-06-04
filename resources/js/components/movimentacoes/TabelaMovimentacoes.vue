@@ -22,6 +22,7 @@ interface Props {
   parcelas?: ParcelaComMovimentacao[];
   activeTab: string;
   selectedMovimentacoes: number[];
+  filters?: Record<string, any>;
 }
 
 const props = defineProps<Props>();
@@ -330,7 +331,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
                   class="h-8 w-8 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
                   <CheckCircle2 class="h-4 w-4" />
                 </Button>
-                <Link :href="movimentacoesRoute.edit({ movimentacao: parcela.movimentacao_id }).url">
+                <Link :href="movimentacoesRoute.edit({ movimentacao: parcela.movimentacao_id }, { query: props.filters }).url">
                   <Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                     <Pencil class="h-4 w-4" />
                   </Button>
@@ -377,7 +378,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
                   class="h-8 w-8 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
                   <CheckCircle2 class="h-4 w-4" />
                 </Button>
-                <Link :href="movimentacoesRoute.edit({ movimentacao: movimentacao.id }).url">
+                <Link :href="movimentacoesRoute.edit({ movimentacao: movimentacao.id }, { query: props.filters }).url">
                   <Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                     <Pencil class="h-4 w-4" />
                   </Button>

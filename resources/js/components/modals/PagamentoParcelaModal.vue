@@ -120,6 +120,8 @@ const submit = () => {
   if (!props.movimentacao) return;
 
   form.post(movimentacoes.pagar({ movimentacao: props.movimentacao.id }).url, {
+    preserveState: true,
+    preserveScroll: true,
     onSuccess: () => {
       emit('update:open', false);
       emit('success');

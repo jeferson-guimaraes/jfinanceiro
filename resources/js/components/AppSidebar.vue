@@ -15,11 +15,15 @@ import { dashboard } from '@/routes';
 import { index } from '@/routes/movimentacoes';
 import { index as indexCategorias } from '@/routes/movimentacoes/categorias';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { ArrowUpDown, LayoutDashboard, LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+import { computed } from 'vue';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+const currentFilters = computed(() => page.props.filters || {});
+
+const mainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -27,7 +31,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Movimentações',
-        href: index(),
+        href: index({ query: currentFilters.value as any }).url,
         icon: ArrowUpDown,
     },
     {
@@ -35,7 +39,7 @@ const mainNavItems: NavItem[] = [
         href: indexCategorias(),
         icon: LayoutGrid,
     },
-];
+]);
 
 const footerNavItems: NavItem[] = [];
 </script>

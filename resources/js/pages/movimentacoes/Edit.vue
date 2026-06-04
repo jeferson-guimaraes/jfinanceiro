@@ -29,6 +29,7 @@ const props = defineProps({
     categoriasGanhos: Array as PropType<Categoria[]>,
     categoriasGastos: Array as PropType<Categoria[]>,
     categoriasGastosFuturos: Array as PropType<Categoria[]>,
+    filters: Object as PropType<Record<string, any>>,
 });
 
 const isCategoriaModalOpen = ref(false);
@@ -36,11 +37,11 @@ const isCategoriaModalOpen = ref(false);
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Movimentações',
-        href: movimentacoes.index().url,
+        href: movimentacoes.index({ query: props.filters }).url,
     },
     {
         title: 'Editar Movimentação',
-        href: props.movimentacao ? movimentacoes.edit({ movimentacao: props.movimentacao.id }).url : '#',
+        href: props.movimentacao ? movimentacoes.edit({ movimentacao: props.movimentacao.id }, { query: props.filters }).url : '#',
     },
 ];
 
@@ -101,7 +102,7 @@ function submit() {
 
     form.patch(movimentacoes.update({ movimentacao: props.movimentacao.id }).url, {
         onSuccess: () => {
-            router.get(movimentacoes.index().url);
+            router.get(movimentacoes.index({ query: props.filters }).url);
         },
     });
 }

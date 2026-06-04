@@ -73,6 +73,25 @@ const mesSelecionado = ref(props.filters.mes || '');
 const anoSelecionado = ref(props.filters.ano || '');
 const perPage = ref(props.filters.per_page || 50);
 
+const currentFilters = computed(() => {
+  const params: Record<string, any> = {
+    tipo: abaAtiva.value,
+    per_page: perPage.value,
+  };
+
+  if (abaAtiva.value === 'todos' || abaAtiva.value === 'ganho' || abaAtiva.value === 'gasto') {
+    if (dataInicio.value) params.data_inicio = dataInicio.value;
+    if (dataFim.value) params.data_fim = dataFim.value;
+  } else if (abaAtiva.value === 'gasto futuro') {
+    if (mesSelecionado.value) params.mes = mesSelecionado.value;
+    if (anoSelecionado.value) params.ano = anoSelecionado.value;
+  }
+
+  if (buscaTexto.value) params.busca = buscaTexto.value;
+
+  return params;
+});
+
 const meses = [
   { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' }, { value: '3', label: 'Março' },
   { value: '4', label: 'Abril' }, { value: '5', label: 'Maio' }, { value: '6', label: 'Junho' },
@@ -150,6 +169,7 @@ function confirmDelete() {
   if (movimentacaoParaExcluir.value) {
     router.delete(movimentacoesRoutes.destroy({ movimentacao: movimentacaoParaExcluir.value.id }).url, {
       preserveScroll: true,
+      preserveState: true,
       onSuccess: () => {
         isModalExclusaoAberto.value = false;
         movimentacaoParaExcluir.value = null;
@@ -173,6 +193,7 @@ const confirmDeleteMany = () => {
         movimentacoes_ids: selectedMovimentacoes.value,
       },
       preserveScroll: true,
+      preserveState: true,
       onSuccess: () => {
         isModalExclusaoMassaAberto.value = false;
         selectedMovimentacoes.value = [];
@@ -346,7 +367,7 @@ const getPageUrl = (page: number | string) => {
           </div>
 
           <div class="hidden sm:block">
-            <Link :href="movimentacoesRoutes.create({ query: { tipo: abaAtiva !== 'todos' ? abaAtiva : 'ganho' } }).url">
+            <Link :href="movimentacoesRoutes.create({ query: currentFilters }).url">
               <Button class="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all px-6">
                 <Plus class="mr-2 h-4 w-4" />
                 Nova Movimentação
@@ -465,12 +486,14 @@ const getPageUrl = (page: number | string) => {
               :key="'desktop-' + abaAtiva"
               :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes.data"
               :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas.data : []" :active-tab="abaAtiva"
+              :filters="currentFilters"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
               @show-details="handleShowDetails" v-model:selectedMovimentacoes="selectedMovimentacoes" />
             <MovimentacoesMobileList v-else-if="isMediumScreen"
               :key="'mobile-' + abaAtiva"
               :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes.data"
               :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas.data : []" :active-tab="abaAtiva"
+              :filters="currentFilters"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
               @show-details="handleShowDetails" />
 
@@ -562,7 +585,7 @@ const getPageUrl = (page: number | string) => {
 
     <!-- Floating Action Button para Telas Pequenas -->
     <div v-if="isMediumScreen" class="fixed bottom-4 right-4 z-50">
-      <Link :href="movimentacoesRoutes.create({ query: { tipo: abaAtiva !== 'todos' ? abaAtiva : 'gasto' } }).url"
+      <Link :href="movimentacoesRoutes.create({ query: currentFilters }).url"
         class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
         <Plus class="h-6 w-6" />
       </Link>

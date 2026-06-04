@@ -14,6 +14,7 @@ const props = defineProps<{
   movimentacoes: Movimentacao[];
   parcelas: ParcelaComMovimentacao[];
   activeTab: string;
+  filters?: Record<string, any>;
 }>();
 
 const emit = defineEmits(['delete', 'update:selection', 'delete:selected', 'pay', 'pay:selected', 'show-details']);
@@ -220,7 +221,7 @@ const getTipoColorClass = (tipo: string) => {
           <Button v-if="!parcela.pago" size="icon" variant="ghost" class="h-7 w-7 text-green-600" @click="emit('pay', parcela.movimentacao)">
             <CheckCircle2 class="h-4 w-4" />
           </Button>
-          <Link :href="movimentacoesRoute.edit({ movimentacao: parcela.movimentacao.id }).url">
+          <Link :href="movimentacoesRoute.edit({ movimentacao: parcela.movimentacao.id }, { query: props.filters }).url">
             <Button size="icon" variant="ghost" class="h-7 w-7 text-gray-400">
               <Pencil class="h-4 w-4" />
             </Button>
@@ -272,7 +273,7 @@ const getTipoColorClass = (tipo: string) => {
             size="icon" variant="ghost" class="h-7 w-7 text-green-600" @click="emit('pay', mov)">
             <CheckCircle2 class="h-4 w-4" />
           </Button>
-          <Link :href="movimentacoesRoute.edit({ movimentacao: mov.id }).url">
+          <Link :href="movimentacoesRoute.edit({ movimentacao: mov.id }, { query: props.filters }).url">
             <Button size="icon" variant="ghost" class="h-7 w-7 text-gray-400">
               <Pencil class="h-4 w-4" />
             </Button>

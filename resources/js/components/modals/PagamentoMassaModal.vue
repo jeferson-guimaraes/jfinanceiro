@@ -78,6 +78,8 @@ watch(() => props.movimentacoes, () => {
 
 const submit = () => {
   form.post(movimentacoesRoutes.pagarMassa().url, {
+    preserveState: true,
+    preserveScroll: true,
     onSuccess: () => {
       emit('update:open', false);
       emit('success');

@@ -15,7 +15,7 @@ defineProps<{
   activeTab: string;
 }>();
 
-const emit = defineEmits(['delete', 'update:selection', 'delete:selected', 'pay']);
+const emit = defineEmits(['delete', 'update:selection', 'delete:selected', 'pay', 'pay:selected', 'show-details']);
 
 const selectedMovimentacoes = ref<number[]>([]);
 

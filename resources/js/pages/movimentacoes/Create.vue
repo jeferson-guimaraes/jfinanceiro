@@ -23,6 +23,7 @@ const props = defineProps({
     categoriasGastos: Array as PropType<Categoria[]>,
     categoriasGastosFuturos: Array as PropType<Categoria[]>,
     tipo: String,
+    filters: Object as PropType<Record<string, any>>,
 });
 
 const isCategoriaModalOpen = ref(false);
@@ -30,11 +31,11 @@ const isCategoriaModalOpen = ref(false);
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Movimentações',
-        href: '/movimentacoes/index',
+        href: movimentacoes.index({ query: props.filters }).url,
     },
     {
         title: 'Nova Movimentação',
-        href: movimentacoes.create().url,
+        href: movimentacoes.create({ query: props.filters }).url,
     },
 ];
 
@@ -137,7 +138,7 @@ function submit() {
         }
     }
 
-    form.post(movimentacoes.store().url, {
+    form.post(movimentacoes.store({ query: props.filters }).url, {
         onSuccess: () => {
             form.reset('descricao', 'valor', 'data_movimentacao', 'parcelas', 'valor_parcelas', 'data_vencimento');
             valor.value = 0;

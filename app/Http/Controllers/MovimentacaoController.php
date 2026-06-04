@@ -55,8 +55,8 @@ class MovimentacaoController extends Controller
     {
         $movimentacaoService->storeMovimentacao($request->validated());
 
-        return redirect()->route('movimentacoes.create')
-            ->with('tipo', $request->validated('tipo'))->with('success', 'Movimentação criada com sucesso!');
+        return redirect()->route('movimentacoes.create', request()->only(['busca', 'data_inicio', 'data_fim', 'mes', 'ano', 'per_page', 'tipo']))
+            ->with('success', 'Movimentação criada com sucesso!');
     }
 
     /**
@@ -87,6 +87,7 @@ class MovimentacaoController extends Controller
 
         return Inertia::render('movimentacoes/Edit', array_merge([
             'movimentacao' => $movimentacao->load('categoria'),
+            'filters' => request()->all(),
         ], $data));
     }
 
