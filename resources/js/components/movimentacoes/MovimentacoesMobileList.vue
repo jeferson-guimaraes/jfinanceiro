@@ -134,6 +134,34 @@ const totalSelecionado = computed(() => {
     .filter(m => selectedMovimentacoes.value.includes(m.id))
     .reduce((acc, m) => acc + Number(m.valor), 0);
 });
+
+const canPaySelected = computed(() => {
+  if (selectedMovimentacoes.value.length === 0) return false;
+
+  const selectedIds = new Set(selectedMovimentacoes.value);
+
+  let selectedMovs: Movimentacao[] = [];
+
+  if (props.activeTab === 'gasto futuro') {
+    const movMap = new Map<number, Movimentacao>();
+
+    props.parcelas.forEach(parcela => {
+      if (selectedIds.has(parcela.movimentacao.id)) {
+        movMap.set(parcela.movimentacao.id, parcela.movimentacao);
+      }
+    });
+
+    selectedMovs = Array.from(movMap.values());
+  } else {
+    selectedMovs = props.movimentacoes.filter(movimentacao => selectedIds.has(movimentacao.id));
+  }
+
+  if (selectedMovs.length === 0) return false;
+
+  return selectedMovs.every(
+    movimentacao => movimentacao.tipo === 'gasto futuro' && (movimentacao.parcelas_pagas || 0) < movimentacao.parcelas
+  );
+});
 </script>
 
 <template>
@@ -179,7 +207,7 @@ const totalSelecionado = computed(() => {
           </span>
         </div>
         <div class="flex gap-1.5">
-          <Button size="sm" class="h-8 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase shadow-sm" @click="emit('pay:selected', selectedMovimentacoes)">
+          <Button v-if="canPaySelected" size="sm" class="h-8 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase shadow-sm" @click="emit('pay:selected', selectedMovimentacoes)">
             Pagar
           </Button>
           <Button size="sm" variant="ghost" class="h-8 px-2 text-red-600 hover:bg-red-50" @click="emit('delete:selected', selectedMovimentacoes)">
