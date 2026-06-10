@@ -228,7 +228,7 @@ const canPaySelected = computed(() => {
         
         <div class="flex-1 min-w-0 flex flex-col">
           <div class="flex justify-between items-start gap-1">
-            <h3 class="font-medium text-gray-900 dark:text-gray-100 truncate text-xs sm:text-sm">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm">
               {{ parcela.movimentacao.descricao }}
             </h3>
             <span class="font-bold text-xs sm:text-sm text-red-600 dark:text-red-400 whitespace-nowrap">
@@ -290,7 +290,7 @@ const canPaySelected = computed(() => {
         
         <div class="flex-1 min-w-0 flex flex-col">
           <div class="flex justify-between items-start gap-1">
-            <h3 class="font-medium text-gray-900 dark:text-gray-100 truncate text-xs sm:text-sm">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm">
               {{ mov.descricao }}
             </h3>
             <span class="font-bold text-xs sm:text-sm whitespace-nowrap" :class="mov.tipo === 'ganho' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
