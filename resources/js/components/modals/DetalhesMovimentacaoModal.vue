@@ -68,7 +68,7 @@ const handleOpenChange = (value: boolean) => {
              <component :is="headerConfig.icon" class="h-5 w-5 text-white/80" />
              <span class="text-xs font-bold uppercase tracking-widest text-white/80">{{ headerConfig.label }}</span>
           </div>
-          <DialogTitle class="text-2xl font-bold text-white truncate pr-8">
+          <DialogTitle class="text-2xl font-bold text-white pr-8 break-words">
             {{ movimentacao?.descricao }}
           </DialogTitle>
         </DialogHeader>

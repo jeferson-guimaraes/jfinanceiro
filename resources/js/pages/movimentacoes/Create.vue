@@ -81,19 +81,21 @@ const categoriasDisponiveis = computed(() => {
     }
 });
 
-watch(() => form.tipo, (newTipo) => {
-    switch (newTipo) {
+const resetCategoria = () => {
+    switch (form.tipo) {
         case 'ganho':
-            form.categoria_id = 2;
+            form.categoria_id = 139;
             break;
         case 'gasto':
             form.categoria_id = 1;
             break;
         case 'gasto futuro':
-            form.categoria_id = 3;
+            form.categoria_id = 140;
             break;
     }
-}, { immediate: true });
+};
+
+watch(() => form.tipo, resetCategoria, { immediate: true });
 
 const valor = ref(0);
 
@@ -143,6 +145,7 @@ function submit() {
             form.reset('descricao', 'valor', 'data_movimentacao', 'parcelas', 'valor_parcelas', 'data_vencimento');
             valor.value = 0;
             valorParcelas.value = 0;
+            resetCategoria();
         },
     });
 }
