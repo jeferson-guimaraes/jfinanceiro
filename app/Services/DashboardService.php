@@ -50,17 +50,31 @@ class DashboardService
             ->doMes($now->month, $now->year)
             ->sum('valor');
 
-        $aPagarFuturo = (float) Parcela::whereHas('movimentacao', function ($query) use ($user) {
+        $aPagarMesAtual = (float) Parcela::whereHas('movimentacao', function ($query) use ($user) {
             $query->doUsuario($user->id)->gastosFuturos();
         })
             ->where('pago', false)
+            ->whereMonth('data_vencimento', $now->month)
+            ->whereYear('data_vencimento', $now->year)
             ->sum('valor');
 
+        $proximoMes = $now->copy()->addMonth();
+        $aPagarProximoMes = (float) Parcela::whereHas('movimentacao', function ($query) use ($user) {
+            $query->doUsuario($user->id)->gastosFuturos();
+        })
+            ->where('pago', false)
+            ->whereMonth('data_vencimento', $proximoMes->month)
+            ->whereYear('data_vencimento', $proximoMes->year)
+            ->sum('valor');
+
+        $saldo = $ganhosMes - $gastosMes;
+
         return [
-            ['title' => 'Saldo Atual', 'value' => ($ganhosMes - $gastosMes), 'icon' => 'wallet', 'color' => 'text-emerald-600', 'description' => 'Saldo do mês'],
-            ['title' => 'Ganhos (Mês)', 'value' => $ganhosMes, 'icon' => 'trendingUp', 'color' => 'text-blue-600', 'description' => 'Total recebido'],
+            ['title' => 'Saldo Atual', 'value' => $saldo, 'icon' => 'wallet', 'color' => $saldo >= 0 ? 'text-emerald-600' : 'text-rose-600', 'description' => 'Saldo do mês'],
+            ['title' => 'Ganhos (Mês)', 'value' => $ganhosMes, 'icon' => 'trendingUp', 'color' => 'text-emerald-600', 'description' => 'Total recebido'],
             ['title' => 'Gastos (Mês)', 'value' => $gastosMes, 'icon' => 'trendingDown', 'color' => 'text-rose-600', 'description' => 'Total gasto'],
-            ['title' => 'A Pagar (Futuro)', 'value' => $aPagarFuturo, 'icon' => 'calendar', 'color' => 'text-amber-600', 'description' => 'Parcelas pendentes'],
+            ['title' => 'A Pagar (Mês Atual)', 'value' => $aPagarMesAtual, 'icon' => 'calendar', 'color' => 'text-rose-600', 'description' => 'Vencimentos de ' . $now->translatedFormat('F')],
+            ['title' => 'A Pagar (Próximo Mês)', 'value' => $aPagarProximoMes, 'icon' => 'calendar', 'color' => 'text-rose-600', 'description' => 'Vencimentos de ' . $proximoMes->translatedFormat('F')],
         ];
     }
 
