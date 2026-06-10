@@ -25,6 +25,7 @@ class PagarParcelaRequest extends FormRequest
             'quantidade_parcelas' => ['required', 'integer', 'min:1'],
             'data_pagamento' => ['required', 'date'],
             'valor_total_pago' => ['required', 'numeric', 'min:0'],
+            'descricao' => ['nullable', 'string', 'max:255'],
         ];
     }
 

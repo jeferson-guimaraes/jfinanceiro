@@ -35,8 +35,31 @@ class PagamentoParcelasMassaTest extends TestCase
         ]);
 
         $response->assertStatus(302);
-        $this->assertDatabaseHas('movimentacoes', ['descricao' => "Pagamento de 1 parcela(s) de: " . $mov1->descricao]);
-        $this->assertDatabaseHas('movimentacoes', ['descricao' => "Pagamento de 1 parcela(s) de: " . $mov2->descricao]);
+        // Agora salva apenas a descrição original quando não informada a personalizada
+        $this->assertDatabaseHas('movimentacoes', ['descricao' => $mov1->descricao, 'tipo' => 'gasto']);
+        $this->assertDatabaseHas('movimentacoes', ['descricao' => $mov2->descricao, 'tipo' => 'gasto']);
+    }
+
+    public function test_pagamento_em_massa_com_descricao_personalizada()
+    {
+        $mov1 = Movimentacao::factory()->for($this->user)->create(['tipo' => 'gasto futuro', 'parcelas' => 3]);
+        Parcela::factory()->create(['movimentacao_id' => $mov1->id, 'valor' => 100, 'pago' => false]);
+
+        $mov2 = Movimentacao::factory()->for($this->user)->create(['tipo' => 'gasto futuro', 'parcelas' => 3]);
+        Parcela::factory()->create(['movimentacao_id' => $mov2->id, 'valor' => 200, 'pago' => false]);
+
+        $descricaoPersonalizada = 'Pagamento em Massa Ref 01';
+
+        $response = $this->actingAs($this->user)->post(route('movimentacoes.pagarMassa'), [
+            'movimentacao_ids' => [$mov1->id, $mov2->id],
+            'quantidade_parcelas' => 1,
+            'data_pagamento' => now()->format('Y-m-d'),
+            'descricao' => $descricaoPersonalizada,
+        ]);
+
+        $response->assertStatus(302);
+        $this->assertDatabaseHas('movimentacoes', ['descricao' => "{$descricaoPersonalizada} - {$mov1->descricao}", 'tipo' => 'gasto']);
+        $this->assertDatabaseHas('movimentacoes', ['descricao' => "{$descricaoPersonalizada} - {$mov2->descricao}", 'tipo' => 'gasto']);
     }
 
     public function test_validacao_de_massa_com_ids_invalidos()

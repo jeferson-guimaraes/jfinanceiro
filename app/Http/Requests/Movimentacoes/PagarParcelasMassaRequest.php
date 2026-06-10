@@ -26,6 +26,7 @@ class PagarParcelasMassaRequest extends FormRequest
             'movimentacao_ids.*' => ['exists:movimentacoes,id'],
             'quantidade_parcelas' => ['required', 'integer', 'min:1'],
             'data_pagamento' => ['required', 'date'],
+            'descricao' => ['nullable', 'string', 'max:255'],
         ];
     }
 

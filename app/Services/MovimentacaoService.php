@@ -439,12 +439,15 @@ class MovimentacaoService
 				]);
 			}
 
-			// 2. Cria uma nova movimentação de GASTO para representar a saída de caixa
+			$descricao = !empty($data['descricao']) 
+				? "{$data['descricao']}: {$movimentacao->descricao}"
+				: $movimentacao->descricao;
+
 			Movimentacao::create([
 				'user_id'      => $movimentacao->user_id,
 				'categoria_id' => $movimentacao->categoria_id,
 				'data'         => $dataPagamento,
-				'descricao'    => "Pagamento de {$quantidade} parcela(s) de: " . $movimentacao->descricao,
+				'descricao'    => $descricao,
 				'valor'        => $valorTotalPago,
 				'tipo'         => TipoMovimentacaoEnum::GASTO->value,
 				'parcelas'     => 1,
@@ -488,11 +491,15 @@ class MovimentacaoService
 
 				if ($valorPagoNestaMovimentacao > 0) {
 					// 2. Cria uma nova movimentação de GASTO para representar a saída de caixa
+					$descricao = !empty($data['descricao']) 
+						? "{$data['descricao']} - {$movimentacao->descricao}"
+						: $movimentacao->descricao;
+
 					Movimentacao::create([
 						'user_id'      => $movimentacao->user_id,
 						'categoria_id' => $movimentacao->categoria_id,
 						'data'         => $dataPagamento,
-						'descricao'    => "Pagamento de {$quantidade} parcela(s) de: " . $movimentacao->descricao,
+						'descricao'    => $descricao,
 						'valor'        => $valorPagoNestaMovimentacao,
 						'tipo'         => TipoMovimentacaoEnum::GASTO->value,
 						'parcelas'     => 1,
