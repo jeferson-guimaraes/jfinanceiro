@@ -9,6 +9,7 @@ import { Link } from '@inertiajs/vue3';
 import movimentacoesRoute from '@/routes/movimentacoes';
 import Checkbox from '../ui/checkbox/Checkbox.vue';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { canPayMovimentacoesInBulk } from '@/utils/movimentacoes';
 
 const props = defineProps<{
   movimentacoes: Movimentacao[];
@@ -139,28 +140,21 @@ const canPaySelected = computed(() => {
   if (selectedMovimentacoes.value.length === 0) return false;
 
   const selectedIds = new Set(selectedMovimentacoes.value);
-
   let selectedMovs: Movimentacao[] = [];
 
   if (props.activeTab === 'gasto futuro') {
     const movMap = new Map<number, Movimentacao>();
-
     props.parcelas.forEach(parcela => {
       if (selectedIds.has(parcela.movimentacao.id)) {
         movMap.set(parcela.movimentacao.id, parcela.movimentacao);
       }
     });
-
     selectedMovs = Array.from(movMap.values());
   } else {
     selectedMovs = props.movimentacoes.filter(movimentacao => selectedIds.has(movimentacao.id));
   }
 
-  if (selectedMovs.length === 0) return false;
-
-  return selectedMovs.every(
-    movimentacao => movimentacao.tipo === 'gasto futuro' && (movimentacao.parcelas_pagas || 0) < movimentacao.parcelas
-  );
+  return canPayMovimentacoesInBulk(selectedMovs);
 });
 </script>
 

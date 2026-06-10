@@ -12,6 +12,7 @@ import movimentacoesRoute from '@/routes/movimentacoes';
 import { type Movimentacao, type ParcelaComMovimentacao } from '@/types';
 import { formatDate } from '@/utils/formatDate';
 import { formatBRL } from '@/utils/masks';
+import { canPayMovimentacoesInBulk } from '@/utils/movimentacoes';
 import { Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import Checkbox from '../ui/checkbox/Checkbox.vue';
@@ -213,6 +214,27 @@ const totalSelecionado = computed(() => {
   
   return 0;
 });
+
+const canPaySelected = computed(() => {
+  if (props.selectedMovimentacoes.length === 0) return false;
+
+  const selectedIds = new Set(props.selectedMovimentacoes);
+  let selectedMovs: Movimentacao[] = [];
+
+  if (props.activeTab === 'gasto futuro' && props.parcelas) {
+    const movMap = new Map<number, Movimentacao>();
+    props.parcelas.forEach(parcela => {
+      if (selectedIds.has(parcela.movimentacao.id)) {
+        movMap.set(parcela.movimentacao.id, parcela.movimentacao);
+      }
+    });
+    selectedMovs = Array.from(movMap.values());
+  } else if (props.movimentacoes) {
+    selectedMovs = props.movimentacoes.filter(m => selectedIds.has(m.id));
+  }
+
+  return canPayMovimentacoesInBulk(selectedMovs);
+});
 </script>
 
 <template>
@@ -245,7 +267,7 @@ const totalSelecionado = computed(() => {
           </span>
         </div>
         <div class="flex gap-2">
-          <Button v-if="activeTab === 'gasto futuro'" class="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-bold uppercase px-4 shadow-sm" @click="emit('pay:selected', props.selectedMovimentacoes)">
+          <Button v-if="canPaySelected" class="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-bold uppercase px-4 shadow-sm" @click="emit('pay:selected', props.selectedMovimentacoes)">
             Pagar Selecionados
           </Button>
           <Button variant="ghost" class="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 text-[10px] font-bold uppercase" @click="requestDeleteMany">
