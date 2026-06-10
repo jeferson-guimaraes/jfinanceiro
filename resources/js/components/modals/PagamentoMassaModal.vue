@@ -17,18 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useForm } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
+import { computed, watch, ref } from 'vue';
 import { type Movimentacao } from '@/types';
 import { Info, Calendar, CreditCard, Tag, DollarSign } from 'lucide-vue-next';
 import movimentacoesRoutes from '@/routes/movimentacoes';
 import { formatBRL } from '@/utils/masks';
+import InfoTooltip from '@/components/InfoTooltip.vue';
 
 const props = defineProps<{
   open: boolean;
@@ -41,6 +36,7 @@ const form = useForm({
   movimentacao_ids: [] as number[],
   quantidade_parcelas: '1',
   data_pagamento: new Date().toISOString().split('T')[0],
+  descricao: '',
 });
 
 const valorTotal = computed(() => {
@@ -83,6 +79,7 @@ watch(() => props.open, (isOpen) => {
     form.movimentacao_ids = props.movimentacoes.map(m => m.id);
     form.quantidade_parcelas = '1';
     form.data_pagamento = new Date().toISOString().split('T')[0];
+    form.descricao = '';
   }
 });
 
@@ -143,19 +140,10 @@ const handleOpenChange = (value: boolean) => {
 
         <div class="grid grid-cols-2 gap-6">
           <div class="space-y-2">
-            <Label for="quantidade" class="text-sm font-medium">
-              Qtd. Parcelas
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger as-child>
-                    <Info class="h-3.5 w-3.5 text-gray-400 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Quantas parcelas deseja quitar em cada movimentação?</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </Label>
+            <div class="flex items-center gap-1.5">
+              <Label for="quantidade" class="text-sm font-medium mb-0">Qtd. Parcelas</Label>
+              <InfoTooltip message="Quantas parcelas deseja quitar em cada movimentação?" />
+            </div>
             <Select v-model="form.quantidade_parcelas">
               <SelectTrigger id="quantidade" class="h-11 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <SelectValue placeholder="Selecione" />
@@ -193,6 +181,19 @@ const handleOpenChange = (value: boolean) => {
               <span class="text-blue-400 dark:text-blue-600 text-xs font-bold uppercase tracking-wider">Total</span>
             </div>
           </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center gap-1.5">
+            <Label for="descricao_pagamento_massa" class="text-sm font-medium mb-0">Descrição Personalizada (Opcional)</Label>
+            <InfoTooltip message="Se preenchido, este texto será concatenado à descrição original de cada movimentação. Caso contrário, apenas a descrição original será mantida no gasto gerado." />
+          </div>
+          <Input 
+            id="descricao_pagamento_massa" 
+            v-model="form.descricao" 
+            placeholder="Ex: Pagamento antecipado, 13º salário..."
+            class="h-11 bg-white dark:bg-gray-800" 
+          />
         </div>
 
         <DialogFooter class="pt-4 flex flex-col-reverse sm:flex-row gap-3">

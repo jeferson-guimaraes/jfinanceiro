@@ -64,6 +64,18 @@ class Movimentacao extends Model
         'data' => 'date:Y-m-d',
     ];
 
+    protected $appends = [
+        'lista_parcelas',
+    ];
+
+    public function getListaParcelasAttribute()
+    {
+        if ($this->relationLoaded('parcelas')) {
+            return $this->getRelation('parcelas');
+        }
+        return null;
+    }
+
     public function scopeDoUsuario(Builder $query, int $userId)
     {
         return $query->where('user_id', $userId);

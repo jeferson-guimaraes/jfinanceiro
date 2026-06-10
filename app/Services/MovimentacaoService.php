@@ -295,8 +295,80 @@ class MovimentacaoService
 	 */
 	public function updateMovimentacao(Movimentacao $movimentacao, array $validated): void
 	{
-		$movimentacaoData = $this->prepareMovimentacaoDataForUpdate($validated);
-		$movimentacao->update($movimentacaoData);
+		\Illuminate\Support\Facades\DB::transaction(function () use ($movimentacao, $validated) {
+			$movimentacaoData = $this->prepareMovimentacaoDataForUpdate($validated);
+			$movimentacao->update($movimentacaoData);
+
+			if ($movimentacao->tipo->value === TipoMovimentacaoEnum::GASTO_FUTURO->value) {
+				// 1. Ajuste de Vencimento Inicial
+				$primeiraParcela = $movimentacao->parcelas()->orderBy('numero')->first();
+				if (!empty($validated['data_vencimento']) && $primeiraParcela && $validated['data_vencimento'] !== $primeiraParcela->data_vencimento->format('Y-m-d')) {
+					$novaData = Carbon::parse($validated['data_vencimento']);
+					$parcelasExistentes = $movimentacao->parcelas()->orderBy('numero')->get();
+					foreach ($parcelasExistentes as $parcela) {
+						$parcela->update([
+							'data_vencimento' => $novaData->format('Y-m-d')
+						]);
+						$novaData->addMonth();
+					}
+				}
+
+				// 2. Ajuste de Quantidade de Parcelas
+				if (isset($validated['parcelas'])) {
+					$novaQtd = (int) $validated['parcelas'];
+					$qtdAtual = $movimentacao->parcelas()->count();
+
+					if ($novaQtd > $qtdAtual) {
+						// Criar novas parcelas
+						$valorMedio = $movimentacao->parcelas()->avg('valor') ?: 0;
+						$ultimaParcela = $movimentacao->parcelas()->orderByDesc('numero')->first();
+						$dataVencimento = $ultimaParcela
+							? Carbon::parse($ultimaParcela->data_vencimento)->addMonth()
+							: (!empty($validated['data_vencimento']) ? Carbon::parse($validated['data_vencimento']) : Carbon::now());
+
+						for ($num = $qtdAtual + 1; $num <= $novaQtd; $num++) {
+							Parcela::create([
+								'movimentacao_id' => $movimentacao->id,
+								'numero' => $num,
+								'valor' => $valorMedio,
+								'data_vencimento' => $dataVencimento->format('Y-m-d')
+							]);
+							$dataVencimento->addMonth();
+						}
+					} elseif ($novaQtd < $qtdAtual) {
+						// Deletar as parcelas com número maior do que novaQtd
+						$movimentacao->parcelas()->where('numero', '>', $novaQtd)->delete();
+					}
+				}
+
+				// 3. Edição Individual das parcelas enviadas
+				if (!empty($validated['parcelas_editadas'])) {
+					foreach ($validated['parcelas_editadas'] as $parcelaEditada) {
+						$parcela = Parcela::find($parcelaEditada['id']);
+						if ($parcela && $parcela->movimentacao_id === $movimentacao->id) {
+							$parcela->update([
+								'valor' => $parcelaEditada['valor'],
+								'data_vencimento' => Carbon::parse($parcelaEditada['data_vencimento'])->format('Y-m-d'),
+							]);
+						}
+					}
+				}
+
+				// 4. Recalcular Valor Total da movimentação e o número de parcelas
+				$somaValores = $movimentacao->parcelas()->sum('valor');
+				$totalParcelas = $movimentacao->parcelas()->count();
+				$movimentacao->update([
+					'valor' => $somaValores,
+					'parcelas' => $totalParcelas,
+				]);
+			} else {
+				// Se mudou de gasto futuro para outro tipo, deleta todas as parcelas
+				$movimentacao->parcelas()->delete();
+				$movimentacao->update([
+					'parcelas' => 1
+				]);
+			}
+		});
 	}
 
 	/**
@@ -311,7 +383,7 @@ class MovimentacaoService
 		$validated['data'] = $validated['data_movimentacao'];
 		unset($validated['data_movimentacao']);
 		// Retorna apenas os campos que podem ser atualizados, para evitar mass assignment issues
-		$movimentacaoFields = ['categoria_id', 'descricao', 'valor', 'data', 'tipo', 'conta_id']; // Ajuste conforme os campos do seu Model Movimentacao
+		$movimentacaoFields = ['categoria_id', 'descricao', 'valor', 'data', 'tipo', 'conta_id', 'parcelas']; // Ajuste conforme os campos do seu Model Movimentacao
 		return array_intersect_key($validated, array_flip($movimentacaoFields));
 	}
 
@@ -367,12 +439,15 @@ class MovimentacaoService
 				]);
 			}
 
-			// 2. Cria uma nova movimentação de GASTO para representar a saída de caixa
+			$descricao = !empty($data['descricao']) 
+				? "{$data['descricao']}: {$movimentacao->descricao}"
+				: $movimentacao->descricao;
+
 			Movimentacao::create([
 				'user_id'      => $movimentacao->user_id,
 				'categoria_id' => $movimentacao->categoria_id,
 				'data'         => $dataPagamento,
-				'descricao'    => "Pagamento de {$quantidade} parcela(s) de: " . $movimentacao->descricao,
+				'descricao'    => $descricao,
 				'valor'        => $valorTotalPago,
 				'tipo'         => TipoMovimentacaoEnum::GASTO->value,
 				'parcelas'     => 1,
@@ -416,11 +491,15 @@ class MovimentacaoService
 
 				if ($valorPagoNestaMovimentacao > 0) {
 					// 2. Cria uma nova movimentação de GASTO para representar a saída de caixa
+					$descricao = !empty($data['descricao']) 
+						? "{$data['descricao']} - {$movimentacao->descricao}"
+						: $movimentacao->descricao;
+
 					Movimentacao::create([
 						'user_id'      => $movimentacao->user_id,
 						'categoria_id' => $movimentacao->categoria_id,
 						'data'         => $dataPagamento,
-						'descricao'    => "Pagamento de {$quantidade} parcela(s) de: " . $movimentacao->descricao,
+						'descricao'    => $descricao,
 						'valor'        => $valorPagoNestaMovimentacao,
 						'tipo'         => TipoMovimentacaoEnum::GASTO->value,
 						'parcelas'     => 1,

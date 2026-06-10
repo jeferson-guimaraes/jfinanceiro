@@ -33,6 +33,32 @@ class PagamentoParcelaTest extends TestCase
 
         $response->assertStatus(302);
         $this->assertDatabaseHas('parcelas', ['movimentacao_id' => $movimentacao->id, 'pago' => true]);
+        // Valida que sem descrição personalizada, usa a descrição original
+        $this->assertDatabaseHas('movimentacoes', [
+            'descricao' => $movimentacao->descricao,
+            'tipo' => 'gasto'
+        ]);
+    }
+
+    public function test_pagar_parcela_com_descricao_personalizada()
+    {
+        $movimentacao = Movimentacao::factory()->for($this->user)->create(['tipo' => 'gasto futuro', 'parcelas' => 3]);
+        Parcela::factory()->count(3)->create(['movimentacao_id' => $movimentacao->id]);
+
+        $descricaoPersonalizada = 'Pagamento com Bônus';
+
+        $response = $this->actingAs($this->user)->post(route('movimentacoes.pagar', $movimentacao), [
+            'quantidade_parcelas' => 1,
+            'data_pagamento' => now()->format('Y-m-d'),
+            'valor_total_pago' => 50.00,
+            'descricao' => $descricaoPersonalizada,
+        ]);
+
+        $response->assertStatus(302);
+        $this->assertDatabaseHas('movimentacoes', [
+            'descricao' => "{$descricaoPersonalizada}: {$movimentacao->descricao}",
+            'tipo' => 'gasto'
+        ]);
     }
 
     public function test_nao_pode_pagar_parcela_de_outro_usuario()

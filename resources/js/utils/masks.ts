@@ -24,7 +24,19 @@ export const unformatBRL = (value: string): number => {
 
 export function handleValorKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLInputElement;
-    if (target.value == 'R$ 0,00' && (event.key === 'Backspace' || event.key === 'Delete')) {
+    
+    if (target.value === 'R$ 0,00' && (event.key === 'Backspace' || event.key === 'Delete')) {
         event.preventDefault();
+        return;
     }
+
+    // Se for um dígito, move o cursor para o final antes de processar a inserção
+    if (/^\d$/.test(event.key)) {
+        target.setSelectionRange(target.value.length, target.value.length);
+    }
+}
+
+export function handleValorClick(event: MouseEvent | FocusEvent) {
+    const target = event.target as HTMLInputElement;
+    target.setSelectionRange(target.value.length, target.value.length);
 }

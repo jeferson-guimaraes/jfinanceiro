@@ -8,7 +8,7 @@ import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { formataDinheiroBRL } from '@/utils/formataDinheiro';
 import { Head } from '@inertiajs/vue3';
-import { Wallet, TrendingUp, CreditCard, DollarSign, type Component } from 'lucide-vue-next';
+import { Wallet, TrendingUp, TrendingDown, Calendar, CreditCard, DollarSign, type Component } from 'lucide-vue-next';
 
 interface Props {
     stats: Array<{
@@ -40,8 +40,23 @@ defineProps<Props>();
 const iconMap: Record<string, typeof Component> = {
     wallet: Wallet,
     trendingUp: TrendingUp,
+    trendingDown: TrendingDown,
+    calendar: Calendar,
     creditCard: CreditCard,
     dollarSign: DollarSign,
+};
+
+const getStatValueColor = (stat: Props['stats'][0]) => {
+    if (stat.title === 'Saldo Atual') {
+        return stat.value >= 0 ? 'text-emerald-600' : 'text-rose-600';
+    }
+    if (stat.title.includes('Ganhos')) {
+        return 'text-emerald-600';
+    }
+    if (stat.title.includes('Gastos') || stat.title.includes('A Pagar')) {
+        return 'text-rose-600';
+    }
+    return '';
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -64,14 +79,14 @@ const breadcrumbs: BreadcrumbItem[] = [
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <Card v-for="stat in stats" :key="stat.title" class="overflow-hidden">
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle class="text-sm font-medium">{{ stat.title }}</CardTitle>
                         <Icon :icon="iconMap[stat.icon]" :class="stat.color" size="20" />
                     </CardHeader>
                     <CardContent>
-                        <div class="text-2xl font-bold" :class="stat.title === 'Saldo Atual' ? 'text-emerald-600' : ''">
+                        <div class="text-2xl font-bold" :class="getStatValueColor(stat)">
                             {{ formataDinheiroBRL(stat.value) }}
                         </div>
                         <p class="text-xs text-muted-foreground mt-1">
