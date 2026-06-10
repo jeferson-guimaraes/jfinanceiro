@@ -19,10 +19,10 @@ import {
     type Categoria,
     type Movimentacao,
 } from '@/types';
-import { formatBRL, handleValorKeydown } from '@/utils/masks';
+import { formatBRL, handleValorKeydown, unformatBRL, handleValorClick } from '@/utils/masks';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { Info, Save, Wallet, Calendar, Tag, CreditCard, Edit, PlusCircle } from 'lucide-vue-next';
-import { computed, ref, type PropType } from 'vue';
+import { computed, ref, type PropType, watch } from 'vue';
 
 const props = defineProps({
     movimentacao: Object as PropType<Movimentacao>,
@@ -51,7 +51,82 @@ const form = useForm({
     tipo: props.movimentacao?.tipo || 'gasto',
     data_movimentacao: props.movimentacao?.data || '',
     categoria_id: props.movimentacao?.categoria_id || (null as number | null),
+    parcelas: props.movimentacao?.lista_parcelas?.length || 1,
+    data_vencimento: props.movimentacao?.lista_parcelas?.[0]?.data_vencimento || '',
+    parcelas_editadas: props.movimentacao?.lista_parcelas ? props.movimentacao.lista_parcelas.map((p: any) => ({
+        id: p.id,
+        valor: Number(p.valor),
+        data_vencimento: p.data_vencimento,
+        numero: p.numero,
+        pago: p.pago,
+        is_temp: false
+    })) : [] as Array<{ id: number | null, valor: number, data_vencimento: string, numero: number, pago: boolean, is_temp?: boolean }>,
 });
+
+watch(() => form.parcelas, (newQtd) => {
+    if (form.tipo !== 'gasto futuro') return;
+    const qtd = Number(newQtd) || 0;
+    if (qtd < form.parcelas_editadas.length) {
+        form.parcelas_editadas = form.parcelas_editadas.slice(0, qtd);
+    } else if (qtd > form.parcelas_editadas.length) {
+        const diff = qtd - form.parcelas_editadas.length;
+        const lastNum = form.parcelas_editadas.length > 0 
+            ? form.parcelas_editadas[form.parcelas_editadas.length - 1].numero 
+            : 0;
+        const lastDateStr = form.parcelas_editadas.length > 0
+            ? form.parcelas_editadas[form.parcelas_editadas.length - 1].data_vencimento
+            : form.data_vencimento;
+
+        const lastDate = lastDateStr ? new Date(lastDateStr + 'T00:00:00') : new Date();
+        const avgValor = form.parcelas_editadas.length > 0
+            ? form.parcelas_editadas.reduce((acc, c) => acc + c.valor, 0) / form.parcelas_editadas.length
+            : 0;
+
+        for (let i = 1; i <= diff; i++) {
+            if (lastNum === 0 && i === 1) {
+                // Herda o vencimento inicial sem adicionar mês
+            } else {
+                lastDate.setMonth(lastDate.getMonth() + 1);
+            }
+            const yyyy = lastDate.getFullYear();
+            const mm = String(lastDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(lastDate.getDate()).padStart(2, '0');
+            const nextDateStr = `${yyyy}-${mm}-${dd}`;
+
+            form.parcelas_editadas.push({
+                id: null,
+                valor: avgValor,
+                data_vencimento: nextDateStr,
+                numero: lastNum + i,
+                pago: false,
+                is_temp: true
+            });
+        }
+    }
+});
+
+watch(() => form.data_vencimento, (newVal) => {
+    if (form.tipo !== 'gasto futuro' || !newVal) return;
+    
+    const currentDate = new Date(newVal + 'T00:00:00');
+    form.parcelas_editadas.forEach((parcela, index) => {
+        if (index > 0) {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+        }
+        const yyyy = currentDate.getFullYear();
+        const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(currentDate.getDate()).padStart(2, '0');
+        parcela.data_vencimento = `${yyyy}-${mm}-${dd}`;
+    });
+});
+
+watch(() => form.parcelas_editadas, (newVal) => {
+    if (form.tipo === 'gasto futuro' && newVal) {
+        const sum = newVal.reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
+        form.valor = Number(sum.toFixed(2));
+        valor.value = form.valor;
+    }
+}, { deep: true });
 
 const formVariant = computed(() => {
     switch (form.tipo) {
@@ -99,6 +174,12 @@ const valorFormatado = computed({
 
 function submit() {
     if (!props.movimentacao) return;
+
+    if (form.tipo === 'gasto futuro') {
+        form.parcelas_editadas = form.parcelas_editadas.filter(p => p.id !== null && !p.is_temp);
+    } else {
+        form.parcelas_editadas = [];
+    }
 
     form.patch(movimentacoes.update({ movimentacao: props.movimentacao.id }).url, {
         onSuccess: () => {
@@ -203,9 +284,97 @@ function refreshCategories() {
                                 <Wallet class="h-4 w-4 text-muted-foreground" />
                                 Valor Total
                             </Label>
-                            <Input id="valor" v-model="valorFormatado" name="valor" type="tel"
-                                @keydown="handleValorKeydown" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 font-mono text-lg" />
+                            <Input id="valor" v-model="valorFormatado" name="valor" type="text"
+                                @keydown="handleValorKeydown" @click="handleValorClick" @focus="handleValorClick" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 font-mono text-lg" />
                             <InputError :message="form.errors.valor" />
+                        </div>
+
+                        <!-- Campos adicionais de Gasto Futuro -->
+                        <template v-if="form.tipo === 'gasto futuro'">
+                            <div class="sm:col-span-3 space-y-2">
+                                <Label for="parcelas" class="text-sm font-semibold flex items-center gap-2">
+                                    <CreditCard class="h-4 w-4 text-muted-foreground" />
+                                    Quantidade de Parcelas
+                                </Label>
+                                <Input id="parcelas" v-model.number="form.parcelas" name="parcelas" type="number"
+                                    min="1" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700" />
+                                <InputError :message="form.errors.parcelas" />
+                            </div>
+
+                            <div class="sm:col-span-3 space-y-2">
+                                <Label for="data_vencimento" class="text-sm font-semibold flex items-center gap-2">
+                                    <Calendar class="h-4 w-4 text-muted-foreground" />
+                                    Vencimento (1ª Parcela)
+                                </Label>
+                                <Input id="data_vencimento" v-model="form.data_vencimento" name="data_vencimento" type="date"
+                                    class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700" />
+                                <InputError :message="form.errors.data_vencimento" />
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Detalhamento de Parcelas se for Gasto Futuro -->
+                    <div v-if="form.tipo === 'gasto futuro'" class="mt-8 border-t border-gray-100 dark:border-gray-800 pt-8 space-y-4">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                <CreditCard class="h-5 w-5 text-gray-500" />
+                                Detalhamento de Parcelas
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                                Edite os valores e datas de vencimento de cada parcela individualmente.
+                            </p>
+                        </div>
+
+                        <div class="border rounded-xl overflow-hidden bg-white dark:bg-gray-900 shadow-sm border-gray-200 dark:border-gray-800">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                            <th class="px-6 py-4 w-24">Nº Parcela</th>
+                                            <th class="px-6 py-4">Valor</th>
+                                            <th class="px-6 py-4">Vencimento</th>
+                                            <th class="px-6 py-4 w-32">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+                                        <tr v-for="(parcela, index) in form.parcelas_editadas" :key="index" class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                                            <td class="px-6 py-4 font-mono font-medium text-gray-600 dark:text-gray-400">
+                                                {{ parcela.numero }} / {{ form.parcelas }}
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <Input 
+                                                    type="text"
+                                                    :model-value="formatBRL(parcela.valor)"
+                                                    @update:model-value="(val: string | number) => parcela.valor = unformatBRL(String(val))"
+                                                    @keydown="handleValorKeydown"
+                                                    @click="handleValorClick"
+                                                    @focus="handleValorClick"
+                                                    class="h-10 w-44 bg-gray-50 dark:bg-gray-800 font-mono text-base border-gray-200 dark:border-gray-700"
+                                                    :disabled="parcela.pago"
+                                                />
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <Input 
+                                                    type="date"
+                                                    v-model="parcela.data_vencimento"
+                                                    class="h-10 w-48 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                                                    :disabled="parcela.pago"
+                                                />
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <span v-if="parcela.pago" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 border border-green-200/50 dark:border-green-800/20">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                    Paga
+                                                </span>
+                                                <span v-else class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/20">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                    Pendente
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 

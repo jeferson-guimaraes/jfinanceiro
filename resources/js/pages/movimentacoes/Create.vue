@@ -13,7 +13,7 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import movimentacoes from '@/routes/movimentacoes';
 import { type BreadcrumbItem, type Categoria } from '@/types';
-import { formatBRL, handleValorKeydown } from '@/utils/masks';
+import { formatBRL, handleValorKeydown, handleValorClick } from '@/utils/masks';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { Info, PlusCircle, Wallet, Calendar, Tag, CreditCard } from 'lucide-vue-next';
 import { computed, ref, type PropType, watch } from 'vue';
@@ -241,7 +241,7 @@ function refreshCategories() {
                                 Valor Total
                             </Label>
                             <Input id="valor" v-model="valorFormatado" name="valor" type="tel"
-                                @keydown="handleValorKeydown" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 font-mono text-lg" />
+                                @keydown="handleValorKeydown" @click="handleValorClick" @focus="handleValorClick" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 font-mono text-lg" />
                             <InputError :message="form.errors.valor" />
                         </div>
 
@@ -255,7 +255,7 @@ function refreshCategories() {
 
                             <div class="sm:col-span-2 space-y-2">
                                 <Label for="valor_parcelas" class="text-sm font-semibold">Valor das Parcelas</Label>
-                                <Input id="valor_parcelas" v-model="valorParcelasFormatado" name="valor_parcelas" type="tel" @keydown="handleValorKeydown" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 font-mono" />
+                                <Input id="valor_parcelas" v-model="valorParcelasFormatado" name="valor_parcelas" type="tel" @keydown="handleValorKeydown" @click="handleValorClick" @focus="handleValorClick" class="h-12 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 font-mono" />
                                 <InputError :message="form.errors.valor_parcelas" />
                             </div>
 

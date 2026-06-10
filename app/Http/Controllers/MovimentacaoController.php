@@ -86,7 +86,9 @@ class MovimentacaoController extends Controller
         $data = $movimentacaoService->getCreateMovimentacaoData();
 
         return Inertia::render('movimentacoes/Edit', array_merge([
-            'movimentacao' => $movimentacao->load('categoria'),
+            'movimentacao' => $movimentacao->load(['categoria', 'parcelas' => function ($query) {
+                $query->orderBy('numero');
+            }]),
             'filters' => request()->all(),
         ], $data));
     }
