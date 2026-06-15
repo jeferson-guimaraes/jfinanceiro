@@ -28,6 +28,7 @@ const isDesktop = useMediaQuery('(min-width: 768px)');
                     <TooltipTrigger as-child>
                         <button 
                             type="button" 
+                            tabindex="-1"
                             class="inline-flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none"
                         >
                             <Info class="h-4 w-4 text-gray-400 cursor-help" />
@@ -47,6 +48,7 @@ const isDesktop = useMediaQuery('(min-width: 768px)');
                 <PopoverTrigger as-child>
                     <button 
                         type="button" 
+                        tabindex="-1"
                         class="inline-flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none"
                     >
                         <Info class="h-4 w-4 text-gray-400 cursor-help" />

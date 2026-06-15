@@ -18,9 +18,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useForm } from '@inertiajs/vue3';
-import { computed, watch, ref } from 'vue';
+import { computed, watch } from 'vue';
 import { type Movimentacao } from '@/types';
-import { Info, Calendar, CreditCard, Tag, DollarSign } from 'lucide-vue-next';
+import { Calendar, CreditCard, Tag, DollarSign } from 'lucide-vue-next';
 import movimentacoesRoutes from '@/routes/movimentacoes';
 import { formatBRL } from '@/utils/masks';
 import InfoTooltip from '@/components/InfoTooltip.vue';

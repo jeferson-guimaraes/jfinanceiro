@@ -11,16 +11,18 @@ import Checkbox from '../ui/checkbox/Checkbox.vue';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { canPayMovimentacoesInBulk } from '@/utils/movimentacoes';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   movimentacoes: Movimentacao[];
   parcelas: ParcelaComMovimentacao[];
   activeTab: string;
+  selectedMovimentacoes?: number[];
   filters?: Record<string, any>;
-}>();
+}>(), {
+  selectedMovimentacoes: () => [],
+});
 
-const emit = defineEmits(['delete', 'update:selection', 'delete:selected', 'pay', 'pay:selected', 'show-details']);
+const emit = defineEmits(['delete', 'update:selectedMovimentacoes', 'delete:selected', 'pay', 'pay:selected', 'show-details']);
 
-const selectedMovimentacoes = ref<number[]>([]);
 const sortKey = ref(props.activeTab === 'gasto futuro' ? 'data_vencimento' : 'data');
 const sortOrder = ref<'asc' | 'desc'>('desc');
 
@@ -80,19 +82,18 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
   emit('delete', mov);
 }
 
-const handleSelection = (movimentacaoId: number, checked: boolean) => {
+function handleSelection(movimentacaoId: number, checked: boolean) {
+  let newValue = [...props.selectedMovimentacoes];
   if (checked) {
-    if (!selectedMovimentacoes.value.includes(movimentacaoId)) {
-      selectedMovimentacoes.value.push(movimentacaoId);
+    if (!newValue.includes(movimentacaoId)) {
+      newValue.push(movimentacaoId);
     }
   } else {
-    selectedMovimentacoes.value = selectedMovimentacoes.value.filter(
-      id => id !== movimentacaoId
-    );
+    newValue = newValue.filter(id => id !== movimentacaoId);
   }
 
-  emit('update:selection', selectedMovimentacoes.value);
-};
+  emit('update:selectedMovimentacoes', newValue);
+}
 
 const getParcelaStatus = (parcela: ParcelaComMovimentacao): 'paga' | 'vencida' | 'vence-hoje' | 'pendente' => {
   if (parcela.pago) return 'paga';
@@ -123,23 +124,23 @@ const getTipoColorClass = (tipo: string) => {
 };
 
 const totalSelecionado = computed(() => {
-  if (selectedMovimentacoes.value.length === 0) return 0;
+  if (props.selectedMovimentacoes.length === 0) return 0;
   
   if (props.activeTab === 'gasto futuro') {
     return props.parcelas
-      .filter(p => selectedMovimentacoes.value.includes(p.movimentacao.id))
+      .filter(p => props.selectedMovimentacoes.includes(p.movimentacao.id))
       .reduce((acc, p) => acc + Number(p.valor), 0);
   }
   
   return props.movimentacoes
-    .filter(m => selectedMovimentacoes.value.includes(m.id))
+    .filter(m => props.selectedMovimentacoes.includes(m.id))
     .reduce((acc, m) => acc + Number(m.valor), 0);
 });
 
 const canPaySelected = computed(() => {
-  if (selectedMovimentacoes.value.length === 0) return false;
+  if (props.selectedMovimentacoes.length === 0) return false;
 
-  const selectedIds = new Set(selectedMovimentacoes.value);
+  const selectedIds = new Set(props.selectedMovimentacoes);
   let selectedMovs: Movimentacao[] = [];
 
   if (props.activeTab === 'gasto futuro') {
@@ -162,14 +163,14 @@ const canPaySelected = computed(() => {
   <div class="space-y-2">
     <!-- Header de Ações em Massa e Ordenação -->
     <div class="flex items-center justify-between gap-2 px-1 mb-2">
-      <div v-if="selectedMovimentacoes.length === 0" class="flex-1 flex items-center gap-2">
+      <div v-if="props.selectedMovimentacoes.length === 0" class="flex-1 flex items-center gap-2">
         <div class="flex-1 max-w-[200px]">
           <Select v-model="sortKey">
             <SelectTrigger class="h-8 text-[10px] font-bold uppercase bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>
             <SelectContent>
-              <template v-if="activeTab === 'gasto futuro'">
+              <template v-if="props.activeTab === 'gasto futuro'">
                 <SelectItem value="movimentacao.data">Data Movimentação</SelectItem>
                 <SelectItem value="data_vencimento">Data Vencimento</SelectItem>
                 <SelectItem value="valor">Valor Parcela</SelectItem>
@@ -191,20 +192,20 @@ const canPaySelected = computed(() => {
         </Button>
       </div>
 
-      <div v-if="selectedMovimentacoes.length > 0" class="flex-1 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm animate-in fade-in zoom-in-95">
+      <div v-if="props.selectedMovimentacoes.length > 0" class="flex-1 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm animate-in fade-in zoom-in-95">
         <div class="flex flex-col ml-1">
           <span class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight">
-            {{ selectedMovimentacoes.length }} selecionados
+            {{ props.selectedMovimentacoes.length }} selecionados
           </span>
           <span class="text-xs font-black text-blue-900 dark:text-blue-100">
             {{ formataDinheiroBRL(totalSelecionado) }}
           </span>
         </div>
         <div class="flex gap-1.5">
-          <Button v-if="canPaySelected" size="sm" class="h-8 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase shadow-sm" @click="emit('pay:selected', selectedMovimentacoes)">
+          <Button v-if="canPaySelected" size="sm" class="h-8 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase shadow-sm" @click="emit('pay:selected', props.selectedMovimentacoes)">
             Pagar
           </Button>
-          <Button size="sm" variant="ghost" class="h-8 px-2 text-red-600 hover:bg-red-50" @click="emit('delete:selected', selectedMovimentacoes)">
+          <Button size="sm" variant="ghost" class="h-8 px-2 text-red-600 hover:bg-red-50" @click="emit('delete:selected', props.selectedMovimentacoes)">
             <Trash2 class="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -212,17 +213,17 @@ const canPaySelected = computed(() => {
     </div>
 
     <!-- Lista de Gastos Futuros (Parcelas) -->
-    <div v-if="activeTab === 'gasto futuro'" key="lista-parcelas" class="divide-y divide-gray-100 dark:divide-gray-800 border-y border-gray-100 dark:border-gray-800">
+    <div v-if="props.activeTab === 'gasto futuro'" key="lista-parcelas" class="divide-y divide-gray-100 dark:divide-gray-800 border-y border-gray-100 dark:border-gray-800">
       <div v-for="parcela in sortedParcelas" :key="'mobile-parcela-' + parcela.id" 
         class="relative flex items-center gap-3 py-2 px-2 bg-white dark:bg-gray-900 transition-all cursor-pointer"
-        :class="selectedMovimentacoes.includes(parcela.movimentacao.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''"
+        :class="props.selectedMovimentacoes.includes(parcela.movimentacao.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''"
         @click="emit('show-details', parcela)">
 
         <!-- Faixa lateral de status -->
         <div class="absolute left-0 top-1 bottom-1 w-1 rounded-r-full" :class="getStatusColorClass(parcela)"></div>
 
         <div @click.stop>
-          <Checkbox :id="`p-${parcela.id}`" :checked="selectedMovimentacoes.includes(parcela.movimentacao.id)"
+          <Checkbox :id="`p-${parcela.id}`" :checked="props.selectedMovimentacoes.includes(parcela.movimentacao.id)"
             @update:modelValue="(checked) => handleSelection(parcela.movimentacao.id, Boolean(checked))" />
         </div>
         
@@ -278,13 +279,13 @@ const canPaySelected = computed(() => {
     <div v-else key="lista-movimentacoes" class="divide-y divide-gray-100 dark:divide-gray-800 border-y border-gray-100 dark:border-gray-800">
       <div v-for="mov in sortedMovimentacoes" :key="'mobile-movimentacao-' + mov.id" 
         class="relative flex items-center gap-3 py-2 px-2 bg-white dark:bg-gray-900 transition-all cursor-pointer"
-        :class="selectedMovimentacoes.includes(mov.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''"
+        :class="props.selectedMovimentacoes.includes(mov.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''"
         @click="emit('show-details', mov)">
         
         <div class="absolute left-0 top-1 bottom-1 w-1 rounded-r-full" :class="getTipoColorClass(mov.tipo)"></div>
         
         <div @click.stop>
-          <Checkbox :id="`m-${mov.id}`" :checked="selectedMovimentacoes.includes(mov.id)"
+          <Checkbox :id="`m-${mov.id}`" :checked="props.selectedMovimentacoes.includes(mov.id)"
             @update:modelValue="(checked) => handleSelection(mov.id, Boolean(checked))" />
         </div>
         
@@ -327,7 +328,7 @@ const canPaySelected = computed(() => {
     </div>
 
     <!-- Empty State -->
-    <div v-if="(activeTab === 'gasto futuro' ? parcelas.length : movimentacoes.length) === 0" 
+    <div v-if="(props.activeTab === 'gasto futuro' ? props.parcelas.length : props.movimentacoes.length) === 0" 
       class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
       <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-4">
         <Calendar class="w-8 h-8 opacity-20" />

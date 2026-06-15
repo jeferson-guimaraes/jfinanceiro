@@ -21,10 +21,10 @@ class Md5AuthenticationTest extends TestCase
         // Precisamos usar forceFill para garantir que o MD5 seja salvo literalmente se possível,
         // ou desabilitar o cast temporariamente se ele interferir.
         $user = User::factory()->withoutTwoFactor()->create();
-        
+
         // Vamos usar DB directly para garantir que o valor seja MD5 puro no banco
         \DB::table('users')->where('id', $user->id)->update(['password' => $md5Password]);
-        
+
         $user->refresh();
         $this->assertEquals($md5Password, $user->password);
 
@@ -56,7 +56,7 @@ class Md5AuthenticationTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $response->assertRedirect(route('dashboard', absolute: false));
-        
+
         // A senha deve permanecer hasheada corretamente
         $user->refresh();
         $this->assertTrue(Hash::check($password, $user->password));

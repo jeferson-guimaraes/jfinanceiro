@@ -33,18 +33,18 @@ class StoreMovimentacaoRequest extends FormRequest
                 Rule::requiredIf($this->input('tipo') === TipoMovimentacaoEnum::GASTO_FUTURO->value),
                 'nullable',
                 'integer',
-                'min:1'
+                'min:1',
             ],
             'valor_parcelas' => [
                 Rule::requiredIf($this->input('tipo') === TipoMovimentacaoEnum::GASTO_FUTURO->value),
                 'numeric',
-                'min:0.01'
+                'min:0.01',
             ],
             'data_vencimento' => [
                 Rule::requiredIf($this->input('tipo') === TipoMovimentacaoEnum::GASTO_FUTURO->value),
                 'nullable',
                 'date',
-                'after_or_equal:data_movimentacao'
+                'after_or_equal:data_movimentacao',
             ],
         ];
     }

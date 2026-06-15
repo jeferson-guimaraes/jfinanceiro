@@ -184,6 +184,12 @@ function confirmDelete() {
   }
 }
 
+function handlePagamentoSucesso() {
+  selectedMovimentacoes.value = [];
+  tabelaKey.value++; // Força a re-renderização total dos componentes de lista
+}
+
+const tabelaKey = ref(0);
 const selectedMovimentacoes = ref<number[]>([]);
 const isModalExclusaoMassaAberto = ref(false);
 
@@ -489,17 +495,18 @@ const getPageUrl = (page: number | string) => {
 
             <!-- Tabelas de Movimentações/Parcelas -->
             <TabelaMovimentacoes v-if="!isMediumScreen"
-              :key="'desktop-' + abaAtiva"
+              :key="'desktop-' + abaAtiva + '-' + tabelaKey"
               :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes.data"
               :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas.data : []" :active-tab="abaAtiva"
               :filters="currentFilters"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
               @show-details="handleShowDetails" v-model:selectedMovimentacoes="selectedMovimentacoes" />
             <MovimentacoesMobileList v-else-if="isMediumScreen"
-              :key="'mobile-' + abaAtiva"
+              :key="'mobile-' + abaAtiva + '-' + tabelaKey"
               :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes.data"
               :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas.data : []" :active-tab="abaAtiva"
               :filters="currentFilters"
+              v-model:selectedMovimentacoes="selectedMovimentacoes"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
               @show-details="handleShowDetails" />
 
@@ -587,7 +594,11 @@ const getPageUrl = (page: number | string) => {
       @cancel="isModalExclusaoMassaAberto = false" />
 
     <PagamentoParcelaModal v-model:open="isModalPagamentoAberto" :movimentacao="movimentacaoParaPagar" />
-    <PagamentoMassaModal v-model:open="isModalPagamentoMassaAberto" :movimentacoes="movimentacoesParaPagarMassa" />
+    <PagamentoMassaModal 
+      v-model:open="isModalPagamentoMassaAberto" 
+      :movimentacoes="movimentacoesParaPagarMassa" 
+      @success="handlePagamentoSucesso" 
+    />
 
     <!-- Floating Action Button para Telas Pequenas -->
     <div v-if="isMediumScreen" class="fixed bottom-4 right-4 z-50">
