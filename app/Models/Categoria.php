@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Enums\TipoMovimentacaoEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -17,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Movimentacao> $movimentacoes
  * @property-read int|null $movimentacoes_count
+ *
  * @method static \Database\Factories\CategoriaFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Categoria newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Categoria newQuery()

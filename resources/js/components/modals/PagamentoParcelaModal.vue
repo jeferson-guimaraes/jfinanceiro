@@ -22,7 +22,7 @@ import { computed, watch, ref } from 'vue';
 import { type Movimentacao } from '@/types';
 import { formataDinheiroBRL } from '@/utils/formataDinheiro';
 import { formatBRL, handleValorKeydown } from '@/utils/masks';
-import { Info, Calendar, DollarSign, Tag, CreditCard, Layers } from 'lucide-vue-next';
+import { Calendar, DollarSign, Tag, CreditCard, Layers } from 'lucide-vue-next';
 import movimentacoes from '@/routes/movimentacoes';
 import InfoTooltip from '@/components/InfoTooltip.vue';
 

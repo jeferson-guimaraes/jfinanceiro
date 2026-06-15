@@ -13,7 +13,7 @@ class DashboardService
     /**
      * Obtém todos os dados necessários para o dashboard de um usuário.
      *
-     * @param User $user Usuário autenticado.
+     * @param  User  $user  Usuário autenticado.
      * @return array{stats: array, recentTransactions: array, categoriesSummary: array}
      */
     public function getDashboardData(User $user): array
@@ -34,8 +34,8 @@ class DashboardService
     /**
      * Calcula as estatísticas financeiras do mês.
      *
-     * @param User $user Usuário autenticado.
-     * @param Carbon $now Data atual para referência do mês/ano.
+     * @param  User  $user  Usuário autenticado.
+     * @param  Carbon  $now  Data atual para referência do mês/ano.
      * @return array Lista de estatísticas formatada para o frontend.
      */
     private function getStats(User $user, Carbon $now): array
@@ -73,15 +73,15 @@ class DashboardService
             ['title' => 'Saldo Atual', 'value' => $saldo, 'icon' => 'wallet', 'color' => $saldo >= 0 ? 'text-emerald-600' : 'text-rose-600', 'description' => 'Saldo do mês'],
             ['title' => 'Ganhos (Mês)', 'value' => $ganhosMes, 'icon' => 'trendingUp', 'color' => 'text-emerald-600', 'description' => 'Total recebido'],
             ['title' => 'Gastos (Mês)', 'value' => $gastosMes, 'icon' => 'trendingDown', 'color' => 'text-rose-600', 'description' => 'Total gasto'],
-            ['title' => 'A Pagar (Mês Atual)', 'value' => $aPagarMesAtual, 'icon' => 'calendar', 'color' => 'text-rose-600', 'description' => 'Vencimentos de ' . $now->translatedFormat('F')],
-            ['title' => 'A Pagar (Próximo Mês)', 'value' => $aPagarProximoMes, 'icon' => 'calendar', 'color' => 'text-rose-600', 'description' => 'Vencimentos de ' . $proximoMes->translatedFormat('F')],
+            ['title' => 'A Pagar (Mês Atual)', 'value' => $aPagarMesAtual, 'icon' => 'calendar', 'color' => 'text-rose-600', 'description' => 'Vencimentos de '.$now->translatedFormat('F')],
+            ['title' => 'A Pagar (Próximo Mês)', 'value' => $aPagarProximoMes, 'icon' => 'calendar', 'color' => 'text-rose-600', 'description' => 'Vencimentos de '.$proximoMes->translatedFormat('F')],
         ];
     }
 
     /**
      * Busca as transações mais recentes.
      *
-     * @param User $user Usuário autenticado.
+     * @param  User  $user  Usuário autenticado.
      * @return array Lista de movimentações formatada para o frontend.
      */
     private function getRecentTransactions(User $user): array
@@ -94,6 +94,7 @@ class DashboardService
             ->get()
             ->map(function ($m) {
                 $isGanho = $m->tipo === TipoMovimentacaoEnum::GANHO;
+
                 return [
                     'id' => $m->id,
                     'description' => $m->descricao,
@@ -101,7 +102,7 @@ class DashboardService
                     'value' => (float) $m->valor,
                     'type' => $isGanho ? 'GANHO' : 'GASTO',
                     'date' => Carbon::parse($m->data)->format('d/m/Y'),
-                    'status' => $isGanho ? 'Recebido' : 'Pago'
+                    'status' => $isGanho ? 'Recebido' : 'Pago',
                 ];
             })
             ->toArray();
@@ -110,8 +111,8 @@ class DashboardService
     /**
      * Gera um resumo de gastos por categoria no mês atual.
      *
-     * @param User $user Usuário autenticado.
-     * @param Carbon $now Data atual para referência do mês/ano.
+     * @param  User  $user  Usuário autenticado.
+     * @param  Carbon  $now  Data atual para referência do mês/ano.
      * @return array Resumo de gastos por categoria com porcentagem.
      */
     private function getCategoriesSummary(User $user, Carbon $now): array
@@ -130,11 +131,12 @@ class DashboardService
             ->get()
             ->map(function ($c) use ($gastosTotaisMes) {
                 $total = (float) $c->total;
+
                 return [
                     'name' => $c->categoria->nome,
                     'value' => $total,
                     'percentage' => $gastosTotaisMes > 0 ? round(($total / $gastosTotaisMes) * 100) : 0,
-                    'color' => 'bg-slate-500'
+                    'color' => 'bg-slate-500',
                 ];
             })
             ->toArray();

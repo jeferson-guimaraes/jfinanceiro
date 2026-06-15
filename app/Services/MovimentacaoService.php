@@ -14,498 +14,501 @@ use Illuminate\Support\Facades\Log;
 
 class MovimentacaoService
 {
-	/**
-	 * Obtém os dados necessários para a criação de uma movimentação.
-	 * Inclui categorias de ganhos, gastos e gastos futuros.
-	 *
-	 * @return array{categoriasGanhos: \Illuminate\Support\Collection, categoriasGastos: \Illuminate\Support\Collection, categoriasGastosFuturos: \Illuminate\Support\Collection}
-	 */
-	public function getCreateMovimentacaoData(): array
-	{
-		$user = Auth::user();
+    /**
+     * Obtém os dados necessários para a criação de uma movimentação.
+     * Inclui categorias de ganhos, gastos e gastos futuros.
+     *
+     * @return array{categoriasGanhos: \Illuminate\Support\Collection, categoriasGastos: \Illuminate\Support\Collection, categoriasGastosFuturos: \Illuminate\Support\Collection}
+     */
+    public function getCreateMovimentacaoData(): array
+    {
+        $user = Auth::user();
 
-		$categorias = Categoria::where(function ($query) use ($user) {
-			$query->where('user_id', $user->id)
-				->orWhereNull('user_id');
-		})
-			->orderBy('nome')
-			->get();
+        $categorias = Categoria::where(function ($query) use ($user) {
+            $query->where('user_id', $user->id)
+                ->orWhereNull('user_id');
+        })
+            ->orderBy('nome')
+            ->get();
 
-		return [
-			'categoriasGanhos'        => $categorias->where('tipo', TipoMovimentacaoEnum::GANHO->value)->values(),
-			'categoriasGastos'        => $categorias->where('tipo', TipoMovimentacaoEnum::GASTO->value)->values(),
-			'categoriasGastosFuturos' => $categorias->where('tipo', TipoMovimentacaoEnum::GASTO_FUTURO->value)->values(),
-		];
-	}
+        return [
+            'categoriasGanhos' => $categorias->where('tipo', TipoMovimentacaoEnum::GANHO->value)->values(),
+            'categoriasGastos' => $categorias->where('tipo', TipoMovimentacaoEnum::GASTO->value)->values(),
+            'categoriasGastosFuturos' => $categorias->where('tipo', TipoMovimentacaoEnum::GASTO_FUTURO->value)->values(),
+        ];
+    }
 
-	/**
-	 * Busca movimentações (ganhos e gastos) e parcelas futuras com base em parâmetros da requisição.
-	 *
-	 * @return array{movimentacoes: LengthAwarePaginator|null, parcelasFuturas: LengthAwarePaginator|null, totais: array, filters: array}
-	 */
-	public function getMovimentacoes(): array
-	{
-		$userId = Auth::id();
-		$tipo = request('tipo') ?? 'todos';
-		$perPage = (int) request('per_page', 50);
+    /**
+     * Busca movimentações (ganhos e gastos) e parcelas futuras com base em parâmetros da requisição.
+     *
+     * @return array{movimentacoes: LengthAwarePaginator|null, parcelasFuturas: LengthAwarePaginator|null, totais: array, filters: array}
+     */
+    public function getMovimentacoes(): array
+    {
+        $userId = Auth::id();
+        $tipo = request('tipo') ?? 'todos';
+        $perPage = (int) request('per_page', 50);
 
-		$ganhosGastos = null;
-		$parcelasFuturas = null;
-		$totais = [
-			'total' => 0,
-			'ganhos' => 0,
-			'despesas' => 0,
-			'pago' => 0,
-			'pendente' => 0,
-		];
+        $ganhosGastos = null;
+        $parcelasFuturas = null;
+        $totais = [
+            'total' => 0,
+            'ganhos' => 0,
+            'despesas' => 0,
+            'pago' => 0,
+            'pendente' => 0,
+        ];
 
-		switch ($tipo) {
-			case 'ganho':
-			case 'gasto':
-				$ganhosGastos = $this->getGanhosGastosMovimentacoes($userId, $tipo);
-				$parcelasFuturas = Parcela::whereRaw('1 = 0')->paginate($perPage);
-				$totais['total'] = (float) $this->getGanhosGastosQuery($userId, $tipo)->sum('valor');
-				break;
-			case 'gasto futuro':
-				$parcelasFuturas = $this->getParcelasFuturasMovimentacoes($userId);
-				$ganhosGastos = Movimentacao::whereRaw('1 = 0')->paginate($perPage);
-				$queryParcelas = $this->getParcelasFuturasQuery($userId);
-				$totais['total'] = (float) (clone $queryParcelas)->sum('valor');
-				$totais['pago'] = (float) (clone $queryParcelas)->where('pago', true)->sum('valor');
-				$totais['pendente'] = $totais['total'] - $totais['pago'];
-				break;
-			case 'todos':
-			default:
-				$ganhosGastos = $this->getGanhosGastosMovimentacoes($userId);
-				$parcelasFuturas = Parcela::whereRaw('1 = 0')->paginate($perPage);
-				$queryGanhosGastos = $this->getGanhosGastosQuery($userId);
-				$totais['ganhos'] = (float) (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GANHO->value)->sum('valor');
-				$totais['despesas'] = (float) (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GASTO->value)->sum('valor');
-				$totais['total'] = $totais['ganhos'] - $totais['despesas'];
-				break;
-		}
+        switch ($tipo) {
+            case 'ganho':
+            case 'gasto':
+                $ganhosGastos = $this->getGanhosGastosMovimentacoes($userId, $tipo);
+                $parcelasFuturas = Parcela::whereRaw('1 = 0')->paginate($perPage);
+                $totais['total'] = (float) $this->getGanhosGastosQuery($userId, $tipo)->sum('valor');
+                break;
+            case 'gasto futuro':
+                $parcelasFuturas = $this->getParcelasFuturasMovimentacoes($userId);
+                $ganhosGastos = Movimentacao::whereRaw('1 = 0')->paginate($perPage);
+                $queryParcelas = $this->getParcelasFuturasQuery($userId);
+                $totais['total'] = (float) (clone $queryParcelas)->sum('valor');
+                $totais['pago'] = (float) (clone $queryParcelas)->where('pago', true)->sum('valor');
+                $totais['pendente'] = $totais['total'] - $totais['pago'];
+                break;
+            case 'todos':
+            default:
+                $ganhosGastos = $this->getGanhosGastosMovimentacoes($userId);
+                $parcelasFuturas = Parcela::whereRaw('1 = 0')->paginate($perPage);
+                $queryGanhosGastos = $this->getGanhosGastosQuery($userId);
+                $totais['ganhos'] = (float) (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GANHO->value)->sum('valor');
+                $totais['despesas'] = (float) (clone $queryGanhosGastos)->where('tipo', TipoMovimentacaoEnum::GASTO->value)->sum('valor');
+                $totais['total'] = $totais['ganhos'] - $totais['despesas'];
+                break;
+        }
 
-		return [
-			'movimentacoes' => $ganhosGastos,
-			'parcelasFuturas' => $parcelasFuturas,
-			'totais' => $totais,
-			'filters' => [
-				'busca' => request('busca'),
-				'data_inicio' => request('data_inicio'),
-				'data_fim' => request('data_fim'),
-				'mes' => request('mes'),
-				'ano' => request('ano'),
-				'per_page' => (int) request('per_page', 50),
-				'tipo' => $tipo,
-			]
-		];
-	}
+        return [
+            'movimentacoes' => $ganhosGastos,
+            'parcelasFuturas' => $parcelasFuturas,
+            'totais' => $totais,
+            'filters' => [
+                'busca' => request('busca'),
+                'data_inicio' => request('data_inicio'),
+                'data_fim' => request('data_fim'),
+                'mes' => request('mes'),
+                'ano' => request('ano'),
+                'per_page' => (int) request('per_page', 50),
+                'tipo' => $tipo,
+            ],
+        ];
+    }
 
-	/**
-	 * Retorna a query base para ganhos e gastos.
-	 *
-	 * @param int $userId ID do usuário.
-	 * @param string|null $tipo Tipo de movimentação (ganho, gasto ou null para ambos).
-	 * @return Builder|Movimentacao
-	 */
-	private function getGanhosGastosQuery(int $userId, ?string $tipo = null)
-	{
-		$dataInicioReq = request('data_inicio');
-		$dataFimReq = request('data_fim');
-		$mes = request('mes');
-		$ano = request('ano');
+    /**
+     * Retorna a query base para ganhos e gastos.
+     *
+     * @param  int  $userId  ID do usuário.
+     * @param  string|null  $tipo  Tipo de movimentação (ganho, gasto ou null para ambos).
+     * @return Builder|Movimentacao
+     */
+    private function getGanhosGastosQuery(int $userId, ?string $tipo = null)
+    {
+        $dataInicioReq = request('data_inicio');
+        $dataFimReq = request('data_fim');
+        $mes = request('mes');
+        $ano = request('ano');
 
-		$query = Movimentacao::doUsuario($userId);
+        $query = Movimentacao::doUsuario($userId);
 
-		if ($tipo === TipoMovimentacaoEnum::GANHO->value) {
-			$query->ganhos();
-		} elseif ($tipo === TipoMovimentacaoEnum::GASTO->value) {
-			$query->gastos();
-		} else {
-			$query->whereIn('tipo', [
-				TipoMovimentacaoEnum::GANHO,
-				TipoMovimentacaoEnum::GASTO
-			]);
-		}
+        if ($tipo === TipoMovimentacaoEnum::GANHO->value) {
+            $query->ganhos();
+        } elseif ($tipo === TipoMovimentacaoEnum::GASTO->value) {
+            $query->gastos();
+        } else {
+            $query->whereIn('tipo', [
+                TipoMovimentacaoEnum::GANHO,
+                TipoMovimentacaoEnum::GASTO,
+            ]);
+        }
 
-		if ($dataInicioReq || $dataFimReq) {
-			$dataInicio = $dataInicioReq ? Carbon::parse($dataInicioReq) : null;
-			$dataFim = $dataFimReq ? Carbon::parse($dataFimReq) : null;
-			if ($dataInicio) $query->whereDate('data', '>=', $dataInicio);
-			if ($dataFim) $query->whereDate('data', '<=', $dataFim);
-		} else {
-			$mes = $mes ?: Carbon::now()->month;
-			$ano = $ano ?: Carbon::now()->year;
-			$query->doMes($mes, $ano);
-		}
+        if ($dataInicioReq || $dataFimReq) {
+            $dataInicio = $dataInicioReq ? Carbon::parse($dataInicioReq) : null;
+            $dataFim = $dataFimReq ? Carbon::parse($dataFimReq) : null;
+            if ($dataInicio) {
+                $query->whereDate('data', '>=', $dataInicio);
+            }
+            if ($dataFim) {
+                $query->whereDate('data', '<=', $dataFim);
+            }
+        } else {
+            $mes = $mes ?: Carbon::now()->month;
+            $ano = $ano ?: Carbon::now()->year;
+            $query->doMes($mes, $ano);
+        }
 
-		$busca = request('busca');
-		if ($busca) $query->where('descricao', 'like', '%' . $busca . '%');
+        $busca = request('busca');
+        if ($busca) {
+            $query->where('descricao', 'like', '%'.$busca.'%');
+        }
 
-		return $query;
-	}
+        return $query;
+    }
 
-	/**
-	 * Retorna a query base para parcelas futuras.
-	 *
-	 * @param int $userId ID do usuário.
-	 * @return Builder|Parcela
-	 */
-	private function getParcelasFuturasQuery(int $userId)
-	{
-		$mes = request('mes') ?: Carbon::now()->month;
-		$ano = request('ano') ?: Carbon::now()->year;
-		$busca = request('busca');
+    /**
+     * Retorna a query base para parcelas futuras.
+     *
+     * @param  int  $userId  ID do usuário.
+     * @return Builder|Parcela
+     */
+    private function getParcelasFuturasQuery(int $userId)
+    {
+        $mes = request('mes') ?: Carbon::now()->month;
+        $ano = request('ano') ?: Carbon::now()->year;
+        $busca = request('busca');
 
-		$inicioMes = Carbon::create($ano, $mes, 1)->startOfMonth();
-		$fimMes = $inicioMes->copy()->endOfMonth();
+        $inicioMes = Carbon::create($ano, $mes, 1)->startOfMonth();
+        $fimMes = $inicioMes->copy()->endOfMonth();
 
-		$query = Parcela::query()
-			->whereBetween('data_vencimento', [$inicioMes, $fimMes])
-			->whereHas('movimentacao', fn($q) => $q->doUsuario($userId));
+        $query = Parcela::query()
+            ->whereBetween('data_vencimento', [$inicioMes, $fimMes])
+            ->whereHas('movimentacao', fn ($q) => $q->doUsuario($userId));
 
-		if ($busca) {
-			$query->whereHas('movimentacao', fn($q) => $q->where('descricao', 'like', '%' . $busca . '%'));
-		}
+        if ($busca) {
+            $query->whereHas('movimentacao', fn ($q) => $q->where('descricao', 'like', '%'.$busca.'%'));
+        }
 
-		return $query;
-	}
+        return $query;
+    }
 
-	/**
-	 * Obtém as movimentações de ganhos e gastos filtradas por data.
-	 *
-	 * @param int $userId O ID do usuário.
-	 * @param string|null $tipo O tipo de movimentação.
-	 * @return LengthAwarePaginator Retorna um paginador de movimentações.
-	 */
-	private function getGanhosGastosMovimentacoes(int $userId, ?string $tipo = null): LengthAwarePaginator
-	{
-		$perPage = request('per_page', 50);
+    /**
+     * Obtém as movimentações de ganhos e gastos filtradas por data.
+     *
+     * @param  int  $userId  O ID do usuário.
+     * @param  string|null  $tipo  O tipo de movimentação.
+     * @return LengthAwarePaginator Retorna um paginador de movimentações.
+     */
+    private function getGanhosGastosMovimentacoes(int $userId, ?string $tipo = null): LengthAwarePaginator
+    {
+        $perPage = request('per_page', 50);
 
-		return $this->getGanhosGastosQuery($userId, $tipo)
-			->select(['id', 'categoria_id', 'data', 'descricao', 'valor', 'tipo', 'parcelas', 'user_id'])
-			->with('categoria:id,nome')
-			->orderByDesc('data')
-			->paginate($perPage)
-			->withQueryString();
-	}
+        return $this->getGanhosGastosQuery($userId, $tipo)
+            ->select(['id', 'categoria_id', 'data', 'descricao', 'valor', 'tipo', 'parcelas', 'user_id'])
+            ->with('categoria:id,nome')
+            ->orderByDesc('data')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
 
-	/**
-	 * Obtém as parcelas futuras para um mês e ano específicos.
-	 *
-	 * @param int $userId O ID do usuário.
-	 * @return LengthAwarePaginator Retorna um paginador de parcelas futuras.
-	 */
-	private function getParcelasFuturasMovimentacoes(int $userId): LengthAwarePaginator
-	{
-		$perPage = request('per_page', 50);
+    /**
+     * Obtém as parcelas futuras para um mês e ano específicos.
+     *
+     * @param  int  $userId  O ID do usuário.
+     * @return LengthAwarePaginator Retorna um paginador de parcelas futuras.
+     */
+    private function getParcelasFuturasMovimentacoes(int $userId): LengthAwarePaginator
+    {
+        $perPage = request('per_page', 50);
 
-		return $this->getParcelasFuturasQuery($userId)
-			->select(['id', 'movimentacao_id', 'numero', 'valor', 'data_vencimento', 'pago'])
-			->with([
-				'movimentacao' => function ($q) {
-					$q->select(['id', 'categoria_id', 'data', 'descricao', 'valor', 'tipo', 'parcelas', 'user_id'])
-						->with('categoria:id,nome')
-						->withCount(['parcelas as parcelas_pagas' => fn($q) => $q->where('pago', true)]);
-				}
-			])
-			->orderBy('data_vencimento')
-			->paginate($perPage)
-			->withQueryString();
-	}
+        return $this->getParcelasFuturasQuery($userId)
+            ->select(['id', 'movimentacao_id', 'numero', 'valor', 'data_vencimento', 'pago'])
+            ->with([
+                'movimentacao' => function ($q) {
+                    $q->select(['id', 'categoria_id', 'data', 'descricao', 'valor', 'tipo', 'parcelas', 'user_id'])
+                        ->with('categoria:id,nome')
+                        ->withCount(['parcelas as parcelas_pagas' => fn ($q) => $q->where('pago', true)]);
+                },
+            ])
+            ->orderBy('data_vencimento')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
 
+    /**
+     * Armazena uma nova movimentação, incluindo a criação de parcelas se for gasto futuro.
+     *
+     * @param  array  $validated  Dados validados da requisição.
+     */
+    public function storeMovimentacao(array $validated): void
+    {
+        $userId = Auth::id();
 
-	/**
-	 * Armazena uma nova movimentação, incluindo a criação de parcelas se for gasto futuro.
-	 *
-	 * @param array $validated Dados validados da requisição.
-	 * @return void
-	 */
-	public function storeMovimentacao(array $validated): void
-	{
-		$userId = Auth::id();
+        $movimentacaoData = $this->prepareMovimentacaoDataForStore($validated);
 
-		$movimentacaoData = $this->prepareMovimentacaoDataForStore($validated);
+        $movimentacao = Movimentacao::create(array_merge($movimentacaoData, ['user_id' => $userId]));
 
-		$movimentacao = Movimentacao::create(array_merge($movimentacaoData, ['user_id' => $userId]));
+        if ($movimentacao->tipo->value === TipoMovimentacaoEnum::GASTO_FUTURO->value) {
+            $this->createParcelasForMovimentacao($movimentacao, $validated);
+        }
+    }
 
-		if ($movimentacao->tipo->value === TipoMovimentacaoEnum::GASTO_FUTURO->value) {
-			$this->createParcelasForMovimentacao($movimentacao, $validated);
-		}
-	}
+    /**
+     * Prepara os dados para a criação de uma movimentação.
+     * Mapeia 'data_movimentacao' para 'data' e remove campos extras.
+     *
+     * @param  array  $validated  Dados validados.
+     * @return array Dados preparados para a criação da movimentação.
+     */
+    private function prepareMovimentacaoDataForStore(array $validated): array
+    {
+        $validated['data'] = $validated['data_movimentacao'];
+        unset($validated['data_movimentacao']);
+        $movimentacaoFields = ['categoria_id', 'data', 'descricao', 'valor', 'tipo', 'parcelas'];
 
-	/**
-	 * Prepara os dados para a criação de uma movimentação.
-	 * Mapeia 'data_movimentacao' para 'data' e remove campos extras.
-	 *
-	 * @param array $validated Dados validados.
-	 * @return array Dados preparados para a criação da movimentação.
-	 */
-	private function prepareMovimentacaoDataForStore(array $validated): array
-	{
-		$validated['data'] = $validated['data_movimentacao'];
-		unset($validated['data_movimentacao']);
-		$movimentacaoFields = ['categoria_id', 'data', 'descricao', 'valor', 'tipo', 'parcelas'];
+        return array_intersect_key($validated, array_flip($movimentacaoFields));
+    }
 
-		return array_intersect_key($validated, array_flip($movimentacaoFields));
-	}
+    /**
+     * Cria as parcelas para uma movimentação de gasto futuro.
+     *
+     * @param  Movimentacao  $movimentacao  A movimentação para a qual criar as parcelas.
+     * @param  array  $validated  Dados validados contendo informações das parcelas.
+     */
+    private function createParcelasForMovimentacao(Movimentacao $movimentacao, array $validated): void
+    {
+        // Garante que os dados necessários para parcelas estejam presentes
+        $numParcelas = $validated['parcelas'] ?? 0;
+        $valorParcela = $validated['valor_parcelas'] ?? 0;
+        $dataVencimentoInicial = $validated['data_vencimento'] ?? null;
 
-	/**
-	 * Cria as parcelas para uma movimentação de gasto futuro.
-	 *
-	 * @param Movimentacao $movimentacao A movimentação para a qual criar as parcelas.
-	 * @param array $validated Dados validados contendo informações das parcelas.
-	 * @return void
-	 */
-	private function createParcelasForMovimentacao(Movimentacao $movimentacao, array $validated): void
-	{
-		// Garante que os dados necessários para parcelas estejam presentes
-		$numParcelas = $validated['parcelas'] ?? 0;
-		$valorParcela = $validated['valor_parcelas'] ?? 0;
-		$dataVencimentoInicial = $validated['data_vencimento'] ?? null;
+        if ($numParcelas <= 0 || $valorParcela <= 0 || ! $dataVencimentoInicial) {
+            // Logar ou lançar um erro se os dados das parcelas forem inválidos
+            Log::warning('Dados insuficientes para criar parcelas para a movimentação ID: '.$movimentacao->id);
 
-		if ($numParcelas <= 0 || $valorParcela <= 0 || !$dataVencimentoInicial) {
-			// Logar ou lançar um erro se os dados das parcelas forem inválidos
-			Log::warning('Dados insuficientes para criar parcelas para a movimentação ID: ' . $movimentacao->id);
-			// Poderia lançar uma exceção aqui se for um erro crítico
-			return;
-		}
+            // Poderia lançar uma exceção aqui se for um erro crítico
+            return;
+        }
 
-		$dataVencimento = Carbon::parse($dataVencimentoInicial);
-		for ($parcelaNum = 1; $parcelaNum <= $numParcelas; $parcelaNum++) {
-			Parcela::create([
-				'movimentacao_id' => $movimentacao->id,
-				'numero' => $parcelaNum,
-				'valor' => $valorParcela,
-				'data_vencimento' => $dataVencimento->format('Y-m-d'), // Formato YYYY-MM-DD
-				// Outros campos da parcela, se houver
-			]);
+        $dataVencimento = Carbon::parse($dataVencimentoInicial);
+        for ($parcelaNum = 1; $parcelaNum <= $numParcelas; $parcelaNum++) {
+            Parcela::create([
+                'movimentacao_id' => $movimentacao->id,
+                'numero' => $parcelaNum,
+                'valor' => $valorParcela,
+                'data_vencimento' => $dataVencimento->format('Y-m-d'), // Formato YYYY-MM-DD
+                // Outros campos da parcela, se houver
+            ]);
 
-			// Calcula a data de vencimento da próxima parcela (assumindo mensalmente)
-			$dataVencimento->addMonth();
-		}
-	}
+            // Calcula a data de vencimento da próxima parcela (assumindo mensalmente)
+            $dataVencimento->addMonth();
+        }
+    }
 
-	/**
-	 * Atualiza uma movimentação existente.
-	 *
-	 * @param Movimentacao $movimentacao A movimentação a ser atualizada.
-	 * @param array $validated Dados validados.
-	 * @return void
-	 */
-	public function updateMovimentacao(Movimentacao $movimentacao, array $validated): void
-	{
-		\Illuminate\Support\Facades\DB::transaction(function () use ($movimentacao, $validated) {
-			$movimentacaoData = $this->prepareMovimentacaoDataForUpdate($validated);
-			$movimentacao->update($movimentacaoData);
+    /**
+     * Atualiza uma movimentação existente.
+     *
+     * @param  Movimentacao  $movimentacao  A movimentação a ser atualizada.
+     * @param  array  $validated  Dados validados.
+     */
+    public function updateMovimentacao(Movimentacao $movimentacao, array $validated): void
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($movimentacao, $validated) {
+            $movimentacaoData = $this->prepareMovimentacaoDataForUpdate($validated);
+            $movimentacao->update($movimentacaoData);
 
-			if ($movimentacao->tipo->value === TipoMovimentacaoEnum::GASTO_FUTURO->value) {
-				// 1. Ajuste de Vencimento Inicial
-				$primeiraParcela = $movimentacao->parcelas()->orderBy('numero')->first();
-				if (!empty($validated['data_vencimento']) && $primeiraParcela && $validated['data_vencimento'] !== $primeiraParcela->data_vencimento->format('Y-m-d')) {
-					$novaData = Carbon::parse($validated['data_vencimento']);
-					$parcelasExistentes = $movimentacao->parcelas()->orderBy('numero')->get();
-					foreach ($parcelasExistentes as $parcela) {
-						$parcela->update([
-							'data_vencimento' => $novaData->format('Y-m-d')
-						]);
-						$novaData->addMonth();
-					}
-				}
+            if ($movimentacao->tipo->value === TipoMovimentacaoEnum::GASTO_FUTURO->value) {
+                // 1. Ajuste de Vencimento Inicial
+                $primeiraParcela = $movimentacao->parcelas()->orderBy('numero')->first();
+                if (! empty($validated['data_vencimento']) && $primeiraParcela && $validated['data_vencimento'] !== $primeiraParcela->data_vencimento->format('Y-m-d')) {
+                    $novaData = Carbon::parse($validated['data_vencimento']);
+                    $parcelasExistentes = $movimentacao->parcelas()->orderBy('numero')->get();
+                    foreach ($parcelasExistentes as $parcela) {
+                        $parcela->update([
+                            'data_vencimento' => $novaData->format('Y-m-d'),
+                        ]);
+                        $novaData->addMonth();
+                    }
+                }
 
-				// 2. Ajuste de Quantidade de Parcelas
-				if (isset($validated['parcelas'])) {
-					$novaQtd = (int) $validated['parcelas'];
-					$qtdAtual = $movimentacao->parcelas()->count();
+                // 2. Ajuste de Quantidade de Parcelas
+                if (isset($validated['parcelas'])) {
+                    $novaQtd = (int) $validated['parcelas'];
+                    $qtdAtual = $movimentacao->parcelas()->count();
 
-					if ($novaQtd > $qtdAtual) {
-						// Criar novas parcelas
-						$valorMedio = $movimentacao->parcelas()->avg('valor') ?: 0;
-						$ultimaParcela = $movimentacao->parcelas()->orderByDesc('numero')->first();
-						$dataVencimento = $ultimaParcela
-							? Carbon::parse($ultimaParcela->data_vencimento)->addMonth()
-							: (!empty($validated['data_vencimento']) ? Carbon::parse($validated['data_vencimento']) : Carbon::now());
+                    if ($novaQtd > $qtdAtual) {
+                        // Criar novas parcelas
+                        $valorMedio = $qtdAtual > 0
+                            ? ($movimentacao->parcelas()->avg('valor') ?: 0)
+                            : (($validated['valor'] ?? $movimentacao->valor) / $novaQtd);
 
-						for ($num = $qtdAtual + 1; $num <= $novaQtd; $num++) {
-							Parcela::create([
-								'movimentacao_id' => $movimentacao->id,
-								'numero' => $num,
-								'valor' => $valorMedio,
-								'data_vencimento' => $dataVencimento->format('Y-m-d')
-							]);
-							$dataVencimento->addMonth();
-						}
-					} elseif ($novaQtd < $qtdAtual) {
-						// Deletar as parcelas com número maior do que novaQtd
-						$movimentacao->parcelas()->where('numero', '>', $novaQtd)->delete();
-					}
-				}
+                        $ultimaParcela = $movimentacao->parcelas()->orderByDesc('numero')->first();
+                        $dataVencimento = $ultimaParcela
+                            ? Carbon::parse($ultimaParcela->data_vencimento)->addMonth()
+                            : (! empty($validated['data_vencimento']) ? Carbon::parse($validated['data_vencimento']) : Carbon::now());
 
-				// 3. Edição Individual das parcelas enviadas
-				if (!empty($validated['parcelas_editadas'])) {
-					foreach ($validated['parcelas_editadas'] as $parcelaEditada) {
-						$parcela = Parcela::find($parcelaEditada['id']);
-						if ($parcela && $parcela->movimentacao_id === $movimentacao->id) {
-							$parcela->update([
-								'valor' => $parcelaEditada['valor'],
-								'data_vencimento' => Carbon::parse($parcelaEditada['data_vencimento'])->format('Y-m-d'),
-							]);
-						}
-					}
-				}
+                        for ($num = $qtdAtual + 1; $num <= $novaQtd; $num++) {
+                            Parcela::create([
+                                'movimentacao_id' => $movimentacao->id,
+                                'numero' => $num,
+                                'valor' => $valorMedio,
+                                'data_vencimento' => $dataVencimento->format('Y-m-d'),
+                            ]);
+                            $dataVencimento->addMonth();
+                        }
+                    } elseif ($novaQtd < $qtdAtual) {
+                        // Deletar as parcelas com número maior do que novaQtd
+                        $movimentacao->parcelas()->where('numero', '>', $novaQtd)->delete();
+                    }
+                }
 
-				// 4. Recalcular Valor Total da movimentação e o número de parcelas
-				$somaValores = $movimentacao->parcelas()->sum('valor');
-				$totalParcelas = $movimentacao->parcelas()->count();
-				$movimentacao->update([
-					'valor' => $somaValores,
-					'parcelas' => $totalParcelas,
-				]);
-			} else {
-				// Se mudou de gasto futuro para outro tipo, deleta todas as parcelas
-				$movimentacao->parcelas()->delete();
-				$movimentacao->update([
-					'parcelas' => 1
-				]);
-			}
-		});
-	}
+                // 3. Edição Individual das parcelas enviadas
+                if (! empty($validated['parcelas_editadas'])) {
+                    foreach ($validated['parcelas_editadas'] as $parcelaEditada) {
+                        $parcela = Parcela::find($parcelaEditada['id']);
+                        if ($parcela && $parcela->movimentacao_id === $movimentacao->id) {
+                            $parcela->update([
+                                'valor' => $parcelaEditada['valor'],
+                                'data_vencimento' => Carbon::parse($parcelaEditada['data_vencimento'])->format('Y-m-d'),
+                            ]);
+                        }
+                    }
+                }
 
-	/**
-	 * Prepara os dados para a atualização de uma movimentação.
-	 * Mapeia 'data_movimentacao' para 'data'.
-	 *
-	 * @param array $validated Dados validados.
-	 * @return array Dados preparados para atualização.
-	 */
-	private function prepareMovimentacaoDataForUpdate(array $validated): array
-	{
-		$validated['data'] = $validated['data_movimentacao'];
-		unset($validated['data_movimentacao']);
-		// Retorna apenas os campos que podem ser atualizados, para evitar mass assignment issues
-		$movimentacaoFields = ['categoria_id', 'descricao', 'valor', 'data', 'tipo', 'conta_id', 'parcelas']; // Ajuste conforme os campos do seu Model Movimentacao
-		return array_intersect_key($validated, array_flip($movimentacaoFields));
-	}
+                // 4. Recalcular Valor Total da movimentação e o número de parcelas
+                $somaValores = $movimentacao->parcelas()->sum('valor');
+                $totalParcelas = $movimentacao->parcelas()->count();
+                $movimentacao->update([
+                    'valor' => $somaValores,
+                    'parcelas' => $totalParcelas,
+                ]);
+            } else {
+                // Se mudou de gasto futuro para outro tipo, deleta todas as parcelas
+                $movimentacao->parcelas()->delete();
+                $movimentacao->update([
+                    'parcelas' => 1,
+                ]);
+            }
+        });
+    }
 
-	/**
-	 * Deleta uma movimentação.
-	 *
-	 * @param Movimentacao $movimentacao A movimentação a ser deletada.
-	 * @return void
-	 */
-	public function destroyMovimentacao(Movimentacao $movimentacao): void
-	{
-		$movimentacao->delete();
-	}
+    /**
+     * Prepara os dados para a atualização de uma movimentação.
+     * Mapeia 'data_movimentacao' para 'data'.
+     *
+     * @param  array  $validated  Dados validados.
+     * @return array Dados preparados para atualização.
+     */
+    private function prepareMovimentacaoDataForUpdate(array $validated): array
+    {
+        $validated['data'] = $validated['data_movimentacao'];
+        unset($validated['data_movimentacao']);
+        // Retorna apenas os campos que podem ser atualizados, para evitar mass assignment issues
+        $movimentacaoFields = ['categoria_id', 'descricao', 'valor', 'data', 'tipo', 'conta_id', 'parcelas']; // Ajuste conforme os campos do seu Model Movimentacao
 
-	/**
-	 * Deleta várias movimentações.
-	 *
-	 * @param array $movimentacoesIds Array com os IDs das movimentações a serem deletadas.
-	 * @return void
-	 */
-	public function destroyManyMovimentacoes(array $movimentacoesIds): void
-	{
-		Movimentacao::doUsuario(Auth::id())
-			->whereIn('id', $movimentacoesIds)
-			->delete();
-	}
+        return array_intersect_key($validated, array_flip($movimentacaoFields));
+    }
 
-	/**
-	 * Paga parcelas de uma movimentação de gasto futuro.
-	 *
-	 * @param Movimentacao $movimentacao A movimentação de gasto futuro.
-	 * @param array $data Dados do pagamento (quantidade, data, valor).
-	 * @return void
-	 */
-	public function pagarParcelas(Movimentacao $movimentacao, array $data): void
-	{
-		\Illuminate\Support\Facades\DB::transaction(function () use ($movimentacao, $data) {
-			$quantidade = $data['quantidade_parcelas'];
-			$dataPagamento = $data['data_pagamento'];
-			$valorTotalPago = (float) $data['valor_total_pago'];
+    /**
+     * Deleta uma movimentação.
+     *
+     * @param  Movimentacao  $movimentacao  A movimentação a ser deletada.
+     */
+    public function destroyMovimentacao(Movimentacao $movimentacao): void
+    {
+        $movimentacao->delete();
+    }
 
-			// 1. Marca as próximas parcelas pendentes como pagas
-			$parcelasAPagar = $movimentacao->parcelas()
-				->where('pago', false)
-				->orderBy('numero')
-				->take($quantidade)
-				->get();
+    /**
+     * Deleta várias movimentações.
+     *
+     * @param  array  $movimentacoesIds  Array com os IDs das movimentações a serem deletadas.
+     */
+    public function destroyManyMovimentacoes(array $movimentacoesIds): void
+    {
+        Movimentacao::doUsuario(Auth::id())
+            ->whereIn('id', $movimentacoesIds)
+            ->delete();
+    }
 
-			foreach ($parcelasAPagar as $parcela) {
-				$parcela->update([
-					'pago' => true,
-					'data_pagamento' => $dataPagamento,
-				]);
-			}
+    /**
+     * Paga parcelas de uma movimentação de gasto futuro.
+     *
+     * @param  Movimentacao  $movimentacao  A movimentação de gasto futuro.
+     * @param  array  $data  Dados do pagamento (quantidade, data, valor).
+     */
+    public function pagarParcelas(Movimentacao $movimentacao, array $data): void
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($movimentacao, $data) {
+            $quantidade = $data['quantidade_parcelas'];
+            $dataPagamento = $data['data_pagamento'];
+            $valorTotalPago = (float) $data['valor_total_pago'];
 
-			$descricao = !empty($data['descricao']) 
-				? "{$data['descricao']}: {$movimentacao->descricao}"
-				: $movimentacao->descricao;
+            // 1. Marca as próximas parcelas pendentes como pagas
+            $parcelasAPagar = $movimentacao->parcelas()
+                ->where('pago', false)
+                ->orderBy('numero')
+                ->take($quantidade)
+                ->get();
 
-			Movimentacao::create([
-				'user_id'      => $movimentacao->user_id,
-				'categoria_id' => $movimentacao->categoria_id,
-				'data'         => $dataPagamento,
-				'descricao'    => $descricao,
-				'valor'        => $valorTotalPago,
-				'tipo'         => TipoMovimentacaoEnum::GASTO->value,
-				'parcelas'     => 1,
-			]);
-		});
-	}
+            foreach ($parcelasAPagar as $parcela) {
+                $parcela->update([
+                    'pago' => true,
+                    'data_pagamento' => $dataPagamento,
+                ]);
+            }
 
-	/**
-	 * Processa o pagamento de parcelas para múltiplas movimentações.
-	 *
-	 * @param array $movimentacaoIds IDs das movimentações a serem pagas.
-	 * @param array $data Dados do pagamento (quantidade, data).
-	 * @return void
-	 */
-	public function pagarParcelasMassa(array $movimentacaoIds, array $data): void
-	{
-		\Illuminate\Support\Facades\DB::transaction(function () use ($movimentacaoIds, $data) {
-			$quantidade = $data['quantidade_parcelas'];
-			$dataPagamento = $data['data_pagamento'];
+            $descricao = ! empty($data['descricao'])
+                ? "{$data['descricao']}: {$movimentacao->descricao}"
+                : $movimentacao->descricao;
 
-			$movimentacoes = Movimentacao::whereIn('id', $movimentacaoIds)
-				->where('user_id', Auth::id())
-				->get();
+            Movimentacao::create([
+                'user_id' => $movimentacao->user_id,
+                'categoria_id' => $movimentacao->categoria_id,
+                'data' => $dataPagamento,
+                'descricao' => $descricao,
+                'valor' => $valorTotalPago,
+                'tipo' => TipoMovimentacaoEnum::GASTO->value,
+                'parcelas' => 1,
+            ]);
+        });
+    }
 
-			foreach ($movimentacoes as $movimentacao) {
-				// 1. Marca as próximas parcelas pendentes como pagas
-				$parcelasAPagar = $movimentacao->parcelas()
-					->where('pago', false)
-					->orderBy('numero')
-					->take($quantidade)
-					->get();
+    /**
+     * Processa o pagamento de parcelas para múltiplas movimentações.
+     *
+     * @param  array  $movimentacaoIds  IDs das movimentações a serem pagas.
+     * @param  array  $data  Dados do pagamento (quantidade, data).
+     */
+    public function pagarParcelasMassa(array $movimentacaoIds, array $data): void
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($movimentacaoIds, $data) {
+            $quantidade = $data['quantidade_parcelas'];
+            $dataPagamento = $data['data_pagamento'];
 
-				$valorPagoNestaMovimentacao = 0;
-				foreach ($parcelasAPagar as $parcela) {
-					$parcela->update([
-						'pago' => true,
-						'data_pagamento' => $dataPagamento,
-					]);
-					$valorPagoNestaMovimentacao += $parcela->valor;
-				}
+            $movimentacoes = Movimentacao::whereIn('id', $movimentacaoIds)
+                ->where('user_id', Auth::id())
+                ->get();
 
-				if ($valorPagoNestaMovimentacao > 0) {
-					// 2. Cria uma nova movimentação de GASTO para representar a saída de caixa
-					$descricao = !empty($data['descricao']) 
-						? "{$data['descricao']} - {$movimentacao->descricao}"
-						: $movimentacao->descricao;
+            foreach ($movimentacoes as $movimentacao) {
+                // 1. Marca as próximas parcelas pendentes como pagas
+                $parcelasAPagar = $movimentacao->parcelas()
+                    ->where('pago', false)
+                    ->orderBy('numero')
+                    ->take($quantidade)
+                    ->get();
 
-					Movimentacao::create([
-						'user_id'      => $movimentacao->user_id,
-						'categoria_id' => $movimentacao->categoria_id,
-						'data'         => $dataPagamento,
-						'descricao'    => $descricao,
-						'valor'        => $valorPagoNestaMovimentacao,
-						'tipo'         => TipoMovimentacaoEnum::GASTO->value,
-						'parcelas'     => 1,
-					]);
-				}
-			}
-		});
-	}
+                $valorPagoNestaMovimentacao = 0;
+                foreach ($parcelasAPagar as $parcela) {
+                    $parcela->update([
+                        'pago' => true,
+                        'data_pagamento' => $dataPagamento,
+                    ]);
+                    $valorPagoNestaMovimentacao += $parcela->valor;
+                }
+
+                if ($valorPagoNestaMovimentacao > 0) {
+                    // 2. Cria uma nova movimentação de GASTO para representar a saída de caixa
+                    $descricao = ! empty($data['descricao'])
+                        ? "{$data['descricao']} - {$movimentacao->descricao}"
+                        : $movimentacao->descricao;
+
+                    Movimentacao::create([
+                        'user_id' => $movimentacao->user_id,
+                        'categoria_id' => $movimentacao->categoria_id,
+                        'data' => $dataPagamento,
+                        'descricao' => $descricao,
+                        'valor' => $valorPagoNestaMovimentacao,
+                        'tipo' => TipoMovimentacaoEnum::GASTO->value,
+                        'parcelas' => 1,
+                    ]);
+                }
+            }
+        });
+    }
 }

@@ -13,8 +13,11 @@ class MovimentacaoTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Categoria $categoriaGanho;
+
     private Categoria $categoriaGasto;
+
     private Categoria $categoriaGastoFuturo;
 
     protected function setUp(): void
@@ -116,6 +119,7 @@ class MovimentacaoTest extends TestCase
             'tipo' => TipoMovimentacaoEnum::GASTO_FUTURO->value,
         ]);
     }
+
     public function test_nao_pode_criar_movimentacao_sem_data(): void
     {
         $movimentacao = [
@@ -240,11 +244,11 @@ class MovimentacaoTest extends TestCase
     public function test_exclui_varias_movimentacoes_com_sucesso(): void
     {
         $movimentacao1 = \App\Models\Movimentacao::factory()->create([
-            'user_id' => $this->user->id
+            'user_id' => $this->user->id,
         ]);
 
         $movimentacao2 = \App\Models\Movimentacao::factory()->create([
-            'user_id' => $this->user->id
+            'user_id' => $this->user->id,
         ]);
 
         $response = $this->from(route('movimentacoes.index'))
@@ -295,7 +299,7 @@ class MovimentacaoTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHas('success', 'Movimentação atualizada com sucesso!');
-        
+
         $this->assertDatabaseHas('movimentacoes', [
             'id' => $movimentacao->id,
             'descricao' => 'Salário novo',
@@ -332,7 +336,7 @@ class MovimentacaoTest extends TestCase
         $response = $this->actingAs($this->user)->patch(route('movimentacoes.update', $movimentacao->id), $dadosAtualizacao);
 
         $response->assertRedirect();
-        
+
         $this->assertDatabaseHas('parcelas', ['id' => $p1->id, 'data_vencimento' => '2026-05-15']);
         $this->assertDatabaseHas('parcelas', ['id' => $p2->id, 'data_vencimento' => '2026-06-15']);
         $this->assertDatabaseHas('parcelas', ['id' => $p3->id, 'data_vencimento' => '2026-07-15']);
@@ -365,11 +369,11 @@ class MovimentacaoTest extends TestCase
         $response = $this->actingAs($this->user)->patch(route('movimentacoes.update', $movimentacao->id), $dadosAtualizacao);
 
         $response->assertRedirect();
-        
+
         $this->assertDatabaseCount('parcelas', 4);
         $this->assertDatabaseHas('parcelas', ['movimentacao_id' => $movimentacao->id, 'numero' => 3, 'valor' => 100, 'data_vencimento' => '2026-03-10']);
         $this->assertDatabaseHas('parcelas', ['movimentacao_id' => $movimentacao->id, 'numero' => 4, 'valor' => 100, 'data_vencimento' => '2026-04-10']);
-        
+
         $this->assertDatabaseHas('movimentacoes', ['id' => $movimentacao->id, 'valor' => 400, 'parcelas' => 4]);
     }
 
@@ -401,10 +405,10 @@ class MovimentacaoTest extends TestCase
         $response = $this->actingAs($this->user)->patch(route('movimentacoes.update', $movimentacao->id), $dadosAtualizacao);
 
         $response->assertRedirect();
-        
+
         $this->assertDatabaseCount('parcelas', 2);
         $this->assertDatabaseMissing('parcelas', ['id' => $p3->id]);
-        
+
         $this->assertDatabaseHas('movimentacoes', ['id' => $movimentacao->id, 'valor' => 200, 'parcelas' => 2]);
     }
 
@@ -441,16 +445,16 @@ class MovimentacaoTest extends TestCase
                     'valor' => 180.00,
                     'data_vencimento' => '2026-02-15',
                 ],
-            ]
+            ],
         ];
 
         $response = $this->actingAs($this->user)->patch(route('movimentacoes.update', $movimentacao->id), $dadosAtualizacao);
 
         $response->assertRedirect();
-        
+
         $this->assertDatabaseHas('parcelas', ['id' => $p1->id, 'valor' => 150.50, 'data_vencimento' => '2026-01-12']);
         $this->assertDatabaseHas('parcelas', ['id' => $p2->id, 'valor' => 180.00, 'data_vencimento' => '2026-02-15']);
-        
+
         $this->assertDatabaseHas('movimentacoes', ['id' => $movimentacao->id, 'valor' => 330.50]);
     }
 
@@ -479,7 +483,7 @@ class MovimentacaoTest extends TestCase
         $response = $this->actingAs($this->user)->patch(route('movimentacoes.update', $movimentacao->id), $dadosAtualizacao);
 
         $response->assertRedirect();
-        
+
         $this->assertDatabaseCount('parcelas', 0);
         $this->assertDatabaseHas('movimentacoes', [
             'id' => $movimentacao->id,

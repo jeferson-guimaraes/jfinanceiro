@@ -23,7 +23,7 @@ class PaginacaoTest extends TestCase
         $response = $this->actingAs($user)->get(route('movimentacoes.index'));
 
         $response->assertStatus(200);
-        
+
         $response->assertInertia(fn ($page) => $page
             ->where('movimentacoes.per_page', 50)
             ->has('movimentacoes.data', 50)

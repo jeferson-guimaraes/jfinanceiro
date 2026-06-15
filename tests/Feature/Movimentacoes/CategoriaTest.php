@@ -182,17 +182,17 @@ class CategoriaTest extends TestCase
             );
     }
 
-     public function test_filtra_categorias_por_busca(): void
+    public function test_filtra_categorias_por_busca(): void
     {
         $categoria1 = Categoria::factory()->create([
             'user_id' => $this->user->id,
             'tipo' => TipoMovimentacaoEnum::GANHO,
-            'nome' => 'Salário'
+            'nome' => 'Salário',
         ]);
         $categoria2 = Categoria::factory()->create([
             'user_id' => $this->user->id,
             'tipo' => TipoMovimentacaoEnum::GANHO,
-            'nome' => 'Investimento'
+            'nome' => 'Investimento',
         ]);
 
         $this->actingAs($this->user)

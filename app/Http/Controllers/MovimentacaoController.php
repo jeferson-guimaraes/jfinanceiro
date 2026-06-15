@@ -19,7 +19,6 @@ class MovimentacaoController extends Controller
     /**
      * Exibe a listagem de movimentações.
      *
-     * @param MovimentacaoService $movimentacaoService
      * @return Response
      */
     public function index(MovimentacaoService $movimentacaoService)
@@ -31,9 +30,6 @@ class MovimentacaoController extends Controller
 
     /**
      * Exibe o formulário para criação de uma nova movimentação.
-     *
-     * @param MovimentacaoService $movimentacaoService
-     * @return Response
      */
     public function create(MovimentacaoService $movimentacaoService): Response
     {
@@ -46,10 +42,6 @@ class MovimentacaoController extends Controller
 
     /**
      * Armazena uma nova movimentação no banco de dados.
-     *
-     * @param StoreMovimentacaoRequest $request
-     * @param MovimentacaoService $movimentacaoService
-     * @return RedirectResponse
      */
     public function store(StoreMovimentacaoRequest $request, MovimentacaoService $movimentacaoService): RedirectResponse
     {
@@ -62,7 +54,6 @@ class MovimentacaoController extends Controller
     /**
      * Exibe a movimentação especificada.
      *
-     * @param Movimentacao $movimentacao
      * @return void
      */
     public function show(Movimentacao $movimentacao)
@@ -72,10 +63,6 @@ class MovimentacaoController extends Controller
 
     /**
      * Exibe o formulário para edição da movimentação especificada.
-     *
-     * @param Movimentacao $movimentacao
-     * @param MovimentacaoService $movimentacaoService
-     * @return Response
      */
     public function edit(Movimentacao $movimentacao, MovimentacaoService $movimentacaoService): Response
     {
@@ -95,11 +82,6 @@ class MovimentacaoController extends Controller
 
     /**
      * Atualiza a movimentação especificada no banco de dados.
-     *
-     * @param UpdateMovimentacaoRequest $request
-     * @param Movimentacao $movimentacao
-     * @param MovimentacaoService $movimentacaoService
-     * @return RedirectResponse
      */
     public function update(UpdateMovimentacaoRequest $request, Movimentacao $movimentacao, MovimentacaoService $movimentacaoService): RedirectResponse
     {
@@ -114,10 +96,6 @@ class MovimentacaoController extends Controller
 
     /**
      * Remove a movimentação especificada do banco de dados.
-     *
-     * @param Movimentacao $movimentacao
-     * @param MovimentacaoService $movimentacaoService
-     * @return RedirectResponse
      */
     public function destroy(Movimentacao $movimentacao, MovimentacaoService $movimentacaoService): RedirectResponse
     {
@@ -132,10 +110,6 @@ class MovimentacaoController extends Controller
 
     /**
      * Remove várias movimentações do banco de dados.
-     *
-     * @param Request $request
-     * @param MovimentacaoService $movimentacaoService
-     * @return RedirectResponse
      */
     public function destroyMany(Request $request, MovimentacaoService $movimentacaoService): RedirectResponse
     {
@@ -151,11 +125,6 @@ class MovimentacaoController extends Controller
 
     /**
      * Processa o pagamento de parcelas de uma movimentação.
-     *
-     * @param PagarParcelaRequest $request
-     * @param Movimentacao $movimentacao
-     * @param MovimentacaoService $movimentacaoService
-     * @return RedirectResponse
      */
     public function pagarParcelas(PagarParcelaRequest $request, Movimentacao $movimentacao, MovimentacaoService $movimentacaoService): RedirectResponse
     {
@@ -170,10 +139,6 @@ class MovimentacaoController extends Controller
 
     /**
      * Processa o pagamento de parcelas de várias movimentações.
-     *
-     * @param PagarParcelasMassaRequest $request
-     * @param MovimentacaoService $movimentacaoService
-     * @return RedirectResponse
      */
     public function pagarParcelasMassa(PagarParcelasMassaRequest $request, MovimentacaoService $movimentacaoService): RedirectResponse
     {

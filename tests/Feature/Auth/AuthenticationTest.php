@@ -61,7 +61,7 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
-        public function test_usuarios_nao_podem_autenticar_com_senha_invalida()
+    public function test_usuarios_nao_podem_autenticar_com_senha_invalida()
     {
         $user = User::factory()->create();
 

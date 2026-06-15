@@ -43,8 +43,6 @@ class CategoriaController extends Controller
 
     /**
      * Renderiza a view para criar uma nova categoria.
-     *
-     * @return Response
      */
     public function create(): Response
     {
@@ -55,9 +53,6 @@ class CategoriaController extends Controller
 
     /**
      * Armazena uma nova categoria no banco de dados.
-     *
-     * @param CategoriasRequest $request
-     * @return RedirectResponse|JsonResponse
      */
     public function store(CategoriasRequest $request): RedirectResponse|JsonResponse
     {
@@ -77,9 +72,6 @@ class CategoriaController extends Controller
 
     /**
      * Renderiza a view para editar uma categoria.
-     *
-     * @param Categoria $categoria
-     * @return Response
      */
     public function edit(Categoria $categoria): Response
     {
@@ -90,10 +82,6 @@ class CategoriaController extends Controller
 
     /**
      * Atualiza uma categoria no banco de dados.
-     *
-     * @param CategoriasRequest $request
-     * @param Categoria $categoria
-     * @return RedirectResponse
      */
     public function update(CategoriasRequest $request, Categoria $categoria): RedirectResponse
     {

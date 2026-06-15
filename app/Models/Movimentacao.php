@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-
 /**
  * @property int $id
  * @property int $categoria_id
@@ -24,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \App\Models\Categoria $categoria
  * @property-read int|null $parcelas_count
  * @property-read \App\Models\User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao query()
@@ -73,6 +73,7 @@ class Movimentacao extends Model
         if ($this->relationLoaded('parcelas')) {
             return $this->getRelation('parcelas');
         }
+
         return null;
     }
 

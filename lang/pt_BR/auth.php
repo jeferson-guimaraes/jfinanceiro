@@ -12,9 +12,9 @@ return [
     |
     */
 
-    'failed'   => 'Credenciais informadas não correspondem com nossos registros.',
+    'failed' => 'Credenciais informadas não correspondem com nossos registros.',
     'password' => 'A senha informada está incorreta.',
     'throttle' => 'Muitas tentativas de login. Por favor, tente novamente em :seconds segundos.',
-    'logout'   => 'Você foi desconectado com sucesso.',
-    'login'    => 'Você foi conectado com sucesso.',
+    'logout' => 'Você foi desconectado com sucesso.',
+    'login' => 'Você foi conectado com sucesso.',
 ];

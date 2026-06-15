@@ -16,13 +16,13 @@ class Parcela extends Model
         'valor',
         'data_vencimento',
         'data_pagamento',
-        'pago'
+        'pago',
     ];
 
     protected $casts = [
         'data_vencimento' => 'date:Y-m-d',
         'data_pagamento' => 'date:Y-m-d',
-        'pago' => 'boolean'
+        'pago' => 'boolean',
     ];
 
     public function movimentacao(): BelongsTo

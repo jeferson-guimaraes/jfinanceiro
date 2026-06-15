@@ -36,7 +36,7 @@ class PagamentoParcelaTest extends TestCase
         // Valida que sem descrição personalizada, usa a descrição original
         $this->assertDatabaseHas('movimentacoes', [
             'descricao' => $movimentacao->descricao,
-            'tipo' => 'gasto'
+            'tipo' => 'gasto',
         ]);
     }
 
@@ -57,7 +57,7 @@ class PagamentoParcelaTest extends TestCase
         $response->assertStatus(302);
         $this->assertDatabaseHas('movimentacoes', [
             'descricao' => "{$descricaoPersonalizada}: {$movimentacao->descricao}",
-            'tipo' => 'gasto'
+            'tipo' => 'gasto',
         ]);
     }
 
