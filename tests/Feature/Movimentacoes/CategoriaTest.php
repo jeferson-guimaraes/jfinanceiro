@@ -205,4 +205,56 @@ class CategoriaTest extends TestCase
                 ->where('listaCategorias.data.0.nome', $categoria1->nome)
             );
     }
+
+    public function test_exclui_categoria_com_sucesso(): void
+    {
+        $categoria = Categoria::factory()->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+        ]);
+
+        $response = $this->from(route('movimentacoes.categorias.index'))
+            ->actingAs($this->user)
+            ->delete(route('movimentacoes.categorias.destroy', $categoria));
+
+        $response->assertRedirect(route('movimentacoes.categorias.index'));
+        $response->assertSessionHas('success', 'Categoria excluída com sucesso!');
+
+        $this->assertDatabaseMissing('categorias', [
+            'id' => $categoria->id,
+        ]);
+    }
+
+    public function test_exclui_varias_categorias_com_sucesso(): void
+    {
+        $categoria1 = Categoria::factory()->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+        ]);
+
+        $categoria2 = Categoria::factory()->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+        ]);
+
+        $response = $this->from(route('movimentacoes.categorias.index'))
+            ->actingAs($this->user)
+            ->delete(route('movimentacoes.categorias.destroyMany'), [
+                'categorias_ids' => [
+                    $categoria1->id,
+                    $categoria2->id,
+                ],
+            ]);
+
+        $response->assertRedirect(route('movimentacoes.categorias.index'));
+        $response->assertSessionHas('success', 'Categorias excluídas com sucesso!');
+
+        $this->assertDatabaseMissing('categorias', [
+            'id' => $categoria1->id,
+        ]);
+
+        $this->assertDatabaseMissing('categorias', [
+            'id' => $categoria2->id,
+        ]);
+    }
 }
