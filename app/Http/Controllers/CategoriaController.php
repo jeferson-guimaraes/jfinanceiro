@@ -83,6 +83,18 @@ class CategoriaController extends Controller
     /**
      * Atualiza uma categoria no banco de dados.
      */
+    public function update(CategoriasRequest $request, Categoria $categoria): RedirectResponse
+    {
+        $categoria->update($request->validated());
+
+        return redirect()
+            ->route('movimentacoes.categorias.index')
+            ->with('success', 'Categoria atualizada com sucesso!');
+    }
+
+    /**
+     * Remove uma categoria do banco de dados.
+     */
     public function destroy(Categoria $categoria): RedirectResponse
     {
         // If the category has associated movimentacoes, reassign them to the appropriate default category

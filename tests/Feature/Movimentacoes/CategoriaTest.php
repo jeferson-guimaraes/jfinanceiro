@@ -206,6 +206,49 @@ class CategoriaTest extends TestCase
             );
     }
 
+    public function test_atualiza_categoria_com_sucesso(): void
+    {
+        $categoria = Categoria::factory()->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO,
+            'nome' => 'Salário',
+        ]);
+
+        $response = $this->actingAs($this->user)->patch(
+            route('movimentacoes.categorias.update', $categoria),
+            [
+                'nome' => 'Salário CLT',
+                'tipo' => TipoMovimentacaoEnum::GANHO->value,
+            ],
+        );
+
+        $response->assertRedirect(route('movimentacoes.categorias.index'));
+        $response->assertSessionHas('success', 'Categoria atualizada com sucesso!');
+
+        $this->assertDatabaseHas('categorias', [
+            'id' => $categoria->id,
+            'nome' => 'Salário CLT',
+            'tipo' => TipoMovimentacaoEnum::GANHO->value,
+        ]);
+    }
+
+    public function test_nao_pode_atualizar_categoria_sem_nome(): void
+    {
+        $categoria = Categoria::factory()->create([
+            'user_id' => $this->user->id,
+            'tipo' => TipoMovimentacaoEnum::GASTO,
+        ]);
+
+        $response = $this->actingAs($this->user)->patch(
+            route('movimentacoes.categorias.update', $categoria),
+            [
+                'tipo' => TipoMovimentacaoEnum::GASTO->value,
+            ],
+        );
+
+        $response->assertSessionHasErrors('nome');
+    }
+
     public function test_exclui_categoria_com_sucesso(): void
     {
         $categoria = Categoria::factory()->create([
