@@ -2,10 +2,11 @@
 import { ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import debounce from 'lodash-es/debounce';
+import ConfirmarExclusaoModal from '@/components/modals/ConfirmarExclusaoModal.vue';
 import TabsListCategories from '@/components/TabsListCategories.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create } from '@/routes/movimentacoes/categorias';
+import categoriasRoutes, { create } from '@/routes/movimentacoes/categorias';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 import { Categoria, Paginated, Filter } from '@/types/movimentacoes/categorias';
@@ -19,7 +20,7 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [
 	{
 		title: 'Categorias',
-		href: '/movimentacoes/categorias',
+		href: categoriasRoutes.index().url,
 	},
 ];
 
@@ -27,8 +28,52 @@ const localSearch = ref(props.filters.search);
 const localTipo = ref(props.filters.tipo);
 const localPerPage = ref(props.filters.per_page || 10);
 
+const isModalExclusaoAberto = ref(false);
+const categoriaParaExcluir = ref<Categoria | null>(null);
+const selectedCategorias = ref<number[]>([]);
+const isModalExclusaoMassaAberto = ref(false);
+
+function requestDelete(categoria: Categoria) {
+	categoriaParaExcluir.value = categoria;
+	isModalExclusaoAberto.value = true;
+}
+
+function confirmDelete() {
+	if (categoriaParaExcluir.value) {
+		router.delete(categoriasRoutes.destroy({ categoria: categoriaParaExcluir.value.id }).url, {
+			preserveScroll: true,
+			preserveState: true,
+			onSuccess: () => {
+				isModalExclusaoAberto.value = false;
+				categoriaParaExcluir.value = null;
+			},
+		});
+	}
+}
+
+function requestDeleteMany(categoriasIds: number[]) {
+	selectedCategorias.value = categoriasIds;
+	isModalExclusaoMassaAberto.value = true;
+}
+
+function confirmDeleteMany() {
+	if (selectedCategorias.value.length > 0) {
+		router.delete(categoriasRoutes.destroyMany().url, {
+			data: {
+				categorias_ids: selectedCategorias.value,
+			},
+			preserveScroll: true,
+			preserveState: true,
+			onSuccess: () => {
+				isModalExclusaoMassaAberto.value = false;
+				selectedCategorias.value = [];
+			},
+		});
+	}
+}
+
 const searchData = () => {
-	router.get('/movimentacoes/categorias', {
+	router.get(categoriasRoutes.index().url, {
 		search: localSearch.value,
 		tipo: localTipo.value,
 		per_page: localPerPage.value,
@@ -46,7 +91,8 @@ watch(localSearch, () => {
 });
 
 watch(localTipo, (newTipo) => {
-	router.get('/movimentacoes/categorias', {
+	selectedCategorias.value = [];
+	router.get(categoriasRoutes.index().url, {
 		search: localSearch.value,
 		tipo: newTipo,
 		per_page: localPerPage.value,
@@ -91,15 +137,38 @@ watch(localPerPage, () => {
 
 				<!-- Conteúdo principal -->
 				<div class="space-y-6">
-					<TabsListCategories 
-						:categorias="listaCategorias" 
+					<TabsListCategories
+						:categorias="listaCategorias"
 						:filters="filters"
-						@update:search="localSearch = $event" 
+						v-model:selectedCategorias="selectedCategorias"
+						@update:search="localSearch = $event"
 						@update:tipo="localTipo = $event"
-						@update:per_page="localPerPage = $event" 
+						@update:per_page="localPerPage = $event"
+						@delete="requestDelete"
+						@delete:selected="requestDeleteMany"
 					/>
 				</div>
 			</div>
 		</div>
+
+		<ConfirmarExclusaoModal
+			v-model:open="isModalExclusaoAberto"
+			title="Excluir categoria"
+			message="Essa categoria será removida permanentemente."
+			description="Essa ação não pode ser desfeita. As movimentações desta categoria serão alteradas para a categoria 'Outros'."
+			confirm-text="Excluir"
+			@confirm="confirmDelete"
+			@cancel="isModalExclusaoAberto = false"
+		/>
+
+		<ConfirmarExclusaoModal
+			v-model:open="isModalExclusaoMassaAberto"
+			title="Excluir categorias"
+			message="As categorias selecionadas serão removidas permanentemente."
+			description="Essa ação não pode ser desfeita. As movimentações desta categoria serão alteradas para a categoria 'Outros'."
+			confirm-text="Excluir"
+			@confirm="confirmDeleteMany"
+			@cancel="isModalExclusaoMassaAberto = false"
+		/>
 	</AppLayout>
 </template>

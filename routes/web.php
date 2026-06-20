@@ -28,19 +28,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('store');
 
         Route::get('{movimentacao}/edit', [MovimentacaoController::class, 'edit'])
-            ->name('edit');
+            ->name('edit')
+            ->whereNumber('movimentacao');
 
         Route::patch('{movimentacao}', [MovimentacaoController::class, 'update'])
-            ->name('update');
+            ->name('update')
+            ->whereNumber('movimentacao');
 
         Route::delete('{movimentacao}', [MovimentacaoController::class, 'destroy'])
-            ->name('destroy');
+            ->name('destroy')
+            ->whereNumber('movimentacao');
 
         Route::delete('/', [MovimentacaoController::class, 'destroyMany'])
             ->name('destroyMany');
 
         Route::post('{movimentacao}/pagar', [MovimentacaoController::class, 'pagarParcelas'])
-            ->name('pagar');
+            ->name('pagar')
+            ->whereNumber('movimentacao');
 
         Route::post('pagar-massa', [MovimentacaoController::class, 'pagarParcelasMassa'])
             ->name('pagarMassa');
@@ -64,6 +68,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::delete('/', [CategoriaController::class, 'destroyMany'])
             ->name('destroyMany');
+
+        Route::delete('{categoria}', [CategoriaController::class, 'destroy'])
+            ->name('destroy');
     });
 });
 

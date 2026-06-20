@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { router, Link } from '@inertiajs/vue3'
+import { Link } from '@inertiajs/vue3'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import ConfirmarExclusaoModal from './modals/ConfirmarExclusaoModal.vue'
 import type { Categoria, Paginated, Filter } from '@/types/movimentacoes/categorias'
 import { Pencil, Trash2 } from 'lucide-vue-next'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,23 +11,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const props = defineProps<{
   categorias: Paginated<Categoria>
   filters: Filter
+  selectedCategorias: number[]
 }>()
 
-const emit = defineEmits(['update:search', 'update:tipo', 'update:per_page'])
-
-const selectedItems = ref<number[]>([])
-const isModalConfirmarExclusaoAberto = ref(false)
+const emit = defineEmits([
+  'update:search',
+  'update:tipo',
+  'update:per_page',
+  'update:selectedCategorias',
+  'delete',
+  'delete:selected',
+])
 
 const localPerPage = ref(String(props.filters.per_page || 10));
 
-const deleteContext = ref<{ type: 'single' | 'multiple', count: number } | null>(null)
-
 function toggleItem(id: number) {
-  if (selectedItems.value.includes(id)) {
-    selectedItems.value = selectedItems.value.filter(i => i !== id)
-  } else {
-    selectedItems.value.push(id)
-  }
+  const newValue = props.selectedCategorias.includes(id)
+    ? props.selectedCategorias.filter(i => i !== id)
+    : [...props.selectedCategorias, id]
+  emit('update:selectedCategorias', newValue)
 }
 
 function handleSearch(event: Event) {
@@ -45,31 +46,9 @@ function handlePerPageChange(value: any) {
   emit('update:per_page', Number(strValue));
 }
 
-function requestDeleteSingle(id: number) {
-  selectedItems.value = [id]
-  deleteContext.value = { type: 'single', count: 1 }
-  isModalConfirmarExclusaoAberto.value = true
+function requestDeleteMany() {
+  emit('delete:selected', props.selectedCategorias)
 }
-
-function requestDeleteMultiple() {
-  deleteContext.value = { type: 'multiple', count: selectedItems.value.length }
-  isModalConfirmarExclusaoAberto.value = true
-}
-
-function confirmDelete() {
-  router.delete('/movimentacoes/categorias', {
-    data: { ids: selectedItems.value },
-    preserveScroll: true,
-    onSuccess: () => {
-      selectedItems.value = []
-      deleteContext.value = null
-      isModalConfirmarExclusaoAberto.value = false
-    },
-  })
-}
-
-const modalTitle = computed(() => deleteContext.value ? (deleteContext.value.type === 'single' ? 'Excluir categoria' : `Excluir ${deleteContext.value.count} categorias`) : '')
-const modalMessage = computed(() => deleteContext.value ? (deleteContext.value.type === 'single' ? 'Essa categoria será removida permanentemente.' : 'As categorias selecionadas serão removidas permanentemente.') : '')
 
 const tabs = [
   { title: 'Ganhos', tipo: 'ganho' },
@@ -107,7 +86,6 @@ const getPageUrl = (page: number | string) => {
   const url = new URL(props.categorias.path, window.location.origin);
   const params = new URLSearchParams(window.location.search);
   params.set('page', String(page));
-  // Mantém outros filtros se existirem
   if (props.filters.search) params.set('search', props.filters.search);
   if (props.filters.tipo) params.set('tipo', props.filters.tipo);
   if (props.filters.per_page) params.set('per_page', String(props.filters.per_page));
@@ -136,15 +114,15 @@ const getPageUrl = (page: number | string) => {
 
     <!-- Header de Ações e Busca -->
     <div class="relative flex items-center gap-2 px-1 mb-2 mt-4 min-h-[36px]">
-      <div class="flex-1 w-full" :class="{ 'opacity-0 pointer-events-none': selectedItems.length > 0 }">
+      <div class="flex-1 w-full" :class="{ 'opacity-0 pointer-events-none': selectedCategorias.length > 0 }">
         <Input :model-value="filters.search" @input="handleSearch" placeholder="Buscar categoria..." class="h-9 text-xs w-full" />
       </div>
 
-      <div v-if="selectedItems.length > 0" class="absolute inset-0 bg-blue-50 dark:bg-blue-900/20 p-1.5 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm">
+      <div v-if="selectedCategorias.length > 0" class="absolute inset-0 bg-blue-50 dark:bg-blue-900/20 p-1.5 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm">
         <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 ml-2 uppercase">
-          {{ selectedItems.length }} selecionados
+          {{ selectedCategorias.length }} selecionados
         </span>
-        <Button size="sm" variant="destructive" class="h-7 px-3 text-[10px] font-bold uppercase" @click="requestDeleteMultiple">
+        <Button size="sm" variant="destructive" class="h-7 px-3 text-[10px] font-bold uppercase" @click="requestDeleteMany">
           <Trash2 class="h-3.5 w-3.5 mr-1" />
           Excluir
         </Button>
@@ -156,7 +134,7 @@ const getPageUrl = (page: number | string) => {
       <div v-for="item in categorias.data" :key="item.id" 
         class="flex items-center gap-3 py-3 px-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
         
-        <Checkbox :model-value="selectedItems.includes(item.id)" @update:modelValue="() => toggleItem(item.id)" />
+        <Checkbox :model-value="selectedCategorias.includes(item.id)" @update:modelValue="() => toggleItem(item.id)" />
         
         <div class="flex-1 font-medium text-sm text-gray-900 dark:text-gray-100">
           {{ item.nome }}
@@ -168,7 +146,7 @@ const getPageUrl = (page: number | string) => {
               <Pencil class="h-4 w-4" />
             </Button>
           </Link>
-          <Button size="icon" variant="ghost" class="h-8 w-8 text-gray-400 hover:text-red-600" @click="requestDeleteSingle(item.id)">
+          <Button size="icon" variant="ghost" class="h-8 w-8 text-gray-400 hover:text-red-600" @click="emit('delete', item)">
             <Trash2 class="h-4 w-4 text-red-500" />
           </Button>
         </div>
@@ -247,9 +225,4 @@ const getPageUrl = (page: number | string) => {
       </div>
     </div>
   </div>
-
-  <!-- Modal -->
-  <ConfirmarExclusaoModal v-model:open="isModalConfirmarExclusaoAberto" :title="modalTitle" :message="modalMessage"
-    description="Essa ação não pode ser desfeita. As movimentações desta categoria serão alteradas para a categoria 'Outros'."
-    confirm-text="Excluir" @confirm="confirmDelete" @cancel="isModalConfirmarExclusaoAberto = false" />
 </template>
