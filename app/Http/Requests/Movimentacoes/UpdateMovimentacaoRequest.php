@@ -22,7 +22,7 @@ class UpdateMovimentacaoRequest extends FormRequest
             'valor' => ['required', 'numeric', 'min:0.01'],
             'tipo' => ['required', Rule::in(array_column(TipoMovimentacaoEnum::cases(), 'value'))],
             'parcelas' => ['nullable', 'integer', 'min:1'],
-            'data_vencimento' => [Rule::requiredIf($this->tipo === TipoMovimentacaoEnum::GASTO_FUTURO->value), 'date'],
+            'data_vencimento' => [Rule::requiredIf($this->tipo === TipoMovimentacaoEnum::GASTO_FUTURO->value), 'nullable', 'date'],
             'parcelas_editadas' => ['nullable', 'array'],
             'parcelas_editadas.*.id' => ['required', 'exists:parcelas,id'],
             'parcelas_editadas.*.valor' => ['required', 'numeric', 'min:0.01'],
