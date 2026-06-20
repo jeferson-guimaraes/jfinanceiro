@@ -308,6 +308,66 @@ class MovimentacaoTest extends TestCase
         ]);
     }
 
+    public function test_atualiza_movimentacao_gasto_com_payload_do_frontend(): void
+    {
+        $movimentacao = \App\Models\Movimentacao::factory()->create([
+            'user_id' => $this->user->id,
+            'categoria_id' => $this->categoriaGasto->id,
+            'tipo' => TipoMovimentacaoEnum::GASTO->value,
+            'valor' => 100,
+            'descricao' => 'Despesa antiga',
+            'data' => '2026-01-01',
+        ]);
+
+        $dadosAtualizacao = [
+            'categoria_id' => $this->categoriaGasto->id,
+            'data_movimentacao' => '2026-01-05',
+            'descricao' => 'Despesa nova',
+            'valor' => 250,
+            'tipo' => TipoMovimentacaoEnum::GASTO->value,
+            'data_vencimento' => '',
+            'parcelas' => 1,
+            'parcelas_editadas' => [],
+        ];
+
+        $response = $this->actingAs($this->user)->patch(route('movimentacoes.update', $movimentacao->id), $dadosAtualizacao);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Movimentação atualizada com sucesso!');
+
+        $this->assertDatabaseHas('movimentacoes', [
+            'id' => $movimentacao->id,
+            'descricao' => 'Despesa nova',
+            'valor' => 250,
+            'data' => '2026-01-05',
+        ]);
+    }
+
+    public function test_pagina_edit_ganho_carrega_com_sucesso(): void
+    {
+        $movimentacao = \App\Models\Movimentacao::factory()->create([
+            'user_id' => $this->user->id,
+            'categoria_id' => $this->categoriaGanho->id,
+            'tipo' => TipoMovimentacaoEnum::GANHO->value,
+            'valor' => 1500,
+            'descricao' => 'Salário',
+            'data' => '2026-01-01',
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('movimentacoes.edit', $movimentacao->id))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('movimentacoes/Edit')
+                ->has('movimentacao')
+                ->where('movimentacao.id', $movimentacao->id)
+                ->where('movimentacao.tipo', TipoMovimentacaoEnum::GANHO->value)
+                ->has('categoriasGanhos')
+                ->has('categoriasGastos')
+                ->has('categoriasGastosFuturos')
+            );
+    }
+
     public function test_atualiza_gasto_futuro_ajusta_vencimento_inicial_em_cascata(): void
     {
         $movimentacao = \App\Models\Movimentacao::factory()->create([

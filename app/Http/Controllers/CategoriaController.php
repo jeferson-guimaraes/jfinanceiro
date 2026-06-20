@@ -85,11 +85,39 @@ class CategoriaController extends Controller
      */
     public function update(CategoriasRequest $request, Categoria $categoria): RedirectResponse
     {
-        $data = $request->validated();
+        $categoria->update($request->validated());
 
-        $categoria->update($data);
+        return redirect()
+            ->route('movimentacoes.categorias.index')
+            ->with('success', 'Categoria atualizada com sucesso!');
+    }
 
-        return redirect()->route('movimentacoes.categorias.index')->with('success', 'Categoria atualizada com sucesso!');
+    /**
+     * Remove uma categoria do banco de dados.
+     */
+    public function destroy(Categoria $categoria): RedirectResponse
+    {
+        // If the category has associated movimentacoes, reassign them to the appropriate default category
+        if ($categoria->movimentacoes()->exists()) {
+            $categoria->movimentacoes()->update([
+                'categoria_id' => DB::raw(
+                    "
+                        CASE tipo
+                            WHEN '".TipoMovimentacaoEnum::GASTO->value."' THEN 1
+                            WHEN '".TipoMovimentacaoEnum::GANHO->value."' THEN 2
+                            WHEN '".TipoMovimentacaoEnum::GASTO_FUTURO->value."' THEN 3
+                            ELSE categoria_id
+                        END
+                    "
+                ),
+            ]);
+        }
+
+        $categoria->delete();
+
+        return redirect()
+            ->back()
+            ->with('success', 'Categoria excluída com sucesso!');
     }
 
     /**
@@ -97,13 +125,12 @@ class CategoriaController extends Controller
      */
     public function destroyMany(Request $request): RedirectResponse
     {
-        $ids = $request->input('ids');
+        $validated = $request->validate([
+            'categorias_ids' => 'required|array',
+            'categorias_ids.*' => 'exists:categorias,id',
+        ]);
 
-        if (empty($ids)) {
-            return redirect()->back()->with('error', 'Nenhuma categoria selecionada para exclusão.');
-        }
-
-        $categorias = Categoria::whereIn('id', $ids)->get();
+        $categorias = Categoria::whereIn('id', $validated['categorias_ids'])->get();
 
         foreach ($categorias as $categoria) {
             if ($categoria->movimentacoes()->exists()) {
@@ -120,8 +147,10 @@ class CategoriaController extends Controller
             }
         }
 
-        Categoria::whereIn('id', $ids)->delete();
+        Categoria::whereIn('id', $validated['categorias_ids'])->delete();
 
-        return redirect()->back()->with('success', 'Categorias excluídas com sucesso!');
+        return redirect()
+            ->back()
+            ->with('success', 'Categorias excluídas com sucesso!');
     }
 }

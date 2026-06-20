@@ -34,6 +34,14 @@ const props = defineProps({
 
 const isCategoriaModalOpen = ref(false);
 
+function normalizeDate(value?: string): string {
+    if (!value) {
+        return '';
+    }
+
+    return value.slice(0, 10);
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Movimentações',
@@ -49,14 +57,14 @@ const form = useForm({
     descricao: props.movimentacao?.descricao || '',
     valor: props.movimentacao?.valor || 0,
     tipo: props.movimentacao?.tipo || 'gasto',
-    data_movimentacao: props.movimentacao?.data || '',
-    categoria_id: props.movimentacao?.categoria_id || (null as number | null),
+    data_movimentacao: normalizeDate(props.movimentacao?.data),
+    categoria_id: props.movimentacao?.categoria_id ? String(props.movimentacao.categoria_id) : '',
     parcelas: props.movimentacao?.lista_parcelas?.length || 1,
-    data_vencimento: props.movimentacao?.lista_parcelas?.[0]?.data_vencimento || '',
+    data_vencimento: normalizeDate(props.movimentacao?.lista_parcelas?.[0]?.data_vencimento),
     parcelas_editadas: props.movimentacao?.lista_parcelas ? props.movimentacao.lista_parcelas.map((p: any) => ({
         id: p.id,
         valor: Number(p.valor),
-        data_vencimento: p.data_vencimento,
+        data_vencimento: normalizeDate(p.data_vencimento),
         numero: p.numero,
         pago: p.pago,
         is_temp: false
@@ -159,6 +167,15 @@ const categoriasDisponiveis = computed(() => {
     }
 });
 
+watch(() => form.tipo, (newTipo, oldTipo) => {
+    if (oldTipo === undefined || newTipo === oldTipo) {
+        return;
+    }
+
+    const primeiraCategoria = categoriasDisponiveis.value?.[0];
+    form.categoria_id = primeiraCategoria ? String(primeiraCategoria.id) : '';
+});
+
 const valor = ref(props.movimentacao?.valor || 0);
 
 const valorFormatado = computed({
@@ -172,20 +189,45 @@ const valorFormatado = computed({
     },
 });
 
-function submit() {
-    if (!props.movimentacao) return;
+function scrollToFormTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-    if (form.tipo === 'gasto futuro') {
-        form.parcelas_editadas = form.parcelas_editadas.filter(p => p.id !== null && !p.is_temp);
-    } else {
-        form.parcelas_editadas = [];
+function submit(): void {
+    if (!props.movimentacao) {
+        return;
     }
 
-    form.patch(movimentacoes.update({ movimentacao: props.movimentacao.id }).url, {
+    const patchOptions = {
         onSuccess: () => {
             router.get(movimentacoes.index({ query: props.filters }).url);
         },
-    });
+        onError: () => {
+            scrollToFormTop();
+        },
+    };
+
+    form
+        .transform((data) => {
+            const payload = {
+                ...data,
+                categoria_id: data.categoria_id ? Number(data.categoria_id) : null,
+            };
+
+            if (data.tipo === 'gasto futuro') {
+                return {
+                    ...payload,
+                    parcelas_editadas: data.parcelas_editadas.filter(
+                        (p) => p.id !== null && !p.is_temp,
+                    ),
+                };
+            }
+
+            const { parcelas, data_vencimento, parcelas_editadas, ...rest } = payload;
+
+            return rest;
+        })
+        .patch(movimentacoes.update({ movimentacao: props.movimentacao.id }).url, patchOptions);
 }
 
 function refreshCategories() {
@@ -217,6 +259,13 @@ function refreshCategories() {
                     :variant="formVariant"
                     :icon="formIcon"
                 >
+                    <div
+                        v-if="form.hasErrors"
+                        class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/30 dark:text-red-400"
+                    >
+                        Verifique os campos destacados abaixo.
+                    </div>
+
                     <div class="grid grid-cols-1 gap-8 sm:grid-cols-6">
                         <div class="sm:col-span-3 space-y-2">
                             <Label for="tipo" class="text-sm font-semibold flex items-center gap-2">
@@ -264,7 +313,7 @@ function refreshCategories() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem v-for="categoria in categoriasDisponiveis" :key="categoria.id"
-                                        :value="categoria.id">
+                                        :value="String(categoria.id)">
                                         {{ categoria.nome }}
                                     </SelectItem>
                                 </SelectContent>
