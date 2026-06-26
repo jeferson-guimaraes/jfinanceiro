@@ -438,6 +438,8 @@ function refreshCategories() {
         </div>
         <CategoriaModal
             :open="isCategoriaModalOpen"
+            :default-tipo="form.tipo as 'ganho' | 'gasto' | 'gasto futuro'"
+            lock-tipo
             @close="isCategoriaModalOpen = false"
             @category-created="refreshCategories"
         />

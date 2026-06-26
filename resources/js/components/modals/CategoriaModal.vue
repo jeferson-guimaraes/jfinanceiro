@@ -8,10 +8,20 @@ import { useToast } from '@/composables/useToast';
 import movimentacoes from '@/routes/movimentacoes';
 import { useForm } from '@inertiajs/vue3';
 import { Tag, PlusCircle, Wallet, Calendar, CreditCard } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, watch, type PropType } from 'vue';
 
-defineProps({
+type TipoCategoria = 'ganho' | 'gasto' | 'gasto futuro';
+
+const props = defineProps({
     open: Boolean,
+    defaultTipo: {
+        type: String as PropType<TipoCategoria>,
+        default: 'gasto',
+    },
+    lockTipo: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(['close', 'category-created']);
@@ -19,9 +29,28 @@ const { success, error } = useToast();
 
 const form = useForm({
     nome: '',
-    tipo: 'gasto',
+    tipo: props.defaultTipo,
     origem: 'modal',
 });
+
+watch(
+    () => props.open,
+    (isOpen) => {
+        if (isOpen) {
+            form.tipo = props.defaultTipo;
+            form.clearErrors();
+        }
+    },
+);
+
+watch(
+    () => props.defaultTipo,
+    (tipo) => {
+        if (props.open && props.lockTipo) {
+            form.tipo = tipo;
+        }
+    },
+);
 
 const variantClasses = computed(() => {
     switch (form.tipo) {
@@ -58,6 +87,7 @@ function submit() {
 function closeModal() {
     emit('close');
     form.reset();
+    form.tipo = props.defaultTipo;
 }
 </script>
 
@@ -91,7 +121,7 @@ function closeModal() {
                             <PlusCircle class="h-4 w-4 text-muted-foreground" />
                             Tipo
                         </Label>
-                        <Select v-model="form.tipo">
+                        <Select v-model="form.tipo" :disabled="lockTipo">
                             <SelectTrigger class="h-11 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                                 <SelectValue placeholder="Selecione o tipo" />
                             </SelectTrigger>
