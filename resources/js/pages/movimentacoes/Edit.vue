@@ -176,6 +176,15 @@ watch(() => form.tipo, (newTipo, oldTipo) => {
     form.categoria_id = primeiraCategoria ? String(primeiraCategoria.id) : '';
 });
 
+const categoriaModalTipo = computed(
+    (): Categoria['tipo'] =>
+        form.tipo === 'ganho' ||
+        form.tipo === 'gasto' ||
+        form.tipo === 'gasto futuro'
+            ? form.tipo
+            : 'gasto',
+);
+
 const valor = ref(props.movimentacao?.valor || 0);
 
 const valorFormatado = computed({
@@ -223,9 +232,13 @@ function submit(): void {
                 };
             }
 
-            const { parcelas, data_vencimento, parcelas_editadas, ...rest } = payload;
-
-            return rest;
+            return {
+                descricao: payload.descricao,
+                valor: payload.valor,
+                tipo: payload.tipo,
+                data_movimentacao: payload.data_movimentacao,
+                categoria_id: payload.categoria_id,
+            };
         })
         .patch(movimentacoes.update({ movimentacao: props.movimentacao.id }).url, patchOptions);
 }
@@ -438,7 +451,7 @@ function refreshCategories() {
         </div>
         <CategoriaModal
             :open="isCategoriaModalOpen"
-            :default-tipo="form.tipo as 'ganho' | 'gasto' | 'gasto futuro'"
+            :default-tipo="categoriaModalTipo"
             lock-tipo
             @close="isCategoriaModalOpen = false"
             @category-created="refreshCategories"
