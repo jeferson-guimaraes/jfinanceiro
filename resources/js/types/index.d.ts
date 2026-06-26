@@ -15,6 +15,14 @@ export interface NavItem {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon;
     isActive?: boolean;
+    description?: string;
+    badge?: string;
+    iconClass?: string;
+}
+
+export interface NavGroup {
+    label: string;
+    items: NavItem[];
 }
 
 export interface Paginated<T> {

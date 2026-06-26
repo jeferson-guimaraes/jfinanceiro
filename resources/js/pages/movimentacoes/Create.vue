@@ -231,7 +231,7 @@ function refreshCategories() {
                             <InputError :message="form.errors.categoria_id" />
                             <div class="mt-1">
                                 <button type="button" @click="isCategoriaModalOpen = true"
-                                    class="text-xs text-blue-500 hover:text-blue-600 font-medium flex items-center gap-1">
+                                    class="text-xs text-blue-500 hover:text-blue-600 font-medium flex items-center gap-1 hover:cursor-pointer">
                                     <PlusCircle class="h-3 w-3" />
                                     Cadastrar nova categoria
                                 </button>
@@ -290,7 +290,12 @@ function refreshCategories() {
                 </FormLayout>
             </form>
         </div>
-        <CategoriaModal :open="isCategoriaModalOpen" @close="isCategoriaModalOpen = false"
-            @category-created="refreshCategories" />
+        <CategoriaModal
+            :open="isCategoriaModalOpen"
+            :default-tipo="form.tipo as 'ganho' | 'gasto' | 'gasto futuro'"
+            lock-tipo
+            @close="isCategoriaModalOpen = false"
+            @category-created="refreshCategories"
+        />
     </AppLayout>
 </template>
