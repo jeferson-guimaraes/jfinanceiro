@@ -305,10 +305,10 @@ const canPaySelected = computed(() => {
               <span v-if="sortKey === 'tipo'" class="text-blue-600">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </div>
           </TableHead>
-          <TableHead class="h-10 text-center cursor-pointer text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-blue-600 transition-colors" @click="sort('movimentacao.valor')">
+          <TableHead class="h-10 text-center cursor-pointer text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-blue-600 transition-colors" @click="sort(activeTab === 'gasto futuro' ? 'movimentacao.valor' : 'valor')">
             <div class="flex items-center justify-center gap-1">
-              Valor
-              <span v-if="sortKey === 'movimentacao.valor'" class="text-blue-600">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+              {{ activeTab === 'gasto futuro' ? 'Vlr. Total' : 'Valor' }}
+              <span v-if="sortKey === (activeTab === 'gasto futuro' ? 'movimentacao.valor' : 'valor')" class="text-blue-600">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
             </div>
           </TableHead>
           <template v-if="activeTab === 'gasto futuro'">
@@ -359,7 +359,7 @@ const canPaySelected = computed(() => {
                 {{ parcela.movimentacao.categoria?.nome || 'Outros' }}
               </span>
             </TableCell>
-            <TableCell class="whitespace-nowrap text-xs font-medium">
+            <TableCell class="whitespace-nowrap text-xs font-bold text-gray-900 dark:text-gray-100">
               {{ formatBRL(Number(parcela.movimentacao.valor)) }}
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs">
