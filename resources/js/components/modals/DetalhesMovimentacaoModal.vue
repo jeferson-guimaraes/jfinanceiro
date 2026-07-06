@@ -18,7 +18,8 @@ import {
   Clock,
   ArrowUpCircle,
   ArrowDownCircle,
-  CalendarDays
+  CalendarDays,
+  CreditCard,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 
@@ -42,6 +43,40 @@ const parcela = computed(() => {
   return isParcela.value ? (props.item as ParcelaComMovimentacao) : null;
 });
 
+const isGastoFuturo = computed(() => movimentacao.value?.tipo === 'gasto futuro');
+
+const totalParcelas = computed(() => Number(movimentacao.value?.parcelas ?? 0));
+
+const parcelasPagas = computed(() => Number(movimentacao.value?.parcelas_pagas ?? 0));
+
+const parcelasPendentes = computed(() => Math.max(totalParcelas.value - parcelasPagas.value, 0));
+
+const valorTotal = computed(() => Number(movimentacao.value?.valor ?? 0));
+
+const valorMedioParcela = computed(() =>
+  totalParcelas.value > 0 ? valorTotal.value / totalParcelas.value : 0,
+);
+
+const progressoPercentual = computed(() =>
+  totalParcelas.value > 0 ? Math.round((parcelasPagas.value / totalParcelas.value) * 100) : 0,
+);
+
+const valorExibidoPrincipal = computed(() => {
+  if (isGastoFuturo.value) {
+    return valorTotal.value;
+  }
+
+  return isParcela.value ? parcela.value!.valor : valorTotal.value;
+});
+
+const labelValorPrincipal = computed(() => {
+  if (isGastoFuturo.value) {
+    return 'Valor Total';
+  }
+
+  return isParcela.value ? 'Valor da Parcela' : 'Valor Total';
+});
+
 const headerConfig = computed(() => {
   if (!movimentacao.value) return { color: 'bg-gray-600', icon: Info, label: 'Detalhes' };
   
@@ -58,7 +93,7 @@ const handleOpenChange = (value: boolean) => {
 
 <template>
   <Dialog :open="open" @update:open="handleOpenChange">
-    <DialogContent class="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
+    <DialogContent :class="['p-0 overflow-hidden border-none shadow-2xl', isGastoFuturo ? 'sm:max-w-[560px]' : 'sm:max-w-[500px]']">
       <div :class="[headerConfig.color, 'p-6 text-white relative transition-colors duration-300']">
         <div class="absolute top-4 right-4 opacity-10">
           <component :is="headerConfig.icon" class="h-24 w-24" />
@@ -76,7 +111,7 @@ const handleOpenChange = (value: boolean) => {
 
       <div class="p-6 bg-white dark:bg-sidebar space-y-6" v-if="movimentacao">
         <!-- Grid de Informações Principais -->
-        <div class="grid grid-cols-2 gap-4">
+        <div :class="isGastoFuturo ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-2 gap-4'">
           <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700/50 space-y-1">
             <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
               <Tag class="h-3.5 w-3.5" />
@@ -90,12 +125,60 @@ const handleOpenChange = (value: boolean) => {
           <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700/50 space-y-1">
             <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
               <DollarSign class="h-3.5 w-3.5" />
-              <span class="text-[10px] font-bold uppercase tracking-wider">Valor {{ isParcela ? 'da Parcela' : 'Total' }}</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider">{{ labelValorPrincipal }}</span>
             </div>
-            <p class="text-lg font-bold text-gray-900 dark:text-gray-100" :class="movimentacao.tipo === 'ganho' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-              {{ formataDinheiroBRL(isParcela ? parcela!.valor : movimentacao.valor) }}
+            <p
+              class="text-lg font-bold"
+              :class="movimentacao.tipo === 'ganho' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+            >
+              {{ formataDinheiroBRL(valorExibidoPrincipal) }}
             </p>
           </div>
+
+          <template v-if="isGastoFuturo">
+            <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700/50 space-y-1">
+              <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
+                <CreditCard class="h-3.5 w-3.5" />
+                <span class="text-[10px] font-bold uppercase tracking-wider">
+                  {{ isParcela ? 'Valor desta Parcela' : 'Valor Médio por Parcela' }}
+                </span>
+              </div>
+              <p class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {{ formataDinheiroBRL(isParcela ? parcela!.valor : valorMedioParcela) }}
+              </p>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700/50 space-y-1">
+              <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
+                <Layers class="h-3.5 w-3.5" />
+                <span class="text-[10px] font-bold uppercase tracking-wider">Parcelas</span>
+              </div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {{ totalParcelas }} {{ totalParcelas === 1 ? 'parcela' : 'parcelas' }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ parcelasPagas }} pagas · {{ parcelasPendentes }} pendentes
+              </p>
+            </div>
+          </template>
+        </div>
+
+        <!-- Resumo de progresso para Gasto Futuro -->
+        <div v-if="isGastoFuturo" class="space-y-2">
+          <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400 px-1">
+            <span>Progresso de Pagamento</span>
+            <span class="text-blue-600 dark:text-blue-400">{{ progressoPercentual }}%</span>
+          </div>
+          <div class="h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+            <div
+              class="h-full rounded-full bg-blue-600 transition-all duration-300"
+              :style="{ width: `${progressoPercentual}%` }"
+            />
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 px-1">
+            {{ parcelasPagas }} de {{ totalParcelas }} parcelas quitadas
+            <span v-if="isParcela"> · média de {{ formataDinheiroBRL(valorMedioParcela) }} por parcela</span>
+          </p>
         </div>
 
         <!-- Seção de Datas e Status -->
@@ -123,8 +206,8 @@ const handleOpenChange = (value: boolean) => {
                     <Layers class="h-4 w-4" />
                   </div>
                   <div>
-                    <p class="text-[10px] text-gray-500 uppercase font-medium">Parcela</p>
-                    <p class="text-sm font-medium">{{ parcela.numero }} de {{ movimentacao.parcelas }}</p>
+                    <p class="text-[10px] text-gray-500 uppercase font-medium">Parcela Atual</p>
+                    <p class="text-sm font-medium">{{ parcela.numero }} de {{ totalParcelas }}</p>
                   </div>
                 </div>
                 <div v-if="parcela.pago" class="flex items-center gap-1 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full text-[10px] font-bold uppercase">
@@ -134,6 +217,22 @@ const handleOpenChange = (value: boolean) => {
                 <div v-else class="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded-full text-[10px] font-bold uppercase">
                   <Clock class="h-3 w-3" />
                   Pendente
+                </div>
+              </div>
+
+              <div v-if="isGastoFuturo" class="p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg text-blue-600 dark:text-blue-400">
+                    <CheckCircle2 class="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p class="text-[10px] text-gray-500 uppercase font-medium">Parcelas Pagas</p>
+                    <p class="text-sm font-medium">{{ parcelasPagas }} de {{ totalParcelas }}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-[10px] text-gray-500 uppercase font-medium">Pendentes</p>
+                  <p class="text-sm font-bold text-amber-600 dark:text-amber-400">{{ parcelasPendentes }}</p>
                 </div>
               </div>
 
@@ -151,11 +250,15 @@ const handleOpenChange = (value: boolean) => {
                    <p class="text-[10px] text-gray-500 uppercase font-medium">Pagamento em</p>
                    <p class="text-sm font-medium text-green-600">{{ formatDate(parcela.data_pagamento) }}</p>
                 </div>
+                <div v-else-if="isGastoFuturo" class="text-right">
+                  <p class="text-[10px] text-gray-500 uppercase font-medium">Valor da Parcela</p>
+                  <p class="text-sm font-bold text-red-600 dark:text-red-400">{{ formataDinheiroBRL(parcela.valor) }}</p>
+                </div>
               </div>
             </template>
 
-            <!-- Informações Gerais de Gasto Futuro (quando não é uma parcela específica mas a movimentação pai) -->
-            <template v-else-if="movimentacao.tipo === 'gasto futuro'">
+            <!-- Informações Gerais de Gasto Futuro (movimentação pai, sem parcela específica) -->
+            <template v-else-if="isGastoFuturo">
               <div class="p-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="bg-purple-50 dark:bg-purple-900/20 p-2 rounded-lg text-purple-600 dark:text-purple-400">
@@ -163,12 +266,28 @@ const handleOpenChange = (value: boolean) => {
                   </div>
                   <div>
                     <p class="text-[10px] text-gray-500 uppercase font-medium">Total de Parcelas</p>
-                    <p class="text-sm font-medium">{{ movimentacao.parcelas }} parcelas</p>
+                    <p class="text-sm font-medium">{{ totalParcelas }} parcelas</p>
                   </div>
                 </div>
                 <div class="text-right">
-                  <p class="text-[10px] text-gray-500 uppercase font-medium">Progresso</p>
-                  <p class="text-sm font-bold text-blue-600">{{ movimentacao.parcelas_pagas || 0 }} de {{ movimentacao.parcelas }} pagas</p>
+                  <p class="text-[10px] text-gray-500 uppercase font-medium">Valor Médio</p>
+                  <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ formataDinheiroBRL(valorMedioParcela) }}</p>
+                </div>
+              </div>
+
+              <div class="p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg text-green-600 dark:text-green-400">
+                    <CheckCircle2 class="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p class="text-[10px] text-gray-500 uppercase font-medium">Parcelas Pagas</p>
+                    <p class="text-sm font-medium">{{ parcelasPagas }} de {{ totalParcelas }}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-[10px] text-gray-500 uppercase font-medium">Pendentes</p>
+                  <p class="text-sm font-bold text-amber-600 dark:text-amber-400">{{ parcelasPendentes }}</p>
                 </div>
               </div>
             </template>

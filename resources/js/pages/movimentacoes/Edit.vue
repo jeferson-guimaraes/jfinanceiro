@@ -71,6 +71,47 @@ const form = useForm({
     })) : [] as Array<{ id: number | null, valor: number, data_vencimento: string, numero: number, pago: boolean, is_temp?: boolean }>,
 });
 
+const isRedistributing = ref(false);
+
+function redistribuirParcelas(): void {
+    if (form.tipo !== 'gasto futuro') {
+        return;
+    }
+
+    const parcelas = form.parcelas_editadas;
+    const qtd = parcelas.length;
+
+    if (qtd === 0 || form.valor <= 0) {
+        return;
+    }
+
+    isRedistributing.value = true;
+
+    const paidSum = parcelas
+        .filter((p) => p.pago)
+        .reduce((acc, p) => acc + Number(p.valor), 0);
+    const pendentes = parcelas.filter((p) => !p.pago);
+
+    if (pendentes.length > 0) {
+        const remaining = form.valor - paidSum;
+        const valorBase = Number((remaining / pendentes.length).toFixed(2));
+
+        pendentes.forEach((p) => {
+            p.valor = valorBase;
+        });
+
+        const newSum = parcelas.reduce((acc, p) => acc + Number(p.valor), 0);
+        const diff = Number((form.valor - newSum).toFixed(2));
+
+        if (diff !== 0) {
+            const lastPendente = pendentes[pendentes.length - 1];
+            lastPendente.valor = Number((lastPendente.valor + diff).toFixed(2));
+        }
+    }
+
+    isRedistributing.value = false;
+}
+
 watch(() => form.parcelas, (newQtd) => {
     if (form.tipo !== 'gasto futuro') return;
     const qtd = Number(newQtd) || 0;
@@ -86,9 +127,6 @@ watch(() => form.parcelas, (newQtd) => {
             : form.data_vencimento;
 
         const lastDate = lastDateStr ? new Date(lastDateStr + 'T00:00:00') : new Date();
-        const avgValor = form.parcelas_editadas.length > 0
-            ? form.parcelas_editadas.reduce((acc, c) => acc + c.valor, 0) / form.parcelas_editadas.length
-            : 0;
 
         for (let i = 1; i <= diff; i++) {
             if (lastNum === 0 && i === 1) {
@@ -103,7 +141,7 @@ watch(() => form.parcelas, (newQtd) => {
 
             form.parcelas_editadas.push({
                 id: null,
-                valor: avgValor,
+                valor: 0,
                 data_vencimento: nextDateStr,
                 numero: lastNum + i,
                 pago: false,
@@ -111,6 +149,8 @@ watch(() => form.parcelas, (newQtd) => {
             });
         }
     }
+
+    redistribuirParcelas();
 });
 
 watch(() => form.data_vencimento, (newVal) => {
@@ -129,11 +169,13 @@ watch(() => form.data_vencimento, (newVal) => {
 });
 
 watch(() => form.parcelas_editadas, (newVal) => {
-    if (form.tipo === 'gasto futuro' && newVal) {
-        const sum = newVal.reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
-        form.valor = Number(sum.toFixed(2));
-        valor.value = form.valor;
+    if (isRedistributing.value || form.tipo !== 'gasto futuro' || !newVal) {
+        return;
     }
+
+    const sum = newVal.reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
+    form.valor = Number(sum.toFixed(2));
+    valor.value = form.valor;
 }, { deep: true });
 
 const formVariant = computed(() => {
@@ -195,6 +237,10 @@ const valorFormatado = computed({
         const digits = Number(value.replace(/[^\d]/g, ''));
         valor.value = digits / 100;
         form.valor = valor.value;
+
+        if (form.tipo === 'gasto futuro') {
+            redistribuirParcelas();
+        }
     },
 });
 
