@@ -153,10 +153,11 @@ const getTipoLabel = (tipo: string) => {
                     parcela.movimentacao.categoria?.nome }}</p>
                 </div>
                 <div class="text-right">
+                  <p class="text-[10px] text-gray-400 font-semibold uppercase">Parcela</p>
                   <p class="font-bold text-red-600 dark:text-red-400">
                     {{ formataDinheiroBRL(parcela.valor) }}
                   </p>
-                  <p class="text-xs font-semibold text-gray-400">
+                  <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
                     Total: {{ formataDinheiroBRL(parcela.movimentacao.valor) }}
                   </p>
                 </div>

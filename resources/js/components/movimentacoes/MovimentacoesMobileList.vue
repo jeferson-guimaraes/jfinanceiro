@@ -173,6 +173,7 @@ const canPaySelected = computed(() => {
               <template v-if="props.activeTab === 'gasto futuro'">
                 <SelectItem value="movimentacao.data">Data Movimentação</SelectItem>
                 <SelectItem value="data_vencimento">Data Vencimento</SelectItem>
+                <SelectItem value="movimentacao.valor">Valor Total</SelectItem>
                 <SelectItem value="valor">Valor Parcela</SelectItem>
                 <SelectItem value="movimentacao.parcelas">Qtd Parcelas</SelectItem>
                 <SelectItem value="movimentacao.parcelas_pagas">Parcelas Pagas</SelectItem>
@@ -232,9 +233,14 @@ const canPaySelected = computed(() => {
             <h3 class="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm">
               {{ parcela.movimentacao.descricao }}
             </h3>
-            <span class="font-bold text-xs sm:text-sm text-red-600 dark:text-red-400 whitespace-nowrap">
-              {{ formataDinheiroBRL(parcela.valor) }}
-            </span>
+            <div class="text-right shrink-0">
+              <span class="font-bold text-xs sm:text-sm text-red-600 dark:text-red-400 whitespace-nowrap block">
+                {{ formataDinheiroBRL(parcela.valor) }}
+              </span>
+              <span class="text-[9px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                Total: {{ formataDinheiroBRL(parcela.movimentacao.valor) }}
+              </span>
+            </div>
           </div>
           
           <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">
@@ -251,6 +257,9 @@ const canPaySelected = computed(() => {
             </span>
             <span class="font-bold bg-gray-100 dark:bg-gray-800 px-1 rounded">
               {{ parcela.numero }}/{{ parcela.movimentacao.parcelas }}
+            </span>
+            <span v-if="parcela.movimentacao.parcelas_pagas !== undefined" class="text-gray-500">
+              {{ parcela.movimentacao.parcelas_pagas }} pagas
             </span>
             <span v-if="parcela.pago" class="text-green-600 font-bold ml-auto uppercase text-[9px]">Paga</span>
             <span v-else-if="getParcelaStatus(parcela) === 'vencida'" class="text-red-600 font-bold ml-auto uppercase text-[9px]">Vencida</span>

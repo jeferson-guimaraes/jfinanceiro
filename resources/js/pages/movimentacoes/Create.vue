@@ -97,6 +97,15 @@ const resetCategoria = () => {
 
 watch(() => form.tipo, resetCategoria, { immediate: true });
 
+const categoriaModalTipo = computed(
+    (): Categoria['tipo'] =>
+        form.tipo === 'ganho' ||
+        form.tipo === 'gasto' ||
+        form.tipo === 'gasto futuro'
+            ? form.tipo
+            : 'ganho',
+);
+
 const valor = ref(0);
 
 const valorFormatado = computed({
@@ -292,7 +301,7 @@ function refreshCategories() {
         </div>
         <CategoriaModal
             :open="isCategoriaModalOpen"
-            :default-tipo="form.tipo as 'ganho' | 'gasto' | 'gasto futuro'"
+            :default-tipo="categoriaModalTipo"
             lock-tipo
             @close="isCategoriaModalOpen = false"
             @category-created="refreshCategories"
