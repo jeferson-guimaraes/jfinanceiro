@@ -273,29 +273,34 @@ watch([dataInicio, dataFim], () => {
     const fimValido = isValidDate(dataFim.value);
 
     if (!dataInicio.value && !dataFim.value) {
+      selectedMovimentacoes.value = [];
       triggerSearch();
       return;
     }
 
     if (inicioValido && fimValido) {
       if (new Date(dataInicio.value) <= new Date(dataFim.value)) {
+        selectedMovimentacoes.value = [];
         triggerSearch();
       }
     }
   }
 });
 
-watch([mesSelecionado, anoSelecionado, perPage], () => {
+watch([mesSelecionado, anoSelecionado], () => {
   if (abaAtiva.value === 'gasto futuro') {
     const ano = parseInt(anoSelecionado.value);
     const anoValido = !isNaN(ano) && ano >= 2000 && ano <= new Date().getFullYear() + 10;
-    
+
     if (mesSelecionado.value && anoValido) {
+      selectedMovimentacoes.value = [];
       triggerSearch();
     }
-  } else {
-    triggerSearch();
   }
+});
+
+watch(perPage, () => {
+  triggerSearch();
 });
 
 watch(buscaTexto, () => {
@@ -307,6 +312,8 @@ watch(buscaTexto, () => {
 
 const limparFiltros = () => {
   const now = new Date();
+
+  selectedMovimentacoes.value = [];
 
   if (abaAtiva.value === 'gasto futuro'){
     mesSelecionado.value = String(currentDate.getMonth() + 1);
