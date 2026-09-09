@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MovimentacaoController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -16,6 +17,10 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
+
+    Route::prefix('usuarios')->name('usuarios.')->middleware('admin')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+    });
 
     Route::prefix('movimentacoes')->name('movimentacoes.')->group(function () {
         Route::get('index', [MovimentacaoController::class, 'index'])
