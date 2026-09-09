@@ -18,6 +18,7 @@ import { dashboard } from '@/routes';
 import movimentacoes from '@/routes/movimentacoes';
 import { index as indexCategorias } from '@/routes/movimentacoes/categorias';
 import { edit as editProfile } from '@/routes/profile';
+import { index as indexUsuarios } from '@/routes/usuarios';
 import { type NavGroup, type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
@@ -27,6 +28,7 @@ import {
     Plus,
     Settings,
     Sparkles,
+    Users,
 } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { computed } from 'vue';
@@ -34,41 +36,60 @@ import { computed } from 'vue';
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 const currentFilters = computed(() => page.props.filters || {});
+const isAdmin = computed(() => user.value?.role === 'admin');
 
-const navGroups = computed<NavGroup[]>(() => [
-    {
-        label: 'Visão Geral',
-        items: [
-            {
-                title: 'Dashboard',
-                href: dashboard(),
-                icon: LayoutDashboard,
-                description: 'Resumo financeiro',
-                iconClass: 'bg-blue-500/20 text-blue-300',
-            },
-        ],
-    },
-    {
-        label: 'Financeiro',
-        items: [
-            {
-                title: 'Movimentações',
-                href: movimentacoes.index({ query: currentFilters.value as any }).url,
-                icon: ArrowUpDown,
-                description: 'Receitas e despesas',
-                iconClass: 'bg-emerald-500/20 text-emerald-300',
-            },
-            {
-                title: 'Categorias',
-                href: indexCategorias(),
-                icon: LayoutGrid,
-                description: 'Organize seus lançamentos',
-                iconClass: 'bg-violet-500/20 text-violet-300',
-            },
-        ],
-    },
-]);
+const navGroups = computed<NavGroup[]>(() => {
+    const groups: NavGroup[] = [
+        {
+            label: 'Visão Geral',
+            items: [
+                {
+                    title: 'Dashboard',
+                    href: dashboard(),
+                    icon: LayoutDashboard,
+                    description: 'Resumo financeiro',
+                    iconClass: 'bg-blue-500/20 text-blue-300',
+                },
+            ],
+        },
+        {
+            label: 'Financeiro',
+            items: [
+                {
+                    title: 'Movimentações',
+                    href: movimentacoes.index({ query: currentFilters.value as any }).url,
+                    icon: ArrowUpDown,
+                    description: 'Receitas e despesas',
+                    iconClass: 'bg-emerald-500/20 text-emerald-300',
+                },
+                {
+                    title: 'Categorias',
+                    href: indexCategorias(),
+                    icon: LayoutGrid,
+                    description: 'Organize seus lançamentos',
+                    iconClass: 'bg-violet-500/20 text-violet-300',
+                },
+            ],
+        },
+    ];
 
+    if (isAdmin.value) {
+        groups.push({
+            label: 'Administração',
+            items: [
+                {
+                    title: 'Usuários',
+                    href: indexUsuarios(),
+                    icon: Users,
+                    description: 'Usuários cadastrados',
+                    iconClass: 'bg-amber-500/20 text-amber-300',
+                },
+            ],
+        });
+    }
+
+    return groups;
+});
 const footerNavItems: NavItem[] = [
     {
         title: 'Configurações',

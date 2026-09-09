@@ -58,6 +58,8 @@ export interface User {
     id: number;
     name: string;
     email: string;
+    role: 'admin' | 'user';
+    status: 'ativo' | 'inativo';
     avatar?: string;
     email_verified_at: string | null;
     created_at: string;
