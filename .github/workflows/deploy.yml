@@ -32,7 +32,7 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Deploy para servidor
+      - name: Deploy e otimização
         uses: easingthemes/ssh-deploy@v5.1.0
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
@@ -49,16 +49,9 @@ jobs:
             storage/framework/cache/,
             storage/framework/sessions/,
             storage/framework/views/
-
-      - name: Otimizar Laravel
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
+          SCRIPT_AFTER: |
             cd /home1/jfinan85/jfinanceiro.com.br
-            rm -rf vendor/
-            /opt/cpanel/composer/bin/composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+            /opt/cpanel/composer/bin/composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-progress
             php artisan optimize:clear
             php artisan optimize
+          SCRIPT_AFTER_REQUIRED: true
