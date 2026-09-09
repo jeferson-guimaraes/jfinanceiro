@@ -38,6 +38,11 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
           REMOTE_HOST: ${{ secrets.HOST }}
           REMOTE_USER: ${{ secrets.USERNAME }}
+          SSH_CMD_ARGS: >-
+            -o StrictHostKeyChecking=no
+            -o ControlMaster=auto
+            -o ControlPath=/tmp/gha-ssh-%C
+            -o ControlPersist=180
           SOURCE: "./"
           TARGET: "/home1/jfinan85/jfinanceiro.com.br"
           EXCLUDE: >
