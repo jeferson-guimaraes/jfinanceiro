@@ -50,8 +50,26 @@ jobs:
             storage/framework/sessions/,
             storage/framework/views/
           SCRIPT_AFTER: |
+            set -e
             cd /home1/jfinan85/jfinanceiro.com.br
-            /opt/cpanel/composer/bin/composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-progress
-            php artisan optimize:clear
-            php artisan optimize
+
+            PHP_BIN=/usr/local/bin/php
+            COMPOSER_PHAR=/home1/jfinan85/composer.phar
+
+            if [ ! -x "$PHP_BIN" ]; then
+              echo "ERRO: PHP CLI nao encontrado em $PHP_BIN"
+              exit 1
+            fi
+            if [ ! -f "$COMPOSER_PHAR" ]; then
+              echo "ERRO: composer.phar nao encontrado em $COMPOSER_PHAR"
+              exit 1
+            fi
+
+            echo "PHP: $("$PHP_BIN" -r 'echo PHP_VERSION;')"
+
+            "$PHP_BIN" -d memory_limit=-1 "$COMPOSER_PHAR" install \
+              --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-progress
+
+            "$PHP_BIN" artisan optimize:clear
+            "$PHP_BIN" artisan optimize
           SCRIPT_AFTER_REQUIRED: true
