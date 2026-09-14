@@ -147,22 +147,8 @@ function handlePay(movimentacao: Movimentacao) {
   isModalPagamentoAberto.value = true;
 }
 
-function handlePayMany(ids: number[]) {
-  // Se estivermos na aba 'gasto futuro', as movimentações estão dentro do objeto parcela
-  if (abaAtiva.value === 'gasto futuro') {
-    const uniqueMovs = new Map<number, Movimentacao>();
-    props.parcelasFuturas.data
-      .filter(p => ids.includes(p.movimentacao.id))
-      .forEach(p => {
-        if (!uniqueMovs.has(p.movimentacao.id)) {
-          uniqueMovs.set(p.movimentacao.id, p.movimentacao);
-        }
-      });
-    movimentacoesParaPagarMassa.value = Array.from(uniqueMovs.values());
-  } else {
-    // Caso contrário, busca no array de movimentações normal
-    movimentacoesParaPagarMassa.value = props.movimentacoes.data.filter(m => ids.includes(m.id));
-  }
+function handlePayMany(movimentacoes: Movimentacao[]) {
+  movimentacoesParaPagarMassa.value = movimentacoes;
   isModalPagamentoMassaAberto.value = true;
 }
 
