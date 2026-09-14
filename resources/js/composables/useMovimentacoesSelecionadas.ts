@@ -68,11 +68,15 @@ export function useMovimentacoesSelecionadas({ selectedMovimentacoes, movimentac
     return total;
   });
 
+  const movimentacoesSelecionadas = computed(() =>
+    Array.from(itensSelecionados.value.values()).map(item => item.movimentacao),
+  );
+
   const canPaySelected = computed(() => {
     if (selectedMovimentacoes.value.length === 0) return false;
 
-    return canPayMovimentacoesInBulk(Array.from(itensSelecionados.value.values()).map(item => item.movimentacao));
+    return canPayMovimentacoesInBulk(movimentacoesSelecionadas.value);
   });
 
-  return { totalSelecionado, canPaySelected };
+  return { totalSelecionado, canPaySelected, movimentacoesSelecionadas };
 }

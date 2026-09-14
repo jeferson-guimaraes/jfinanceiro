@@ -197,7 +197,7 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
   emit('delete', movimentacao);
 }
 
-const { totalSelecionado, canPaySelected } = useMovimentacoesSelecionadas({
+const { totalSelecionado, canPaySelected, movimentacoesSelecionadas } = useMovimentacoesSelecionadas({
   selectedMovimentacoes: toRef(props, 'selectedMovimentacoes'),
   movimentacoes: computed(() => props.movimentacoes ?? []),
   parcelas: computed(() => props.parcelas ?? []),
@@ -235,7 +235,7 @@ const { totalSelecionado, canPaySelected } = useMovimentacoesSelecionadas({
           </span>
         </div>
         <div class="flex gap-2">
-          <Button v-if="canPaySelected" class="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-bold uppercase px-4 shadow-sm" @click="emit('pay:selected', props.selectedMovimentacoes)">
+          <Button v-if="canPaySelected" class="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-bold uppercase px-4 shadow-sm" @click="emit('pay:selected', movimentacoesSelecionadas)">
             Pagar Selecionados
           </Button>
           <Button variant="ghost" class="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 text-[10px] font-bold uppercase" @click="requestDeleteMany">

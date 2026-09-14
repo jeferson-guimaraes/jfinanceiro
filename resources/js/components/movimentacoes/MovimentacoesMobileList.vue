@@ -123,7 +123,7 @@ const getTipoColorClass = (tipo: string) => {
   }
 };
 
-const { totalSelecionado, canPaySelected } = useMovimentacoesSelecionadas({
+const { totalSelecionado, canPaySelected, movimentacoesSelecionadas } = useMovimentacoesSelecionadas({
   selectedMovimentacoes: toRef(props, 'selectedMovimentacoes'),
   movimentacoes: toRef(props, 'movimentacoes'),
   parcelas: toRef(props, 'parcelas'),
@@ -175,7 +175,7 @@ const { totalSelecionado, canPaySelected } = useMovimentacoesSelecionadas({
           </span>
         </div>
         <div class="flex gap-1.5">
-          <Button v-if="canPaySelected" size="sm" class="h-8 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase shadow-sm" @click="emit('pay:selected', props.selectedMovimentacoes)">
+          <Button v-if="canPaySelected" size="sm" class="h-8 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase shadow-sm" @click="emit('pay:selected', movimentacoesSelecionadas)">
             Pagar
           </Button>
           <Button size="sm" variant="ghost" class="h-8 px-2 text-red-600 hover:bg-red-50" @click="emit('delete:selected', props.selectedMovimentacoes)">
