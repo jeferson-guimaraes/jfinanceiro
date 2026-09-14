@@ -143,7 +143,7 @@ const getTipoLabel = (tipo: string) => {
                   : getStatusBgClass(parcela)
               ]">
               <div class="flex justify-end mb-2">
-                <Checkbox class="bg-gray-50" :id="`movimentacao-${parcela.movimentacao.id}`" :checked="selectedMovimentacoes.includes(parcela.movimentacao.id)"
+                <Checkbox class="bg-gray-50" :id="`movimentacao-${parcela.movimentacao.id}`" :model-value="selectedMovimentacoes.includes(parcela.movimentacao.id)"
                   @update:modelValue="(checked) => handleSelection(parcela.movimentacao.id, Boolean(checked))" />
               </div>
               <div class="flex justify-between items-start">
@@ -220,7 +220,7 @@ const getTipoLabel = (tipo: string) => {
         class="rounded-lg border p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 mb-5"
         :class="selectedMovimentacoes.includes(movimentacao.id) ? 'bg-blue-200/30' : 'bg-white'">
         <div class="flex justify-end mb-2">
-          <Checkbox :id="`movimentacao-${movimentacao.id}`" :checked="selectedMovimentacoes.includes(movimentacao.id)"
+          <Checkbox :id="`movimentacao-${movimentacao.id}`" :model-value="selectedMovimentacoes.includes(movimentacao.id)"
             @update:modelValue="(checked) => handleSelection(movimentacao.id, Boolean(checked))" />
         </div>
         <div class="flex justify-between">
