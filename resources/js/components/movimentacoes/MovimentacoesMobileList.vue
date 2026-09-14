@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, toRef } from 'vue';
 import type { Movimentacao, ParcelaComMovimentacao } from '@/types';
 import { formataDinheiroBRL } from '@/utils/formataDinheiro';
 import { formatDate } from '@/utils/formatDate';
@@ -9,7 +9,7 @@ import { Link } from '@inertiajs/vue3';
 import movimentacoesRoute from '@/routes/movimentacoes';
 import Checkbox from '../ui/checkbox/Checkbox.vue';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { canPayMovimentacoesInBulk } from '@/utils/movimentacoes';
+import { useMovimentacoesSelecionadas } from '@/composables/useMovimentacoesSelecionadas';
 
 const props = withDefaults(defineProps<{
   movimentacoes: Movimentacao[];
@@ -123,39 +123,11 @@ const getTipoColorClass = (tipo: string) => {
   }
 };
 
-const totalSelecionado = computed(() => {
-  if (props.selectedMovimentacoes.length === 0) return 0;
-  
-  if (props.activeTab === 'gasto futuro') {
-    return props.parcelas
-      .filter(p => props.selectedMovimentacoes.includes(p.movimentacao.id))
-      .reduce((acc, p) => acc + Number(p.valor), 0);
-  }
-  
-  return props.movimentacoes
-    .filter(m => props.selectedMovimentacoes.includes(m.id))
-    .reduce((acc, m) => acc + Number(m.valor), 0);
-});
-
-const canPaySelected = computed(() => {
-  if (props.selectedMovimentacoes.length === 0) return false;
-
-  const selectedIds = new Set(props.selectedMovimentacoes);
-  let selectedMovs: Movimentacao[] = [];
-
-  if (props.activeTab === 'gasto futuro') {
-    const movMap = new Map<number, Movimentacao>();
-    props.parcelas.forEach(parcela => {
-      if (selectedIds.has(parcela.movimentacao.id)) {
-        movMap.set(parcela.movimentacao.id, parcela.movimentacao);
-      }
-    });
-    selectedMovs = Array.from(movMap.values());
-  } else {
-    selectedMovs = props.movimentacoes.filter(movimentacao => selectedIds.has(movimentacao.id));
-  }
-
-  return canPayMovimentacoesInBulk(selectedMovs);
+const { totalSelecionado, canPaySelected, movimentacoesSelecionadas } = useMovimentacoesSelecionadas({
+  selectedMovimentacoes: toRef(props, 'selectedMovimentacoes'),
+  movimentacoes: toRef(props, 'movimentacoes'),
+  parcelas: toRef(props, 'parcelas'),
+  activeTab: toRef(props, 'activeTab'),
 });
 </script>
 
@@ -203,7 +175,7 @@ const canPaySelected = computed(() => {
           </span>
         </div>
         <div class="flex gap-1.5">
-          <Button v-if="canPaySelected" size="sm" class="h-8 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase shadow-sm" @click="emit('pay:selected', props.selectedMovimentacoes)">
+          <Button v-if="canPaySelected" size="sm" class="h-8 px-3 bg-green-600 hover:bg-green-700 text-[10px] font-bold uppercase shadow-sm" @click="emit('pay:selected', movimentacoesSelecionadas)">
             Pagar
           </Button>
           <Button size="sm" variant="ghost" class="h-8 px-2 text-red-600 hover:bg-red-50" @click="emit('delete:selected', props.selectedMovimentacoes)">
@@ -224,7 +196,7 @@ const canPaySelected = computed(() => {
         <div class="absolute left-0 top-1 bottom-1 w-1 rounded-r-full" :class="getStatusColorClass(parcela)"></div>
 
         <div @click.stop>
-          <Checkbox :id="`p-${parcela.id}`" :checked="props.selectedMovimentacoes.includes(parcela.movimentacao.id)"
+          <Checkbox :id="`p-${parcela.id}`" :model-value="props.selectedMovimentacoes.includes(parcela.movimentacao.id)"
             @update:modelValue="(checked) => handleSelection(parcela.movimentacao.id, Boolean(checked))" />
         </div>
         
@@ -294,7 +266,7 @@ const canPaySelected = computed(() => {
         <div class="absolute left-0 top-1 bottom-1 w-1 rounded-r-full" :class="getTipoColorClass(mov.tipo)"></div>
         
         <div @click.stop>
-          <Checkbox :id="`m-${mov.id}`" :checked="props.selectedMovimentacoes.includes(mov.id)"
+          <Checkbox :id="`m-${mov.id}`" :model-value="props.selectedMovimentacoes.includes(mov.id)"
             @update:modelValue="(checked) => handleSelection(mov.id, Boolean(checked))" />
         </div>
         

@@ -12,9 +12,9 @@ import movimentacoesRoute from '@/routes/movimentacoes';
 import { type Movimentacao, type ParcelaComMovimentacao } from '@/types';
 import { formatDate } from '@/utils/formatDate';
 import { formatBRL } from '@/utils/masks';
-import { canPayMovimentacoesInBulk } from '@/utils/movimentacoes';
+import { useMovimentacoesSelecionadas } from '@/composables/useMovimentacoesSelecionadas';
 import { Link } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, toRef } from 'vue';
 import Checkbox from '../ui/checkbox/Checkbox.vue';
 import { Trash2, Pencil, CheckCircle2 } from 'lucide-vue-next';
 
@@ -197,43 +197,11 @@ function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
   emit('delete', movimentacao);
 }
 
-const totalSelecionado = computed(() => {
-  if (props.selectedMovimentacoes.length === 0) return 0;
-  
-  if (props.activeTab === 'gasto futuro' && props.parcelas) {
-    return props.parcelas
-      .filter(parcela => props.selectedMovimentacoes.includes(parcela.movimentacao.id))
-      .reduce((acc, parcela) => acc + Number(parcela.valor), 0);
-  }
-  
-  if (props.movimentacoes) {
-    return props.movimentacoes
-      .filter(movimentacao => props.selectedMovimentacoes.includes(movimentacao.id))
-      .reduce((acc, movimentacao) => acc + Number(movimentacao.valor), 0);
-  }
-  
-  return 0;
-});
-
-const canPaySelected = computed(() => {
-  if (props.selectedMovimentacoes.length === 0) return false;
-
-  const selectedIds = new Set(props.selectedMovimentacoes);
-  let selectedMovs: Movimentacao[] = [];
-
-  if (props.activeTab === 'gasto futuro' && props.parcelas) {
-    const movMap = new Map<number, Movimentacao>();
-    props.parcelas.forEach(parcela => {
-      if (selectedIds.has(parcela.movimentacao.id)) {
-        movMap.set(parcela.movimentacao.id, parcela.movimentacao);
-      }
-    });
-    selectedMovs = Array.from(movMap.values());
-  } else if (props.movimentacoes) {
-    selectedMovs = props.movimentacoes.filter(m => selectedIds.has(m.id));
-  }
-
-  return canPayMovimentacoesInBulk(selectedMovs);
+const { totalSelecionado, canPaySelected, movimentacoesSelecionadas } = useMovimentacoesSelecionadas({
+  selectedMovimentacoes: toRef(props, 'selectedMovimentacoes'),
+  movimentacoes: computed(() => props.movimentacoes ?? []),
+  parcelas: computed(() => props.parcelas ?? []),
+  activeTab: toRef(props, 'activeTab'),
 });
 </script>
 
@@ -267,7 +235,7 @@ const canPaySelected = computed(() => {
           </span>
         </div>
         <div class="flex gap-2">
-          <Button v-if="canPaySelected" class="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-bold uppercase px-4 shadow-sm" @click="emit('pay:selected', props.selectedMovimentacoes)">
+          <Button v-if="canPaySelected" class="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-bold uppercase px-4 shadow-sm" @click="emit('pay:selected', movimentacoesSelecionadas)">
             Pagar Selecionados
           </Button>
           <Button variant="ghost" class="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 text-[10px] font-bold uppercase" @click="requestDeleteMany">
@@ -346,7 +314,7 @@ const canPaySelected = computed(() => {
             :class="[getStatusRowClass(parcela), 'cursor-pointer transition-colors duration-150']" 
             @click="emit('show-details', parcela)">
             <TableCell @click.stop>
-              <Checkbox :checked="selectedMovimentacoes.includes(parcela.movimentacao.id)" @update:modelValue="(val) => toggleSelection(parcela.movimentacao.id, Boolean(val))" />
+              <Checkbox :model-value="selectedMovimentacoes.includes(parcela.movimentacao.id)" @update:modelValue="(val) => toggleSelection(parcela.movimentacao.id, Boolean(val))" />
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-medium">
               {{ formatDate(parcela.movimentacao.data) }}
@@ -398,7 +366,7 @@ const canPaySelected = computed(() => {
             :class="[props.selectedMovimentacoes && props.selectedMovimentacoes.includes(movimentacao.id) ? 'bg-blue-50/50 dark:bg-blue-900/20' : '', 'cursor-pointer transition-colors duration-150 border-b border-gray-50 dark:border-gray-800/50']" 
             @click="emit('show-details', movimentacao)">
             <TableCell @click.stop>
-              <Checkbox :checked="props.selectedMovimentacoes && props.selectedMovimentacoes.includes(movimentacao.id)" @update:modelValue="(val) => toggleSelection(movimentacao.id, Boolean(val))" />
+              <Checkbox :model-value="props.selectedMovimentacoes && props.selectedMovimentacoes.includes(movimentacao.id)" @update:modelValue="(val) => toggleSelection(movimentacao.id, Boolean(val))" />
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-medium">
               {{ formatDate(movimentacao.data) }}
