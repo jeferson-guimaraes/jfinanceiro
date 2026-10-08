@@ -93,8 +93,8 @@ function closeModal() {
 
 <template>
     <Dialog :open="open" @update:open="closeModal">
-        <DialogContent class="sm:max-w-[450px] p-0 overflow-hidden border-none shadow-2xl">
-            <div :class="[variantClasses, 'p-6 text-white relative transition-colors duration-300']">
+        <DialogContent class="sm:max-w-[450px] flex flex-col gap-0 p-0 overflow-hidden border-none shadow-2xl">
+            <div :class="[variantClasses, 'shrink-0 p-6 text-white relative transition-colors duration-300']">
                 <div class="absolute top-4 right-4 opacity-10">
                     <component :is="formIcon" class="h-20 w-20" />
                 </div>
@@ -106,7 +106,7 @@ function closeModal() {
                 </DialogHeader>
             </div>
 
-            <form @submit.prevent="submit" class="p-6 space-y-6 bg-white dark:bg-sidebar">
+            <form @submit.prevent="submit" class="min-h-0 overflow-y-auto p-6 space-y-6 bg-white dark:bg-sidebar">
                 <div class="space-y-4">
                     <div class="space-y-2">
                         <Label for="nome" class="text-sm font-semibold flex items-center gap-2">
