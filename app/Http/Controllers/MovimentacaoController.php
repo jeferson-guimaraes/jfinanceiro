@@ -11,6 +11,7 @@ use App\Services\MovimentacaoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -115,7 +116,7 @@ class MovimentacaoController extends Controller
     {
         $validated = $request->validate([
             'movimentacoes_ids' => 'required|array',
-            'movimentacoes_ids.*' => 'exists:movimentacoes,id',
+            'movimentacoes_ids.*' => ['integer', Rule::exists('movimentacoes', 'id')->where('user_id', Auth::id())],
         ]);
 
         $movimentacaoService->destroyManyMovimentacoes($validated['movimentacoes_ids']);

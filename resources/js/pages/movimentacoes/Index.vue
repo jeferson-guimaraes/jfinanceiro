@@ -10,12 +10,21 @@ import TotalCard from '@/components/movimentacoes/ValorCard.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import movimentacoesRoutes from '@/routes/movimentacoes';
 import type { BreadcrumbItem, Movimentacao, ParcelaComMovimentacao, Paginated } from '@/types';
-import { Head, router, Link } from '@inertiajs/vue3';
+import { Head, router, Link, usePage } from '@inertiajs/vue3';
 import { Check, Hourglass, Wallet, X, Plus, ArrowUp, ArrowDown, CircleDollarSign } from 'lucide-vue-next';
 import MovimentacoesMobileList from '@/components/movimentacoes/MovimentacoesMobileList.vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import isValidDate from '@/utils/validaData';
 import { Button } from '@/components/ui/button';
+import { useMovimentacoesSelecionadas } from '@/composables/useMovimentacoesSelecionadas';
+import {
+  comPeriodoPadrao,
+  isMesmoRecorte,
+  lerEstadoMovimentacoes,
+  salvarEstadoMovimentacoes,
+  type FiltrosMovimentacoes,
+} from '@/composables/useEstadoMovimentacoes';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const isMediumScreen = ref(false);
 
@@ -64,14 +73,83 @@ const tabs = [
   { title: 'Futuras', tipo: 'gasto futuro' },
 ];
 
-const abaAtiva = ref(props.filters.tipo || 'todos');
+const userId = usePage().props.auth.user.id;
 
-const dataInicio = ref(props.filters.data_inicio || '');
-const dataFim = ref(props.filters.data_fim || '');
-const buscaTexto = ref(props.filters.busca || '');
-const mesSelecionado = ref(props.filters.mes || '');
-const anoSelecionado = ref(props.filters.ano || '');
-const perPage = ref(props.filters.per_page || 50);
+const filtrosDaUrl: FiltrosMovimentacoes = {
+  tipo: props.filters.tipo || 'todos',
+  data_inicio: props.filters.data_inicio || '',
+  data_fim: props.filters.data_fim || '',
+  mes: props.filters.mes || '',
+  ano: props.filters.ano || '',
+  busca: props.filters.busca || '',
+  per_page: props.filters.per_page || 50,
+};
+
+// Sem query string o usuário chegou por um link "limpo" (menu, breadcrumb, cadastro):
+// nesse caso o estado salvo na sessão vence. Com query string, a URL vence.
+const estadoSalvo = lerEstadoMovimentacoes(userId);
+const chegouSemFiltros = typeof window !== 'undefined' && window.location.search === '';
+const restaurarFiltros = chegouSemFiltros && estadoSalvo !== null;
+const filtrosIniciais = restaurarFiltros ? comPeriodoPadrao(estadoSalvo!.filtros) : filtrosDaUrl;
+
+// A seleção salva guarda só IDs. Eles só voltam a ser selecionados se a conta aparecer nos
+// dados atuais do mesmo recorte, para que ações em massa nunca atinjam itens fora da tela.
+const idsSelecaoSalva = estadoSalvo && isMesmoRecorte(estadoSalvo.filtros, filtrosIniciais)
+  ? estadoSalvo.selecionados
+  : [];
+
+const abaAtiva = ref(filtrosIniciais.tipo);
+
+const dataInicio = ref(filtrosIniciais.data_inicio);
+const dataFim = ref(filtrosIniciais.data_fim);
+const buscaTexto = ref(filtrosIniciais.busca);
+const mesSelecionado = ref(filtrosIniciais.mes);
+const anoSelecionado = ref(filtrosIniciais.ano);
+const perPage = ref(filtrosIniciais.per_page);
+
+const carregandoEstadoSalvo = ref(restaurarFiltros);
+
+const idsVisiveis = (): Set<number> => {
+  if (abaAtiva.value === 'gasto futuro') {
+    return new Set(props.parcelasFuturas.data.map(parcela => parcela.movimentacao.id));
+  }
+
+  return new Set(props.movimentacoes.data.map(movimentacao => movimentacao.id));
+};
+
+const selecaoSalvaVisivel = (): number[] => {
+  const visiveis = idsVisiveis();
+
+  return idsSelecaoSalva.filter(id => visiveis.has(id));
+};
+
+const selectedMovimentacoes = ref<number[]>(restaurarFiltros ? [] : selecaoSalvaVisivel());
+
+const { totalSelecionado, canPaySelected, movimentacoesSelecionadas } = useMovimentacoesSelecionadas({
+  selectedMovimentacoes,
+  movimentacoes: computed(() => (abaAtiva.value === 'gasto futuro' ? [] : props.movimentacoes.data)),
+  parcelas: computed(() => (abaAtiva.value === 'gasto futuro' ? props.parcelasFuturas.data : [])),
+  activeTab: abaAtiva,
+});
+
+watch(
+  [abaAtiva, dataInicio, dataFim, mesSelecionado, anoSelecionado, buscaTexto, perPage, selectedMovimentacoes, carregandoEstadoSalvo],
+  () => {
+    salvarEstadoMovimentacoes(userId, {
+      filtros: {
+        tipo: abaAtiva.value,
+        data_inicio: dataInicio.value,
+        data_fim: dataFim.value,
+        mes: mesSelecionado.value,
+        ano: anoSelecionado.value,
+        busca: buscaTexto.value,
+        per_page: perPage.value,
+      },
+      selecionados: carregandoEstadoSalvo.value ? idsSelecaoSalva : selectedMovimentacoes.value,
+    });
+  },
+  { immediate: true, deep: true },
+);
 
 const currentFilters = computed(() => {
   const params: Record<string, any> = {
@@ -102,6 +180,18 @@ const meses = [
 const currentDate = new Date();
 // Inicializa com mês/ano atual se não vier da prop
 onMounted(() => {
+  if (restaurarFiltros) {
+    triggerSearch({
+      onSuccess: () => {
+        selectedMovimentacoes.value = selecaoSalvaVisivel();
+      },
+      onFinish: () => {
+        carregandoEstadoSalvo.value = false;
+      },
+    });
+    return;
+  }
+
   if (abaAtiva.value === 'gasto futuro' || (!mesSelecionado.value && !anoSelecionado.value)) {
     if (!mesSelecionado.value) mesSelecionado.value = String(currentDate.getMonth() + 1);
     if (!anoSelecionado.value) anoSelecionado.value = String(currentDate.getFullYear());
@@ -163,6 +253,8 @@ function confirmDelete() {
       preserveScroll: true,
       preserveState: true,
       onSuccess: () => {
+        const idExcluido = movimentacaoParaExcluir.value?.id;
+        selectedMovimentacoes.value = selectedMovimentacoes.value.filter(id => id !== idExcluido);
         isModalExclusaoAberto.value = false;
         movimentacaoParaExcluir.value = null;
       },
@@ -176,7 +268,6 @@ function handlePagamentoSucesso() {
 }
 
 const tabelaKey = ref(0);
-const selectedMovimentacoes = ref<number[]>([]);
 const isModalExclusaoMassaAberto = ref(false);
 
 const requestDeleteMany = (movimentacoesIds: number[]) => {
@@ -202,7 +293,7 @@ const confirmDeleteMany = () => {
 
 const debounceTimer = ref<any>(null);
 
-const triggerSearch = () => {
+const triggerSearch = (callbacks: { onSuccess?: () => void; onFinish?: () => void } = {}) => {
   const params: Record<string, string | number | null> = {};
 
   if (abaAtiva.value === 'todos' || abaAtiva.value === 'ganho' || abaAtiva.value === 'gasto') {
@@ -222,6 +313,7 @@ const triggerSearch = () => {
   router.get(movimentacoesRoutes.index().url, params, {
     preserveState: true,
     replace: true,
+    ...callbacks,
   });
 };
 
@@ -450,8 +542,13 @@ const getPageUrl = (page: number | string) => {
 
                 <!-- Totais -->
                 <div class="grid grid-cols-3 gap-2 sm:gap-3 lg:w-1/3 min-w-[320px]">
+                  <!-- Carregando o estado restaurado da sessão -->
+                  <template v-if="carregandoEstadoSalvo">
+                    <Skeleton v-for="i in 3" :key="'total-' + i" class="h-16 rounded-xl" />
+                  </template>
+
                   <!-- Caso 'gasto futuro' -->
-                  <template v-if="abaAtiva === 'gasto futuro'">
+                  <template v-else-if="abaAtiva === 'gasto futuro'">
                     <TotalCard :icon="CircleDollarSign" :icon-classes="'text-red-600'" title="Total" :value="total" />
                     <TotalCard :icon="Check" :icon-classes="'text-green-600'" title="Pago" :value="totalPago" />
                     <TotalCard :icon="Hourglass" :icon-classes="'text-yellow-600'" title="Pendente" :value="totalPendente" />
@@ -487,19 +584,26 @@ const getPageUrl = (page: number | string) => {
             </div>
 
             <!-- Tabelas de Movimentações/Parcelas -->
-            <TabelaMovimentacoes v-if="!isMediumScreen"
+            <div v-if="carregandoEstadoSalvo" class="flex flex-col gap-2" aria-busy="true">
+              <Skeleton v-for="i in 6" :key="'linha-' + i" class="h-12 w-full" />
+            </div>
+            <TabelaMovimentacoes v-else-if="!isMediumScreen"
               :key="'desktop-' + abaAtiva + '-' + tabelaKey"
               :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes.data"
               :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas.data : []" :active-tab="abaAtiva"
               :filters="currentFilters"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
-              @show-details="handleShowDetails" v-model:selectedMovimentacoes="selectedMovimentacoes" />
+              @show-details="handleShowDetails" v-model:selectedMovimentacoes="selectedMovimentacoes"
+              :total-selecionado="totalSelecionado" :can-pay-selected="canPaySelected"
+              :movimentacoes-selecionadas="movimentacoesSelecionadas" />
             <MovimentacoesMobileList v-else-if="isMediumScreen"
               :key="'mobile-' + abaAtiva + '-' + tabelaKey"
               :movimentacoes="abaAtiva === 'gasto futuro' ? [] : props.movimentacoes.data"
               :parcelas="abaAtiva === 'gasto futuro' ? props.parcelasFuturas.data : []" :active-tab="abaAtiva"
               :filters="currentFilters"
               v-model:selectedMovimentacoes="selectedMovimentacoes"
+              :total-selecionado="totalSelecionado" :can-pay-selected="canPaySelected"
+              :movimentacoes-selecionadas="movimentacoesSelecionadas"
               @delete="requestDelete" @delete:selected="requestDeleteMany" @pay="handlePay" @pay:selected="handlePayMany"
               @show-details="handleShowDetails" />
 

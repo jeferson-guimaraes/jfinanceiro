@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Movimentacoes;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class PagarParcelasMassaRequest extends FormRequest
 {
@@ -23,7 +24,7 @@ class PagarParcelasMassaRequest extends FormRequest
     {
         return [
             'movimentacao_ids' => ['required', 'array'],
-            'movimentacao_ids.*' => ['exists:movimentacoes,id'],
+            'movimentacao_ids.*' => ['integer', Rule::exists('movimentacoes', 'id')->where('user_id', $this->user()->id)],
             'quantidade_parcelas' => ['required', 'integer', 'min:1'],
             'data_pagamento' => ['required', 'date'],
             'descricao' => ['nullable', 'string', 'max:255'],
@@ -40,6 +41,7 @@ class PagarParcelasMassaRequest extends FormRequest
         return [
             'movimentacao_ids.required' => 'Nenhuma movimentação selecionada.',
             'movimentacao_ids.array' => 'Os IDs das movimentações devem ser um array.',
+            'movimentacao_ids.*.integer' => 'Os IDs das movimentações devem ser números inteiros.',
             'movimentacao_ids.*.exists' => 'Uma ou mais movimentações selecionadas não existem.',
             'quantidade_parcelas.required' => 'A quantidade de parcelas é obrigatória.',
             'quantidade_parcelas.integer' => 'A quantidade de parcelas deve ser um número inteiro.',

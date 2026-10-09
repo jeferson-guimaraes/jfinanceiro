@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, toRef } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { Movimentacao, ParcelaComMovimentacao } from '@/types';
 import { formataDinheiroBRL } from '@/utils/formataDinheiro';
 import { formatDate } from '@/utils/formatDate';
@@ -9,13 +9,15 @@ import { Link } from '@inertiajs/vue3';
 import movimentacoesRoute from '@/routes/movimentacoes';
 import Checkbox from '../ui/checkbox/Checkbox.vue';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { useMovimentacoesSelecionadas } from '@/composables/useMovimentacoesSelecionadas';
 
 const props = withDefaults(defineProps<{
   movimentacoes: Movimentacao[];
   parcelas: ParcelaComMovimentacao[];
   activeTab: string;
   selectedMovimentacoes?: number[];
+  totalSelecionado: number;
+  canPaySelected: boolean;
+  movimentacoesSelecionadas: Movimentacao[];
   filters?: Record<string, any>;
 }>(), {
   selectedMovimentacoes: () => [],
@@ -123,12 +125,6 @@ const getTipoColorClass = (tipo: string) => {
   }
 };
 
-const { totalSelecionado, canPaySelected, movimentacoesSelecionadas } = useMovimentacoesSelecionadas({
-  selectedMovimentacoes: toRef(props, 'selectedMovimentacoes'),
-  movimentacoes: toRef(props, 'movimentacoes'),
-  parcelas: toRef(props, 'parcelas'),
-  activeTab: toRef(props, 'activeTab'),
-});
 </script>
 
 <template>

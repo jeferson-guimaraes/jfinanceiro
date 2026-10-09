@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import UserInfo from '@/components/UserInfo.vue';
+import { limparEstadosMovimentacoes } from '@/composables/useEstadoMovimentacoes';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -17,6 +18,7 @@ interface Props {
 }
 
 const handleLogout = () => {
+    limparEstadosMovimentacoes();
     router.flushAll();
 };
 
