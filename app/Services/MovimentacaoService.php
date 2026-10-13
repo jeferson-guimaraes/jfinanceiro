@@ -15,6 +15,17 @@ use Illuminate\Support\Facades\Log;
 class MovimentacaoService
 {
     /**
+     * Quantidade máxima de palavras consideradas na busca. As demais são ignoradas para
+     * evitar consultas enormes quando um texto longo é colado no campo.
+     */
+    private const LIMITE_PALAVRAS_BUSCA = 10;
+
+    /**
+     * Maior valor que cabe nas colunas DECIMAL(10, 2) de movimentações e parcelas.
+     */
+    private const VALOR_MAXIMO = 99999999.99;
+
+    /**
      * Obtém os dados necessários para a criação de uma movimentação.
      * Inclui categorias de ganhos, gastos e gastos futuros.
      *
@@ -143,9 +154,8 @@ class MovimentacaoService
             $query->doMes($mes, $ano);
         }
 
-        $busca = request('busca');
-        if ($busca) {
-            $query->where('descricao', 'like', '%'.$busca.'%');
+        foreach ($this->palavrasDaBusca(request('busca')) as $palavra) {
+            $query->where(fn (Builder $q) => $this->filtraMovimentacaoPorPalavra($q, $palavra));
         }
 
         return $query;
@@ -170,11 +180,79 @@ class MovimentacaoService
             ->whereBetween('data_vencimento', [$inicioMes, $fimMes])
             ->whereHas('movimentacao', fn ($q) => $q->doUsuario($userId));
 
-        if ($busca) {
-            $query->whereHas('movimentacao', fn ($q) => $q->where('descricao', 'like', '%'.$busca.'%'));
+        foreach ($this->palavrasDaBusca($busca) as $palavra) {
+            $valor = $this->valorDaPalavra($palavra);
+
+            $query->where(function (Builder $q) use ($palavra, $valor) {
+                $q->whereHas('movimentacao', fn (Builder $m) => $this->filtraMovimentacaoPorPalavra($m, $palavra));
+
+                if ($valor !== null) {
+                    $q->orWhere('valor', $valor);
+                }
+            });
         }
 
         return $query;
+    }
+
+    /**
+     * Separa o texto da busca em palavras. Cada palavra precisa corresponder a algum campo
+     * da movimentação para que ela apareça no resultado. O símbolo "R$" é ignorado e só as
+     * primeiras palavras, até o limite, são consideradas.
+     *
+     * @return list<string>
+     */
+    private function palavrasDaBusca(?string $busca): array
+    {
+        $palavras = preg_split('/\s+/', trim((string) $busca), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        $palavras = array_values(array_filter(
+            $palavras,
+            fn (string $palavra) => strcasecmp($palavra, 'R$') !== 0,
+        ));
+
+        return array_slice($palavras, 0, self::LIMITE_PALAVRAS_BUSCA);
+    }
+
+    /**
+     * Interpreta uma palavra da busca como valor em reais, aceitando os formatos
+     * "45", "45,9", "45,90", "45.90", "1.234", "1.234,56" e "R$45,90".
+     * Retorna null quando a palavra não é um valor ou passa do maior valor armazenável.
+     */
+    private function valorDaPalavra(string $palavra): ?float
+    {
+        $texto = preg_replace('/^R\$/i', '', $palavra);
+        $valor = null;
+
+        if (preg_match('/^\d{1,3}(\.\d{3})*(,\d{1,2})?$/', $texto) || preg_match('/^\d+(,\d{1,2})?$/', $texto)) {
+            $valor = (float) str_replace(['.', ','], ['', '.'], $texto);
+        } elseif (preg_match('/^\d+\.\d{1,2}$/', $texto)) {
+            $valor = (float) $texto;
+        }
+
+        if ($valor === null || ! is_finite($valor) || $valor > self::VALOR_MAXIMO) {
+            return null;
+        }
+
+        return $valor;
+    }
+
+    /**
+     * Restringe a query de movimentações às que contêm a palavra na descrição ou no nome da
+     * categoria, ou cujo valor é igual à palavra interpretada como valor.
+     */
+    private function filtraMovimentacaoPorPalavra(Builder $query, string $palavra): void
+    {
+        $valor = $this->valorDaPalavra($palavra);
+
+        $query->where(function (Builder $q) use ($palavra, $valor) {
+            $q->where('descricao', 'like', '%'.$palavra.'%')
+                ->orWhereHas('categoria', fn (Builder $c) => $c->where('nome', 'like', '%'.$palavra.'%'));
+
+            if ($valor !== null) {
+                $q->orWhere('valor', $valor);
+            }
+        });
     }
 
     /**

@@ -12,9 +12,8 @@ import movimentacoesRoute from '@/routes/movimentacoes';
 import { type Movimentacao, type ParcelaComMovimentacao } from '@/types';
 import { formatDate } from '@/utils/formatDate';
 import { formatBRL } from '@/utils/masks';
-import { useMovimentacoesSelecionadas } from '@/composables/useMovimentacoesSelecionadas';
 import { Link } from '@inertiajs/vue3';
-import { computed, ref, toRef } from 'vue';
+import { computed, ref } from 'vue';
 import Checkbox from '../ui/checkbox/Checkbox.vue';
 import { Trash2, Pencil, CheckCircle2 } from 'lucide-vue-next';
 
@@ -23,6 +22,9 @@ interface Props {
   parcelas?: ParcelaComMovimentacao[];
   activeTab: string;
   selectedMovimentacoes: number[];
+  totalSelecionado: number;
+  canPaySelected: boolean;
+  movimentacoesSelecionadas: Movimentacao[];
   filters?: Record<string, any>;
 }
 
@@ -194,15 +196,10 @@ const getStatusRowClass = (parcela: ParcelaComMovimentacao) => {
 };
 
 function requestDelete(movimentacao: Movimentacao | ParcelaComMovimentacao) {
-  emit('delete', movimentacao);
+  const mov = 'movimentacao' in movimentacao ? movimentacao.movimentacao : movimentacao;
+  emit('delete', mov);
 }
 
-const { totalSelecionado, canPaySelected, movimentacoesSelecionadas } = useMovimentacoesSelecionadas({
-  selectedMovimentacoes: toRef(props, 'selectedMovimentacoes'),
-  movimentacoes: computed(() => props.movimentacoes ?? []),
-  parcelas: computed(() => props.parcelas ?? []),
-  activeTab: toRef(props, 'activeTab'),
-});
 </script>
 
 <template>

@@ -24,6 +24,7 @@ import { Calendar, CreditCard, Tag, DollarSign } from 'lucide-vue-next';
 import movimentacoesRoutes from '@/routes/movimentacoes';
 import { formatBRL } from '@/utils/masks';
 import InfoTooltip from '@/components/InfoTooltip.vue';
+import { abrirCalendarioNoToque } from '@/utils/abrirCalendarioNoToque';
 
 const props = defineProps<{
   open: boolean;
@@ -108,8 +109,8 @@ const handleOpenChange = (value: boolean) => {
 
 <template>
   <Dialog :open="open" @update:open="handleOpenChange">
-    <DialogContent class="sm:max-w-[550px] p-0 overflow-hidden border-none shadow-2xl">
-      <div class="bg-blue-600 p-6 text-white relative">
+    <DialogContent class="sm:max-w-[550px] flex flex-col gap-0 p-0 overflow-hidden border-none shadow-2xl">
+      <div class="shrink-0 bg-blue-600 p-6 text-white relative">
         <div class="absolute top-4 right-4 opacity-10">
           <CreditCard class="h-24 w-24" />
         </div>
@@ -121,7 +122,7 @@ const handleOpenChange = (value: boolean) => {
         </DialogHeader>
       </div>
 
-      <form @submit.prevent="submit" class="p-6 space-y-6 bg-white dark:bg-sidebar">
+      <form @submit.prevent="submit" class="min-h-0 overflow-y-auto p-6 space-y-6 bg-white dark:bg-sidebar">
         <!-- Lista de Movimentações -->
         <div class="space-y-3">
           <Label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Movimentações Selecionadas:</Label>
@@ -138,7 +139,7 @@ const handleOpenChange = (value: boolean) => {
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div class="space-y-2">
             <div class="flex items-center gap-1.5">
               <Label for="quantidade" class="text-sm font-medium mb-0">Qtd. Parcelas</Label>
@@ -161,7 +162,7 @@ const handleOpenChange = (value: boolean) => {
               <Calendar class="h-4 w-4 text-gray-400" />
               Data Pagamento
             </Label>
-            <Input id="data_pagamento" v-model="form.data_pagamento" type="date" required class="h-11 bg-white dark:bg-gray-800" />
+            <Input id="data_pagamento" v-model="form.data_pagamento" type="date" required class="h-11 bg-white dark:bg-gray-800" @click="abrirCalendarioNoToque" />
           </div>
         </div>
 

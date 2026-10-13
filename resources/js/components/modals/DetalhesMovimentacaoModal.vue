@@ -93,8 +93,8 @@ const handleOpenChange = (value: boolean) => {
 
 <template>
   <Dialog :open="open" @update:open="handleOpenChange">
-    <DialogContent :class="['p-0 overflow-hidden border-none shadow-2xl', isGastoFuturo ? 'sm:max-w-[560px]' : 'sm:max-w-[500px]']">
-      <div :class="[headerConfig.color, 'p-6 text-white relative transition-colors duration-300']">
+    <DialogContent :class="['flex flex-col gap-0 p-0 overflow-hidden border-none shadow-2xl', isGastoFuturo ? 'sm:max-w-[560px]' : 'sm:max-w-[500px]']">
+      <div :class="[headerConfig.color, 'shrink-0 p-6 text-white relative transition-colors duration-300']">
         <div class="absolute top-4 right-4 opacity-10">
           <component :is="headerConfig.icon" class="h-24 w-24" />
         </div>
@@ -109,7 +109,7 @@ const handleOpenChange = (value: boolean) => {
         </DialogHeader>
       </div>
 
-      <div class="p-6 bg-white dark:bg-sidebar space-y-6" v-if="movimentacao">
+      <div class="min-h-0 overflow-y-auto p-6 bg-white dark:bg-sidebar space-y-6" v-if="movimentacao">
         <!-- Grid de Informações Principais -->
         <div :class="isGastoFuturo ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-2 gap-4'">
           <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700/50 space-y-1">

@@ -276,6 +276,43 @@ class MovimentacaoTest extends TestCase
         ]);
     }
 
+    public function test_exclusao_em_massa_rejeita_movimentacao_de_outro_usuario(): void
+    {
+        $outroUsuario = User::factory()->create();
+        $movimentacaoAlheia = \App\Models\Movimentacao::factory()->create([
+            'user_id' => $outroUsuario->id,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->delete(route('movimentacoes.destroyMany'), [
+                'movimentacoes_ids' => [$movimentacaoAlheia->id],
+            ]);
+
+        $response->assertSessionHasErrors(['movimentacoes_ids.0']);
+        $this->assertDatabaseHas('movimentacoes', ['id' => $movimentacaoAlheia->id]);
+    }
+
+    public function test_exclusao_em_massa_com_movimentacao_ja_excluida_nao_exclui_nenhuma(): void
+    {
+        $valida = \App\Models\Movimentacao::factory()->create([
+            'user_id' => $this->user->id,
+        ]);
+
+        $excluida = \App\Models\Movimentacao::factory()->create([
+            'user_id' => $this->user->id,
+        ]);
+        $idExcluido = $excluida->id;
+        $excluida->delete();
+
+        $response = $this->actingAs($this->user)
+            ->delete(route('movimentacoes.destroyMany'), [
+                'movimentacoes_ids' => [$valida->id, $idExcluido],
+            ]);
+
+        $response->assertSessionHasErrors(['movimentacoes_ids.1']);
+        $this->assertDatabaseHas('movimentacoes', ['id' => $valida->id]);
+    }
+
     public function test_atualiza_movimentacao_ganho_com_sucesso(): void
     {
         $movimentacao = \App\Models\Movimentacao::factory()->create([

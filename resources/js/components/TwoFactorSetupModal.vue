@@ -110,8 +110,8 @@ watch(
 
 <template>
     <Dialog :open="isOpen" @update:open="isOpen = $event">
-        <DialogContent class="sm:max-w-md">
-            <DialogHeader class="flex items-center justify-center">
+        <DialogContent class="flex flex-col overflow-hidden sm:max-w-md">
+            <DialogHeader class="flex shrink-0 items-center justify-center">
                 <div
                     class="mb-3 w-auto rounded-full border border-border bg-card p-0.5 shadow-sm"
                 >
@@ -148,7 +148,7 @@ watch(
             </DialogHeader>
 
             <div
-                class="relative flex w-auto flex-col items-center justify-center space-y-5"
+                class="relative flex min-h-0 w-auto flex-col items-center space-y-5 overflow-y-auto"
             >
                 <template v-if="!showVerificationStep">
                     <AlertError v-if="errors?.length" :errors="errors" />

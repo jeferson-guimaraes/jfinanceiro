@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - develop
-      - main
+      - 'release/**'
+      - 'hotfix/**'
   pull_request:
     branches:
       - develop
       - main
+  # Chamado pelo workflow de deploy, que só publica se os testes passarem na main.
+  workflow_call:
 
 jobs:
   ci:
