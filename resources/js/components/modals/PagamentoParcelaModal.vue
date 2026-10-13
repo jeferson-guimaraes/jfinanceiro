@@ -25,6 +25,7 @@ import { formatBRL, handleValorKeydown } from '@/utils/masks';
 import { Calendar, DollarSign, Tag, CreditCard, Layers } from 'lucide-vue-next';
 import movimentacoes from '@/routes/movimentacoes';
 import InfoTooltip from '@/components/InfoTooltip.vue';
+import { abrirCalendarioNoToque } from '@/utils/abrirCalendarioNoToque';
 
 const props = defineProps<{
   open: boolean;
@@ -207,13 +208,13 @@ const handleOpenChange = (value: boolean) => {
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div class="space-y-2">
             <Label for="data_pagamento" class="text-sm font-medium flex items-center gap-2">
               <Calendar class="h-4 w-4 text-gray-400" />
               Data Pagamento
             </Label>
-            <Input id="data_pagamento" v-model="form.data_pagamento" type="date" required class="h-11 bg-white dark:bg-gray-800" />
+            <Input id="data_pagamento" v-model="form.data_pagamento" type="date" required class="h-11 bg-white dark:bg-gray-800" @click="abrirCalendarioNoToque" />
           </div>
           <div class="space-y-2">
             <Label for="valor_total_pago" class="text-sm font-medium flex items-center gap-2">
