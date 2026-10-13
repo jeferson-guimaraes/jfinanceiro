@@ -13,7 +13,7 @@ import type { BreadcrumbItem, Movimentacao, ParcelaComMovimentacao, Paginated } 
 import { Head, router, Link, usePage } from '@inertiajs/vue3';
 import { Check, Hourglass, Wallet, X, Plus, ArrowUp, ArrowDown, CircleDollarSign } from 'lucide-vue-next';
 import MovimentacoesMobileList from '@/components/movimentacoes/MovimentacoesMobileList.vue';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import isValidDate from '@/utils/validaData';
 import { Button } from '@/components/ui/button';
 import { useMovimentacoesSelecionadas } from '@/composables/useMovimentacoesSelecionadas';
@@ -381,6 +381,20 @@ watch(perPage, () => {
   triggerSearch();
 });
 
+const campoBusca = ref<{ $el: HTMLInputElement } | null>(null);
+
+/**
+ * Limpa só o texto da busca e refaz a consulta na hora, sem esperar o debounce da digitação.
+ * O foco volta para o campo para o usuário já poder digitar outra busca.
+ */
+async function limparBusca() {
+  buscaTexto.value = '';
+  await nextTick();
+  clearTimeout(debounceTimer.value);
+  triggerSearch();
+  campoBusca.value?.$el?.focus();
+}
+
 watch(buscaTexto, () => {
   clearTimeout(debounceTimer.value);
   debounceTimer.value = setTimeout(() => {
@@ -530,7 +544,17 @@ const getPageUrl = (page: number | string) => {
                     <!-- Filtro de Busca por Texto -->
                     <div class="flex flex-[1.5] items-center gap-2">
                       <div class="relative flex-1">
-                        <Input v-model="buscaTexto" placeholder="Buscar descrição..." class="h-9 pl-3 text-xs" />
+                        <Input ref="campoBusca" v-model="buscaTexto" placeholder="Buscar por descrição, categoria ou valor..." aria-label="Buscar movimentações por descrição, categoria ou valor" class="h-9 pl-3 pr-8 text-xs" />
+                        <button
+                          v-if="buscaTexto"
+                          type="button"
+                          aria-label="Limpar busca"
+                          title="Limpar busca"
+                          class="absolute inset-y-0 right-0 flex w-8 items-center justify-center rounded-r-md text-gray-400 transition-colors hover:cursor-pointer hover:text-gray-700 focus-visible:text-gray-700 focus-visible:outline-none dark:hover:text-gray-200 dark:focus-visible:text-gray-200"
+                          @click="limparBusca"
+                        >
+                          <X class="h-3.5 w-3.5" />
+                        </button>
                       </div>
                       <Button variant="outline" size="sm" @click="limparFiltros" class="h-9 px-2 text-xs">
                         <X class="mr-1 h-3 w-3" />
