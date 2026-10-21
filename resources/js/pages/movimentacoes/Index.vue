@@ -13,6 +13,7 @@ import type { BreadcrumbItem, Movimentacao, ParcelaComMovimentacao, Paginated } 
 import { Head, router, Link, usePage } from '@inertiajs/vue3';
 import { Check, Hourglass, Wallet, X, Plus, ArrowUp, ArrowDown, CircleDollarSign } from 'lucide-vue-next';
 import MovimentacoesMobileList from '@/components/movimentacoes/MovimentacoesMobileList.vue';
+import FiltroSituacaoParcelas, { type SituacaoParcelas } from '@/components/movimentacoes/FiltroSituacaoParcelas.vue';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import isValidDate from '@/utils/validaData';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,7 @@ const props = defineProps<{
     ano: string;
     per_page: number;
     tipo: string;
+    situacao?: SituacaoParcelas;
   };
 }>();
 
@@ -83,6 +85,7 @@ const filtrosDaUrl: FiltrosMovimentacoes = {
   ano: props.filters.ano || '',
   busca: props.filters.busca || '',
   per_page: props.filters.per_page || 50,
+  situacao: props.filters.situacao || 'todas',
 };
 
 // Sem query string o usuário chegou por um link "limpo" (menu, breadcrumb, cadastro):
@@ -106,6 +109,7 @@ const buscaTexto = ref(filtrosIniciais.busca);
 const mesSelecionado = ref(filtrosIniciais.mes);
 const anoSelecionado = ref(filtrosIniciais.ano);
 const perPage = ref(filtrosIniciais.per_page);
+const situacaoParcelas = ref<SituacaoParcelas>((filtrosIniciais.situacao as SituacaoParcelas) || 'todas');
 
 const carregandoEstadoSalvo = ref(restaurarFiltros);
 
@@ -133,7 +137,7 @@ const { totalSelecionado, canPaySelected, movimentacoesSelecionadas } = useMovim
 });
 
 watch(
-  [abaAtiva, dataInicio, dataFim, mesSelecionado, anoSelecionado, buscaTexto, perPage, selectedMovimentacoes, carregandoEstadoSalvo],
+  [abaAtiva, dataInicio, dataFim, mesSelecionado, anoSelecionado, buscaTexto, perPage, situacaoParcelas, selectedMovimentacoes, carregandoEstadoSalvo],
   () => {
     salvarEstadoMovimentacoes(userId, {
       filtros: {
@@ -144,6 +148,7 @@ watch(
         ano: anoSelecionado.value,
         busca: buscaTexto.value,
         per_page: perPage.value,
+        situacao: situacaoParcelas.value,
       },
       selecionados: carregandoEstadoSalvo.value ? idsSelecaoSalva : selectedMovimentacoes.value,
     });
@@ -163,6 +168,7 @@ const currentFilters = computed(() => {
   } else if (abaAtiva.value === 'gasto futuro') {
     if (mesSelecionado.value) params.mes = mesSelecionado.value;
     if (anoSelecionado.value) params.ano = anoSelecionado.value;
+    if (situacaoParcelas.value !== 'todas') params.situacao = situacaoParcelas.value;
   }
 
   if (buscaTexto.value) params.busca = buscaTexto.value;
@@ -302,6 +308,7 @@ const triggerSearch = (callbacks: { onSuccess?: () => void; onFinish?: () => voi
   } else if (abaAtiva.value === 'gasto futuro') {
     if (mesSelecionado.value) params.mes = mesSelecionado.value;
     if (anoSelecionado.value) params.ano = anoSelecionado.value;
+    if (situacaoParcelas.value !== 'todas') params.situacao = situacaoParcelas.value;
   }
 
   if (buscaTexto.value) {
@@ -377,6 +384,16 @@ watch([mesSelecionado, anoSelecionado], () => {
   }
 });
 
+/**
+ * A situação só restringe a lista exibida, como a busca, então mantém a seleção feita para o
+ * usuário poder alternar entre Todas, Pagas e Não pagas sem perder o que já marcou.
+ */
+watch(situacaoParcelas, () => {
+  if (abaAtiva.value === 'gasto futuro') {
+    triggerSearch();
+  }
+});
+
 watch(perPage, () => {
   triggerSearch();
 });
@@ -417,6 +434,7 @@ const limparFiltros = () => {
     dataFim.value = ultimoDia.toISOString().split('T')[0];
   }
 
+  situacaoParcelas.value = 'todas';
   buscaTexto.value = '';
   triggerSearch();
 };
@@ -562,6 +580,9 @@ const getPageUrl = (page: number | string) => {
                       </Button>
                     </div>
                   </div>
+
+                  <!-- Filtro de situação das parcelas (apenas na aba 'gasto futuro') -->
+                  <FiltroSituacaoParcelas v-if="abaAtiva === 'gasto futuro'" v-model="situacaoParcelas" />
                 </div>
 
                 <!-- Totais -->
