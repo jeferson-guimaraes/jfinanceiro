@@ -5,17 +5,23 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import { initializeTheme } from './composables/useAppearance';
+import { montarTitulo, nomeDaAplicacao } from './lib/tituloDaPagina';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+/**
+ * Preenchido no setup com o nome enviado pelo servidor, antes de a primeira página montar.
+ */
+let appName = nomeDaAplicacao(undefined);
 
 createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: (title) => montarTitulo(title, appName),
     resolve: (name) =>
         resolvePageComponent(
             `./pages/${name}.vue`,
             import.meta.glob<DefineComponent>('./pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
+        appName = nomeDaAplicacao(props.initialPage.props);
+
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .mount(el);

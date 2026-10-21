@@ -3,7 +3,6 @@ import { AppPageProps } from '@/types/index';
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
     interface ImportMetaEnv {
-        readonly VITE_APP_NAME: string;
         [key: string]: string | boolean | undefined;
     }
 
