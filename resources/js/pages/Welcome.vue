@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import NotaEstrelas from '@/components/avaliacoes/NotaEstrelas.vue';
 import { dashboard, login, register } from '@/routes';
+import avaliacoesRoutes from '@/routes/avaliacoes';
 import { Head, Link } from '@inertiajs/vue3';
 import { 
     CheckCircle, 
@@ -9,12 +11,24 @@ import {
     LayoutDashboard,
     Lock,
     Gift,
-    Ban
+    Ban,
+    MessageSquareHeart,
+    Quote
 } from 'lucide-vue-next';
 
-defineProps<{
+interface AvaliacaoPublica {
+    id: number;
+    nome: string;
+    nota: number;
+    mensagem: string;
+}
+
+withDefaults(defineProps<{
     canRegister?: boolean;
-}>();
+    avaliacoes?: AvaliacaoPublica[];
+}>(), {
+    avaliacoes: () => [],
+});
 </script>
 
 <template>
@@ -127,6 +141,36 @@ defineProps<{
                             <h3 class="text-xl font-bold mb-3">Sua privacidade importa</h3>
                             <p class="text-muted-foreground">Não vendemos seus dados. Seus dados financeiros são protegidos e acessíveis apenas por você.</p>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Avaliações dos usuários (exibida a partir de 2 avaliações aprovadas) -->
+            <section v-if="avaliacoes.length" class="py-20" aria-labelledby="titulo-avaliacoes">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center mb-16">
+                        <h2 id="titulo-avaliacoes" class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">O que dizem nossos usuários</h2>
+                        <p class="mt-4 text-muted-foreground">Avaliações reais de quem usa o JFinanceiro no dia a dia.</p>
+                    </div>
+
+                    <div class="flex flex-wrap justify-center gap-8">
+                        <figure
+                            v-for="avaliacao in avaliacoes"
+                            :key="avaliacao.id"
+                            class="relative flex w-full flex-col gap-4 rounded-3xl border border-border bg-card p-8 transition-all hover:shadow-md sm:w-[calc(50%-1rem)] lg:w-[calc((100%-4rem)/3)]"
+                        >
+                            <Quote class="absolute top-6 right-6 h-8 w-8 text-primary/10" aria-hidden="true" />
+                            <NotaEstrelas :model-value="avaliacao.nota" readonly tamanho="sm" />
+                            <blockquote class="flex-1 text-muted-foreground whitespace-pre-line">{{ avaliacao.mensagem }}</blockquote>
+                            <figcaption class="font-semibold text-foreground">{{ avaliacao.nome }}</figcaption>
+                        </figure>
+                    </div>
+
+                    <div class="mt-12 text-center">
+                        <Link :href="avaliacoesRoutes.create()" class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-6 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground">
+                            <MessageSquareHeart class="h-4 w-4" />
+                            Deixe também sua avaliação
+                        </Link>
                     </div>
                 </div>
             </section>
