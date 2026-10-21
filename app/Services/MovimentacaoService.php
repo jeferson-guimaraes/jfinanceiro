@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\SituacaoParcelaEnum;
 use App\Enums\TipoMovimentacaoEnum;
 use App\Models\Categoria;
 use App\Models\Movimentacao;
@@ -80,7 +81,7 @@ class MovimentacaoService
             case 'gasto futuro':
                 $parcelasFuturas = $this->getParcelasFuturasMovimentacoes($userId);
                 $ganhosGastos = Movimentacao::whereRaw('1 = 0')->paginate($perPage);
-                $queryParcelas = $this->getParcelasFuturasQuery($userId);
+                $queryParcelas = $this->getParcelasFuturasQuery($userId, aplicarSituacao: false);
                 $totais['total'] = (float) (clone $queryParcelas)->sum('valor');
                 $totais['pago'] = (float) (clone $queryParcelas)->where('pago', true)->sum('valor');
                 $totais['pendente'] = $totais['total'] - $totais['pago'];
@@ -108,6 +109,7 @@ class MovimentacaoService
                 'ano' => request('ano'),
                 'per_page' => (int) request('per_page', 50),
                 'tipo' => $tipo,
+                'situacao' => SituacaoParcelaEnum::daRequisicao(request('situacao'))->value,
             ],
         ];
     }
@@ -164,10 +166,15 @@ class MovimentacaoService
     /**
      * Retorna a query base para parcelas futuras.
      *
+     * O filtro de situação (pagas ou não pagas) vale para a listagem, mas não para os totais:
+     * os cards já separam o mês em pago e pendente, e filtrar por situação zeraria um deles.
+     * A busca, por outro lado, vale para os dois: os cards resumem o que foi buscado no mês.
+     *
      * @param  int  $userId  ID do usuário.
+     * @param  bool  $aplicarSituacao  Se deve aplicar o filtro de situação da requisição.
      * @return Builder|Parcela
      */
-    private function getParcelasFuturasQuery(int $userId)
+    private function getParcelasFuturasQuery(int $userId, bool $aplicarSituacao = true)
     {
         $mes = request('mes') ?: Carbon::now()->month;
         $ano = request('ano') ?: Carbon::now()->year;
@@ -179,6 +186,14 @@ class MovimentacaoService
         $query = Parcela::query()
             ->whereBetween('data_vencimento', [$inicioMes, $fimMes])
             ->whereHas('movimentacao', fn ($q) => $q->doUsuario($userId));
+
+        if ($aplicarSituacao) {
+            match (SituacaoParcelaEnum::daRequisicao(request('situacao'))) {
+                SituacaoParcelaEnum::PAGAS => $query->where('pago', true),
+                SituacaoParcelaEnum::NAO_PAGAS => $query->where('pago', false),
+                SituacaoParcelaEnum::TODAS => null,
+            };
+        }
 
         foreach ($this->palavrasDaBusca($busca) as $palavra) {
             $valor = $this->valorDaPalavra($palavra);

@@ -15,6 +15,7 @@ import {
     SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import avaliacoesRoutes from '@/routes/avaliacoes';
 import movimentacoes from '@/routes/movimentacoes';
 import { index as indexCategorias } from '@/routes/movimentacoes/categorias';
 import { edit as editProfile } from '@/routes/profile';
@@ -28,6 +29,7 @@ import {
     Plus,
     Settings,
     Sparkles,
+    Star,
     Users,
 } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
@@ -84,6 +86,13 @@ const navGroups = computed<NavGroup[]>(() => {
                     description: 'Usuários cadastrados',
                     iconClass: 'bg-amber-500/20 text-amber-300',
                 },
+                {
+                    title: 'Avaliações',
+                    href: avaliacoesRoutes.index(),
+                    icon: Star,
+                    description: 'Moderar feedbacks',
+                    iconClass: 'bg-yellow-500/20 text-yellow-300',
+                },
             ],
         });
     }
@@ -91,6 +100,11 @@ const navGroups = computed<NavGroup[]>(() => {
     return groups;
 });
 const footerNavItems: NavItem[] = [
+    {
+        title: 'Avaliar o sistema',
+        href: avaliacoesRoutes.create(),
+        icon: Star,
+    },
     {
         title: 'Configurações',
         href: editProfile(),

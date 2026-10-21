@@ -1,18 +1,19 @@
 <?php
 
+use App\Http\Controllers\AvaliacaoController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MovimentacaoController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]);
-})->name('home');
+Route::get('/', HomeController::class)->name('home');
+
+Route::get('avaliar', [AvaliacaoController::class, 'create'])->name('avaliacoes.create');
+Route::post('avaliar', [AvaliacaoController::class, 'store'])
+    ->middleware('throttle:avaliacoes')
+    ->name('avaliacoes.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])
@@ -20,6 +21,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('usuarios')->name('usuarios.')->middleware('admin')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
+    });
+
+    Route::prefix('avaliacoes')->name('avaliacoes.')->middleware('admin')->group(function () {
+        Route::get('/', [AvaliacaoController::class, 'index'])->name('index');
+
+        Route::patch('{avaliacao}/aprovar', [AvaliacaoController::class, 'aprovar'])
+            ->name('aprovar')
+            ->whereNumber('avaliacao');
+
+        Route::patch('{avaliacao}/reprovar', [AvaliacaoController::class, 'reprovar'])
+            ->name('reprovar')
+            ->whereNumber('avaliacao');
     });
 
     Route::prefix('movimentacoes')->name('movimentacoes.')->group(function () {

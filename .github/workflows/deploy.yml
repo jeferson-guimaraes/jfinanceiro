@@ -66,6 +66,14 @@ jobs:
             storage/framework/cache/,
             storage/framework/sessions/,
             storage/framework/views/
+          # Coloca o site em manutenção antes de copiar os arquivos, ainda com o código antigo,
+          # para que nenhum visitante veja o código novo antes do banco estar migrado.
+          SCRIPT_BEFORE: |
+            cd /home1/jfinan85/jfinanceiro.com.br
+            /usr/local/bin/php artisan down --retry=60 || echo "Aviso: nao foi possivel ativar o modo de manutencao"
+          SCRIPT_BEFORE_REQUIRED: false
+          # Se qualquer passo falhar, o site continua em manutenção (e não pela metade) e o job
+          # falha no GitHub. Corrija o problema e rode o deploy de novo, ou use "artisan up".
           SCRIPT_AFTER: |
             set -e
             cd /home1/jfinan85/jfinanceiro.com.br
@@ -88,5 +96,8 @@ jobs:
               --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-progress
 
             "$PHP_BIN" artisan optimize:clear
+            "$PHP_BIN" artisan migrate --force
+            "$PHP_BIN" artisan db:seed --class=AvaliacaoSeeder --force
             "$PHP_BIN" artisan optimize
+            "$PHP_BIN" artisan up
           SCRIPT_AFTER_REQUIRED: true

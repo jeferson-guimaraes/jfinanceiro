@@ -48,7 +48,7 @@ class MovimentacaoController extends Controller
     {
         $movimentacaoService->storeMovimentacao($request->validated());
 
-        return redirect()->route('movimentacoes.create', request()->only(['busca', 'data_inicio', 'data_fim', 'mes', 'ano', 'per_page', 'tipo']))
+        return redirect()->route('movimentacoes.create', request()->only(['busca', 'data_inicio', 'data_fim', 'mes', 'ano', 'per_page', 'tipo', 'situacao']))
             ->with('success', 'Movimentação criada com sucesso!');
     }
 
