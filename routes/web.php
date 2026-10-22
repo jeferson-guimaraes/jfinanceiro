@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MovimentacaoController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UsuarioSenhaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -21,6 +22,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('usuarios')->name('usuarios.')->middleware('admin')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
+
+        Route::patch('{usuario}/senha', UsuarioSenhaController::class)
+            ->name('senha.update')
+            ->whereNumber('usuario');
     });
 
     Route::prefix('avaliacoes')->name('avaliacoes.')->middleware('admin')->group(function () {
