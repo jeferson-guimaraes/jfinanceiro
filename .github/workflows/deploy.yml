@@ -28,7 +28,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: 8.4
 
       - name: Instalar dependências PHP
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
@@ -61,6 +61,9 @@ jobs:
           # migration renomeada), para que não voltem a rodar. Tudo que está em EXCLUDE fica
           # protegido da remoção: dependências instaladas no servidor, dados e arquivos de
           # ambiente e da hospedagem (".well-known" é usado na renovação do certificado SSL).
+          # "public/.htaccess" fica de fora porque o cPanel grava nele a versão do PHP do site;
+          # sobrescrevê-lo fazia o site voltar ao PHP padrão da hospedagem a cada deploy.
+          # Mudanças no .htaccess do repositório precisam ser aplicadas manualmente no servidor.
           # "storage/" precisa ficar inteiro de fora, porque guarda o arquivo do modo de
           # manutenção, sessões, logs e uploads.
           ARGS: "-rlgoDzvc -i --delete"
@@ -72,6 +75,7 @@ jobs:
             /storage/,
             /bootstrap/cache/,
             /public/storage,
+            /public/.htaccess,
             /public/.well-known/,
             /public/cgi-bin/,
             /.env,
@@ -81,7 +85,7 @@ jobs:
           # para que nenhum visitante veja o código novo antes do banco estar migrado.
           SCRIPT_BEFORE: |
             cd /home1/jfinan85/jfinanceiro.com.br
-            /usr/local/bin/php artisan down --retry=60 || echo "Aviso: nao foi possivel ativar o modo de manutencao"
+            /opt/cpanel/ea-php84/root/usr/bin/php artisan down --retry=60 || echo "Aviso: nao foi possivel ativar o modo de manutencao"
           # SCRIPT_BEFORE_REQUIRED fica de fora de propósito: a action trata qualquer texto,
           # inclusive "false", como verdadeiro. Uma falha ao entrar em manutenção não deve
           # impedir o deploy, e o "|| echo" acima já garante isso.
@@ -91,7 +95,9 @@ jobs:
             set -e
             cd /home1/jfinan85/jfinanceiro.com.br
 
-            PHP_BIN=/usr/local/bin/php
+            # Mesmo PHP que serve o site (ea-php84, definido pelo cPanel no public/.htaccess).
+            # O /usr/local/bin/php do servidor é 8.3 e resolveria as dependências para outra versão.
+            PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php
             COMPOSER_PHAR=/home1/jfinan85/composer.phar
 
             if [ ! -x "$PHP_BIN" ]; then
