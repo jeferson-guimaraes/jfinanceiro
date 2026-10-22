@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AlterarSenhaUsuarioModal from '@/components/modals/AlterarSenhaUsuarioModal.vue';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,6 +10,7 @@ import type { BreadcrumbItem, Paginated, User } from '@/types';
 import { formatDate } from '@/utils/formatDate';
 import { Head, Link, router } from '@inertiajs/vue3';
 import debounce from 'lodash-es/debounce';
+import { KeyRound } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 type UsuarioListItem = Pick<User, 'id' | 'name' | 'email' | 'role' | 'status' | 'created_at'>;
@@ -30,6 +33,19 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: usuariosRoutes.index().url,
   },
 ];
+
+const usuarioParaAlterarSenha = ref<UsuarioListItem | null>(null);
+const isModalSenhaAberto = ref(false);
+
+/**
+ * Só usuários padrão podem ter a senha alterada pelo administrador.
+ */
+const podeAlterarSenha = (usuario: UsuarioListItem): boolean => usuario.role === 'user';
+
+const abrirAlteracaoDeSenha = (usuario: UsuarioListItem): void => {
+  usuarioParaAlterarSenha.value = usuario;
+  isModalSenhaAberto.value = true;
+};
 
 const localSearch = ref(props.filters.search || '');
 const localRole = ref(props.filters.role || 'all');
@@ -172,7 +188,7 @@ const getPageUrl = (page: number | string): string => {
             </Select>
           </div>
 
-          <div class="overflow-hidden rounded-lg border border-gray-100 dark:border-gray-800">
+          <div class="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-800">
             <Table>
               <TableHeader class="bg-gray-50/50 dark:bg-gray-900/50">
                 <TableRow>
@@ -181,11 +197,12 @@ const getPageUrl = (page: number | string): string => {
                   <TableHead class="text-xs">Perfil</TableHead>
                   <TableHead class="text-xs">Status</TableHead>
                   <TableHead class="text-xs">Cadastro</TableHead>
+                  <TableHead class="text-right text-xs">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow v-if="usuarios.data.length === 0">
-                  <TableCell colspan="5" class="py-8 text-center text-sm text-gray-500">
+                  <TableCell colspan="6" class="py-8 text-center text-sm text-gray-500">
                     Nenhum usuário encontrado.
                   </TableCell>
                 </TableRow>
@@ -211,6 +228,19 @@ const getPageUrl = (page: number | string): string => {
                   </TableCell>
                   <TableCell class="text-sm text-gray-600 dark:text-gray-300">
                     {{ formatDate(usuario.created_at) }}
+                  </TableCell>
+                  <TableCell class="text-right">
+                    <Button
+                      v-if="podeAlterarSenha(usuario)"
+                      size="sm"
+                      variant="outline"
+                      class="h-8 text-xs whitespace-nowrap"
+                      @click="abrirAlteracaoDeSenha(usuario)"
+                    >
+                      <KeyRound class="mr-1.5 h-3.5 w-3.5" />
+                      Alterar senha
+                    </Button>
+                    <span v-else class="text-xs text-gray-400" aria-label="Sem ações para administradores">—</span>
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -288,5 +318,7 @@ const getPageUrl = (page: number | string): string => {
         </div>
       </div>
     </div>
+
+    <AlterarSenhaUsuarioModal v-model:open="isModalSenhaAberto" :usuario="usuarioParaAlterarSenha" />
   </AppLayout>
 </template>
