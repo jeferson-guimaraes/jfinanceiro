@@ -23,18 +23,18 @@ jobs:
 
     steps:
       - name: Checkout projeto
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: 8.4
 
       - name: Instalar dependências PHP
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -45,7 +45,7 @@ jobs:
         run: npm run build
 
       - name: Deploy e otimização
-        uses: easingthemes/ssh-deploy@v5.1.0
+        uses: easingthemes/ssh-deploy@v6.0.1
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
           REMOTE_HOST: ${{ secrets.HOST }}
@@ -57,28 +57,47 @@ jobs:
             -o ControlPersist=180
           SOURCE: "./"
           TARGET: "/home1/jfinan85/jfinanceiro.com.br"
+          # --delete remove do servidor os arquivos que saíram do repositório (por exemplo, uma
+          # migration renomeada), para que não voltem a rodar. Tudo que está em EXCLUDE fica
+          # protegido da remoção: dependências instaladas no servidor, dados e arquivos de
+          # ambiente e da hospedagem (".well-known" é usado na renovação do certificado SSL).
+          # "public/.htaccess" fica de fora porque o cPanel grava nele a versão do PHP do site;
+          # sobrescrevê-lo fazia o site voltar ao PHP padrão da hospedagem a cada deploy.
+          # Mudanças no .htaccess do repositório precisam ser aplicadas manualmente no servidor.
+          # "storage/" precisa ficar inteiro de fora, porque guarda o arquivo do modo de
+          # manutenção, sessões, logs e uploads.
+          ARGS: "-rlgoDzvc -i --delete"
           EXCLUDE: >
             node_modules/,
             .git/,
             .github/,
             vendor/,
-            storage/logs/,
-            storage/framework/cache/,
-            storage/framework/sessions/,
-            storage/framework/views/
+            /storage/,
+            /bootstrap/cache/,
+            /public/storage,
+            /public/.htaccess,
+            /public/.well-known/,
+            /public/cgi-bin/,
+            /.env,
+            /.ftpquota,
+            error_log
           # Coloca o site em manutenção antes de copiar os arquivos, ainda com o código antigo,
           # para que nenhum visitante veja o código novo antes do banco estar migrado.
           SCRIPT_BEFORE: |
             cd /home1/jfinan85/jfinanceiro.com.br
-            /usr/local/bin/php artisan down --retry=60 || echo "Aviso: nao foi possivel ativar o modo de manutencao"
-          SCRIPT_BEFORE_REQUIRED: false
+            /opt/cpanel/ea-php84/root/usr/bin/php artisan down --retry=60 || echo "Aviso: nao foi possivel ativar o modo de manutencao"
+          # SCRIPT_BEFORE_REQUIRED fica de fora de propósito: a action trata qualquer texto,
+          # inclusive "false", como verdadeiro. Uma falha ao entrar em manutenção não deve
+          # impedir o deploy, e o "|| echo" acima já garante isso.
           # Se qualquer passo falhar, o site continua em manutenção (e não pela metade) e o job
           # falha no GitHub. Corrija o problema e rode o deploy de novo, ou use "artisan up".
           SCRIPT_AFTER: |
             set -e
             cd /home1/jfinan85/jfinanceiro.com.br
 
-            PHP_BIN=/usr/local/bin/php
+            # Mesmo PHP que serve o site (ea-php84, definido pelo cPanel no public/.htaccess).
+            # O /usr/local/bin/php do servidor é 8.3 e resolveria as dependências para outra versão.
+            PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php
             COMPOSER_PHAR=/home1/jfinan85/composer.phar
 
             if [ ! -x "$PHP_BIN" ]; then
