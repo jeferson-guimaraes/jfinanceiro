@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configuraLimiteDeAvaliacoes();
+        $this->configuraLimiteDoAssistente();
     }
 
     /**
@@ -40,6 +41,18 @@ class AppServiceProvider extends ServiceProvider
                 ->response(fn () => back()
                     ->withInput()
                     ->withErrors(['envio' => self::MENSAGEM_LIMITE_TENTATIVAS]));
+        });
+    }
+
+    /**
+     * Limita a API do assistente a 60 requisições por minuto por token (ou por IP, sem token).
+     */
+    private function configuraLimiteDoAssistente(): void
+    {
+        RateLimiter::for('assistente-api', function (Request $request): Limit {
+            $tokenId = $request->user()?->currentAccessToken()?->getKey();
+
+            return Limit::perMinute(60)->by($tokenId ? 'token:'.$tokenId : 'ip:'.$request->ip());
         });
     }
 }
