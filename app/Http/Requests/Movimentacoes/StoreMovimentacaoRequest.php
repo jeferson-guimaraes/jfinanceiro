@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Movimentacoes;
 
 use App\Enums\TipoMovimentacaoEnum;
+use App\Rules\CategoriaDisponivel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,8 +25,8 @@ class StoreMovimentacaoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'categoria_id' => ['required', 'exists:categorias,id'],
-            'data_movimentacao' => ['required', 'date'],
+            'categoria_id' => ['required', 'integer', new CategoriaDisponivel($this->input('tipo'))],
+            'data_movimentacao' => ['required', 'date', 'after_or_equal:2000-01-01'],
             'descricao' => ['required', 'string', 'max:255'],
             'valor' => ['required', 'numeric', 'min:0.01'],
             'tipo' => ['required', Rule::in(array_column(TipoMovimentacaoEnum::cases(), 'value'))],
@@ -58,6 +59,7 @@ class StoreMovimentacaoRequest extends FormRequest
     {
         return [
             'data_vencimento.after_or_equal' => 'A data de vencimento da primeira parcela não pode ser anterior à data da compra.',
+            'data_movimentacao.after_or_equal' => 'Informe uma data a partir do ano 2000.',
         ];
     }
 }

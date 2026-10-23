@@ -588,4 +588,22 @@ class MovimentacaoTest extends TestCase
             'parcelas' => 1,
         ]);
     }
+
+    public function test_tela_de_criacao_informa_a_categoria_outros_de_cada_tipo(): void
+    {
+        $outrosGanho = Categoria::factory()->create(['user_id' => null, 'nome' => 'Outros', 'tipo' => TipoMovimentacaoEnum::GANHO->value]);
+        $outrosGastoProprio = Categoria::factory()->create(['user_id' => $this->user->id, 'nome' => 'outros', 'tipo' => TipoMovimentacaoEnum::GASTO->value]);
+        $outrosGastoGlobal = Categoria::factory()->create(['user_id' => null, 'nome' => 'Outros', 'tipo' => TipoMovimentacaoEnum::GASTO->value]);
+        Categoria::factory()->create(['user_id' => User::factory(), 'nome' => 'Outros', 'tipo' => TipoMovimentacaoEnum::GASTO_FUTURO->value]);
+
+        $this->actingAs($this->user)
+            ->get(route('movimentacoes.create'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('movimentacoes/Create')
+                ->where('categoriasPadrao.ganho', $outrosGanho->id)
+                ->where('categoriasPadrao.gasto', $outrosGastoGlobal->id)
+                ->where('categoriasPadrao.gasto futuro', null)
+            );
+    }
 }

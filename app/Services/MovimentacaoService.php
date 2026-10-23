@@ -10,8 +10,10 @@ use App\Models\Parcela;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class MovimentacaoService
 {
@@ -28,9 +30,9 @@ class MovimentacaoService
 
     /**
      * Obtém os dados necessários para a criação de uma movimentação.
-     * Inclui categorias de ganhos, gastos e gastos futuros.
+     * Inclui categorias de ganhos, gastos e gastos futuros e a categoria padrão ("Outros") de cada tipo.
      *
-     * @return array{categoriasGanhos: \Illuminate\Support\Collection, categoriasGastos: \Illuminate\Support\Collection, categoriasGastosFuturos: \Illuminate\Support\Collection}
+     * @return array{categoriasGanhos: \Illuminate\Support\Collection, categoriasGastos: \Illuminate\Support\Collection, categoriasGastosFuturos: \Illuminate\Support\Collection, categoriasPadrao: array<string, int|null>}
      */
     public function getCreateMovimentacaoData(): array
     {
@@ -47,7 +49,24 @@ class MovimentacaoService
             'categoriasGanhos' => $categorias->where('tipo', TipoMovimentacaoEnum::GANHO->value)->values(),
             'categoriasGastos' => $categorias->where('tipo', TipoMovimentacaoEnum::GASTO->value)->values(),
             'categoriasGastosFuturos' => $categorias->where('tipo', TipoMovimentacaoEnum::GASTO_FUTURO->value)->values(),
+            'categoriasPadrao' => collect(TipoMovimentacaoEnum::cases())
+                ->mapWithKeys(fn (TipoMovimentacaoEnum $tipo) => [$tipo->value => $this->categoriaPadraoId($categorias, $tipo)])
+                ->all(),
         ];
+    }
+
+    /**
+     * Id da categoria "Outros" do tipo (a global tem preferência sobre a do usuário), ou null se não houver.
+     *
+     * @param  Collection<int, Categoria>  $categorias  Categorias disponíveis ao usuário.
+     */
+    private function categoriaPadraoId(Collection $categorias, TipoMovimentacaoEnum $tipo): ?int
+    {
+        return $categorias
+            ->where('tipo', $tipo->value)
+            ->filter(fn (Categoria $categoria) => Str::lower(Str::ascii(trim($categoria->nome))) === 'outros')
+            ->sortBy(fn (Categoria $categoria) => $categoria->user_id === null ? 0 : 1)
+            ->first()?->id;
     }
 
     /**
