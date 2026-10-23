@@ -22,6 +22,7 @@ const props = defineProps({
     categoriasGanhos: Array as PropType<Categoria[]>,
     categoriasGastos: Array as PropType<Categoria[]>,
     categoriasGastosFuturos: Array as PropType<Categoria[]>,
+    categoriasPadrao: Object as PropType<Record<string, number | null>>,
     tipo: String,
     filters: Object as PropType<Record<string, any>>,
 });
@@ -81,18 +82,9 @@ const categoriasDisponiveis = computed(() => {
     }
 });
 
+// Categoria padrão ("Outros") de cada tipo, informada pelo servidor.
 const resetCategoria = () => {
-    switch (form.tipo) {
-        case 'ganho':
-            form.categoria_id = 139;
-            break;
-        case 'gasto':
-            form.categoria_id = 1;
-            break;
-        case 'gasto futuro':
-            form.categoria_id = 140;
-            break;
-    }
+    form.categoria_id = props.categoriasPadrao?.[form.tipo] ?? null;
 };
 
 watch(() => form.tipo, resetCategoria, { immediate: true });
