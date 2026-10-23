@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\SituacaoParcelaEnum;
 use App\Enums\TipoMovimentacaoEnum;
+use App\Exceptions\MovimentacaoInvalidaException;
 use App\Models\Categoria;
 use App\Models\Movimentacao;
 use App\Models\Parcela;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class MovimentacaoService
@@ -335,19 +336,57 @@ class MovimentacaoService
     /**
      * Armazena uma nova movimentação, incluindo a criação de parcelas se for gasto futuro.
      *
-     * @param  array  $validated  Dados validados da requisição.
+     * Tudo numa transação: se as parcelas não puderem ser criadas, nada é gravado.
+     *
+     * @param  array  $validated  Dados validados da requisição. Para gasto futuro: `parcelas`, `data_vencimento` e
+     *                            `valor_parcelas` (valor fixo) ou `valores_parcelas` (lista com o valor de cada uma).
+     * @return Movimentacao A movimentação criada.
+     *
+     * @throws MovimentacaoInvalidaException Quando faltam dados para gerar as parcelas do gasto futuro.
      */
-    public function storeMovimentacao(array $validated): void
+    public function storeMovimentacao(array $validated): Movimentacao
     {
-        $userId = Auth::id();
+        return DB::transaction(function () use ($validated) {
+            $movimentacaoData = $this->prepareMovimentacaoDataForStore($validated);
 
-        $movimentacaoData = $this->prepareMovimentacaoDataForStore($validated);
+            $movimentacao = Movimentacao::create(array_merge($movimentacaoData, ['user_id' => Auth::id()]));
 
-        $movimentacao = Movimentacao::create(array_merge($movimentacaoData, ['user_id' => $userId]));
+            if ($movimentacao->tipo->value === TipoMovimentacaoEnum::GASTO_FUTURO->value) {
+                $this->createParcelasForMovimentacao($movimentacao, $validated);
+            }
 
-        if ($movimentacao->tipo->value === TipoMovimentacaoEnum::GASTO_FUTURO->value) {
-            $this->createParcelasForMovimentacao($movimentacao, $validated);
-        }
+            return $movimentacao;
+        });
+    }
+
+    /**
+     * Vencimentos mensais a partir do 1º, sem pular mês: em meses mais curtos cai no último dia
+     * (31/01 → 28/02 → 31/03). Usado no caminho da API do assistente.
+     *
+     * @return list<string> Datas AAAA-MM-DD.
+     */
+    public function montarVencimentosParcelas(Carbon $primeiroVencimento, int $quantidade): array
+    {
+        return array_map(
+            fn (int $indice) => $primeiroVencimento->copy()->addMonthsNoOverflow($indice)->format('Y-m-d'),
+            range(0, $quantidade - 1),
+        );
+    }
+
+    /**
+     * Divide um valor total em parcelas fixas, em centavos; a diferença de arredondamento vai para a última.
+     * Ex.: 1000 em 3x → [333.33, 333.33, 333.34] (soma sempre igual ao total).
+     *
+     * @return list<float>
+     */
+    public function montarValoresParcelas(float $valorTotal, int $quantidade): array
+    {
+        $totalCentavos = (int) round($valorTotal * 100);
+        $parcelaCentavos = intdiv($totalCentavos, $quantidade);
+        $valores = array_fill(0, $quantidade, $parcelaCentavos);
+        $valores[$quantidade - 1] += $totalCentavos - $parcelaCentavos * $quantidade;
+
+        return array_map(fn (int $centavos) => $centavos / 100, $valores);
     }
 
     /**
@@ -374,30 +413,25 @@ class MovimentacaoService
      */
     private function createParcelasForMovimentacao(Movimentacao $movimentacao, array $validated): void
     {
-        // Garante que os dados necessários para parcelas estejam presentes
-        $numParcelas = $validated['parcelas'] ?? 0;
-        $valorParcela = $validated['valor_parcelas'] ?? 0;
+        $numParcelas = (int) ($validated['parcelas'] ?? 0);
+        $valores = $validated['valores_parcelas'] ?? array_fill(0, max($numParcelas, 0), (float) ($validated['valor_parcelas'] ?? 0));
         $dataVencimentoInicial = $validated['data_vencimento'] ?? null;
 
-        if ($numParcelas <= 0 || $valorParcela <= 0 || ! $dataVencimentoInicial) {
-            // Logar ou lançar um erro se os dados das parcelas forem inválidos
-            Log::warning('Dados insuficientes para criar parcelas para a movimentação ID: '.$movimentacao->id);
-
-            // Poderia lançar uma exceção aqui se for um erro crítico
-            return;
+        if ($numParcelas <= 0 || count($valores) !== $numParcelas || min($valores) <= 0 || ! $dataVencimentoInicial) {
+            throw new MovimentacaoInvalidaException('Informe a quantidade, o valor e o vencimento da primeira parcela.');
         }
 
+        // Vencimentos: os informados (API) ou mensais encadeados a partir do 1º (fluxo web, comportamento original).
+        $vencimentos = $validated['vencimentos_parcelas'] ?? [];
         $dataVencimento = Carbon::parse($dataVencimentoInicial);
-        for ($parcelaNum = 1; $parcelaNum <= $numParcelas; $parcelaNum++) {
+        foreach (array_values($valores) as $indice => $valorParcela) {
             Parcela::create([
                 'movimentacao_id' => $movimentacao->id,
-                'numero' => $parcelaNum,
+                'numero' => $indice + 1,
                 'valor' => $valorParcela,
-                'data_vencimento' => $dataVencimento->format('Y-m-d'), // Formato YYYY-MM-DD
-                // Outros campos da parcela, se houver
+                'data_vencimento' => $vencimentos[$indice] ?? $dataVencimento->format('Y-m-d'),
             ]);
 
-            // Calcula a data de vencimento da próxima parcela (assumindo mensalmente)
             $dataVencimento->addMonth();
         }
     }
@@ -529,24 +563,42 @@ class MovimentacaoService
     }
 
     /**
-     * Paga parcelas de uma movimentação de gasto futuro.
+     * Paga as próximas parcelas pendentes de uma movimentação de gasto futuro e lança o GASTO correspondente.
+     *
+     * As parcelas são travadas na transação (evita pagamento em dobro por envios simultâneos). Sem
+     * `valor_total_pago`, o gasto lançado é a soma das parcelas efetivamente pagas.
      *
      * @param  Movimentacao  $movimentacao  A movimentação de gasto futuro.
-     * @param  array  $data  Dados do pagamento (quantidade, data, valor).
+     * @param  array  $data  `quantidade_parcelas`, `data_pagamento`, `valor_total_pago` (opcional) e `descricao` (opcional).
+     * @return Movimentacao O gasto lançado pelo pagamento.
+     *
+     * @throws MovimentacaoInvalidaException Se não for gasto futuro ou não houver parcelas pendentes suficientes.
      */
-    public function pagarParcelas(Movimentacao $movimentacao, array $data): void
+    public function pagarParcelas(Movimentacao $movimentacao, array $data): Movimentacao
     {
-        \Illuminate\Support\Facades\DB::transaction(function () use ($movimentacao, $data) {
-            $quantidade = $data['quantidade_parcelas'];
-            $dataPagamento = $data['data_pagamento'];
-            $valorTotalPago = (float) $data['valor_total_pago'];
+        if ($movimentacao->tipo !== TipoMovimentacaoEnum::GASTO_FUTURO) {
+            throw new MovimentacaoInvalidaException('Só é possível pagar parcelas de um gasto futuro (compra parcelada).');
+        }
 
-            // 1. Marca as próximas parcelas pendentes como pagas
+        return DB::transaction(function () use ($movimentacao, $data) {
+            $quantidade = (int) $data['quantidade_parcelas'];
+            $dataPagamento = $data['data_pagamento'];
+
+            // 1. Trava e marca as próximas parcelas pendentes como pagas
             $parcelasAPagar = $movimentacao->parcelas()
                 ->where('pago', false)
                 ->orderBy('numero')
+                ->lockForUpdate()
                 ->take($quantidade)
                 ->get();
+
+            if ($parcelasAPagar->isEmpty()) {
+                throw new MovimentacaoInvalidaException('Esta compra não tem parcelas pendentes.');
+            }
+
+            if ($parcelasAPagar->count() < $quantidade) {
+                throw new MovimentacaoInvalidaException("Só há {$parcelasAPagar->count()} parcela(s) pendente(s) nesta compra.");
+            }
 
             foreach ($parcelasAPagar as $parcela) {
                 $parcela->update([
@@ -555,11 +607,16 @@ class MovimentacaoService
                 ]);
             }
 
+            $valorTotalPago = isset($data['valor_total_pago'])
+                ? (float) $data['valor_total_pago']
+                : (float) $parcelasAPagar->sum('valor');
+
             $descricao = ! empty($data['descricao'])
                 ? "{$data['descricao']}: {$movimentacao->descricao}"
                 : $movimentacao->descricao;
 
-            Movimentacao::create([
+            // 2. Lança o GASTO que representa a saída de caixa
+            return Movimentacao::create([
                 'user_id' => $movimentacao->user_id,
                 'categoria_id' => $movimentacao->categoria_id,
                 'data' => $dataPagamento,
@@ -569,6 +626,24 @@ class MovimentacaoService
                 'parcelas' => 1,
             ]);
         });
+    }
+
+    /**
+     * Parcelas pendentes de gasto futuro do usuário que vencem até a data (inclui as atrasadas).
+     *
+     * @return Collection<int, Parcela>
+     */
+    public function parcelasPendentesAte(int $userId, Carbon $ate): Collection
+    {
+        return Parcela::query()
+            ->whereHas('movimentacao', fn ($query) => $query->doUsuario($userId)->gastosFuturos())
+            ->where('pago', false)
+            ->whereNotNull('data_vencimento')
+            ->whereDate('data_vencimento', '<=', $ate->toDateString())
+            ->with('movimentacao.categoria')
+            ->orderBy('data_vencimento')
+            ->orderBy('id')
+            ->get();
     }
 
     /**
@@ -592,6 +667,7 @@ class MovimentacaoService
                 $parcelasAPagar = $movimentacao->parcelas()
                     ->where('pago', false)
                     ->orderBy('numero')
+                    ->lockForUpdate()
                     ->take($quantidade)
                     ->get();
 

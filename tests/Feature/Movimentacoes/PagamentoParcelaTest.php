@@ -40,6 +40,20 @@ class PagamentoParcelaTest extends TestCase
         ]);
     }
 
+    public function test_pagar_sem_parcela_pendente_mostra_mensagem_e_nao_lanca_gasto()
+    {
+        $movimentacao = Movimentacao::factory()->for($this->user)->create(['tipo' => 'gasto futuro', 'parcelas' => 1]);
+        Parcela::factory()->create(['movimentacao_id' => $movimentacao->id, 'pago' => true]);
+
+        $this->actingAs($this->user)->post(route('movimentacoes.pagar', $movimentacao), [
+            'quantidade_parcelas' => 1,
+            'data_pagamento' => now()->format('Y-m-d'),
+            'valor_total_pago' => 50.00,
+        ])->assertRedirect()->assertSessionHas('error', 'Esta compra não tem parcelas pendentes.');
+
+        $this->assertDatabaseMissing('movimentacoes', ['tipo' => 'gasto']);
+    }
+
     public function test_pagar_parcela_com_descricao_personalizada()
     {
         $movimentacao = Movimentacao::factory()->for($this->user)->create(['tipo' => 'gasto futuro', 'parcelas' => 3]);
