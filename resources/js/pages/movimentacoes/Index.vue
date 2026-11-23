@@ -4,6 +4,8 @@ import PagamentoParcelaModal from '@/components/modals/PagamentoParcelaModal.vue
 import PagamentoMassaModal from '@/components/modals/PagamentoMassaModal.vue';
 import DetalhesMovimentacaoModal from '@/components/modals/DetalhesMovimentacaoModal.vue';
 import TabelaMovimentacoes from '@/components/movimentacoes/TabelaMovimentacoes.vue';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TotalCard from '@/components/movimentacoes/ValorCard.vue';
@@ -61,6 +63,7 @@ const props = defineProps<{
     per_page: number;
     tipo: string;
     situacao?: SituacaoParcelas;
+    historico?: boolean;
   };
 }>();
 
@@ -86,6 +89,7 @@ const filtrosDaUrl: FiltrosMovimentacoes = {
   busca: props.filters.busca || '',
   per_page: props.filters.per_page || 50,
   situacao: props.filters.situacao || 'todas',
+  historico: Boolean(props.filters.historico),
 };
 
 // Sem query string o usuário chegou por um link "limpo" (menu, breadcrumb, cadastro):
@@ -110,6 +114,7 @@ const mesSelecionado = ref(filtrosIniciais.mes);
 const anoSelecionado = ref(filtrosIniciais.ano);
 const perPage = ref(filtrosIniciais.per_page);
 const situacaoParcelas = ref<SituacaoParcelas>((filtrosIniciais.situacao as SituacaoParcelas) || 'todas');
+const buscaNoHistorico = ref(Boolean(filtrosIniciais.historico));
 
 const carregandoEstadoSalvo = ref(restaurarFiltros);
 
@@ -137,7 +142,7 @@ const { totalSelecionado, canPaySelected, movimentacoesSelecionadas } = useMovim
 });
 
 watch(
-  [abaAtiva, dataInicio, dataFim, mesSelecionado, anoSelecionado, buscaTexto, perPage, situacaoParcelas, selectedMovimentacoes, carregandoEstadoSalvo],
+  [abaAtiva, dataInicio, dataFim, mesSelecionado, anoSelecionado, buscaTexto, perPage, situacaoParcelas, buscaNoHistorico, selectedMovimentacoes, carregandoEstadoSalvo],
   () => {
     salvarEstadoMovimentacoes(userId, {
       filtros: {
@@ -149,6 +154,7 @@ watch(
         busca: buscaTexto.value,
         per_page: perPage.value,
         situacao: situacaoParcelas.value,
+        historico: buscaNoHistorico.value,
       },
       selecionados: carregandoEstadoSalvo.value ? idsSelecaoSalva : selectedMovimentacoes.value,
     });
@@ -157,18 +163,23 @@ watch(
 );
 
 const currentFilters = computed(() => {
-  const params: Record<string, any> = {
+  const params: Record<string, string | number> = {
     tipo: abaAtiva.value,
     per_page: perPage.value,
   };
 
-  if (abaAtiva.value === 'todos' || abaAtiva.value === 'ganho' || abaAtiva.value === 'gasto') {
-    if (dataInicio.value) params.data_inicio = dataInicio.value;
-    if (dataFim.value) params.data_fim = dataFim.value;
+  if (buscaNoHistorico.value) {
+    params.historico = 1;
   } else if (abaAtiva.value === 'gasto futuro') {
     if (mesSelecionado.value) params.mes = mesSelecionado.value;
     if (anoSelecionado.value) params.ano = anoSelecionado.value;
-    if (situacaoParcelas.value !== 'todas') params.situacao = situacaoParcelas.value;
+  } else {
+    if (dataInicio.value) params.data_inicio = dataInicio.value;
+    if (dataFim.value) params.data_fim = dataFim.value;
+  }
+
+  if (abaAtiva.value === 'gasto futuro' && situacaoParcelas.value !== 'todas') {
+    params.situacao = situacaoParcelas.value;
   }
 
   if (buscaTexto.value) params.busca = buscaTexto.value;
@@ -300,24 +311,7 @@ const confirmDeleteMany = () => {
 const debounceTimer = ref<any>(null);
 
 const triggerSearch = (callbacks: { onSuccess?: () => void; onFinish?: () => void } = {}) => {
-  const params: Record<string, string | number | null> = {};
-
-  if (abaAtiva.value === 'todos' || abaAtiva.value === 'ganho' || abaAtiva.value === 'gasto') {
-    if (dataInicio.value) params.data_inicio = dataInicio.value;
-    if (dataFim.value) params.data_fim = dataFim.value;
-  } else if (abaAtiva.value === 'gasto futuro') {
-    if (mesSelecionado.value) params.mes = mesSelecionado.value;
-    if (anoSelecionado.value) params.ano = anoSelecionado.value;
-    if (situacaoParcelas.value !== 'todas') params.situacao = situacaoParcelas.value;
-  }
-
-  if (buscaTexto.value) {
-    params.busca = buscaTexto.value;
-  }
-  params.tipo = abaAtiva.value;
-  params.per_page = perPage.value;
-
-  router.get(movimentacoesRoutes.index().url, params, {
+  router.get(movimentacoesRoutes.index().url, currentFilters.value, {
     preserveState: true,
     replace: true,
     ...callbacks,
@@ -352,6 +346,8 @@ function changeTab(newAba: string) {
 
 // Watchers para disparar a busca quando os filtros mudam
 watch([dataInicio, dataFim], () => {
+  if (buscaNoHistorico.value) return;
+
   if (abaAtiva.value === 'todos' || abaAtiva.value === 'ganho' || abaAtiva.value === 'gasto') {
     // Só dispara se ambas estiverem vazias (limpeza) ou se ambas forem válidas e a ordem estiver correta
     const inicioValido = isValidDate(dataInicio.value);
@@ -373,6 +369,8 @@ watch([dataInicio, dataFim], () => {
 });
 
 watch([mesSelecionado, anoSelecionado], () => {
+  if (buscaNoHistorico.value) return;
+
   if (abaAtiva.value === 'gasto futuro') {
     const ano = parseInt(anoSelecionado.value);
     const anoValido = !isNaN(ano) && ano >= 2000 && ano <= new Date().getFullYear() + 10;
@@ -395,6 +393,15 @@ watch(situacaoParcelas, () => {
 });
 
 watch(perPage, () => {
+  triggerSearch();
+});
+
+/**
+ * Ligar ou desligar a busca no histórico muda o recorte dos dados, então a seleção é limpa
+ * para que ações em massa não atinjam itens que deixaram de estar na tela.
+ */
+watch(buscaNoHistorico, () => {
+  selectedMovimentacoes.value = [];
   triggerSearch();
 });
 
@@ -435,6 +442,7 @@ const limparFiltros = () => {
   }
 
   situacaoParcelas.value = 'todas';
+  buscaNoHistorico.value = false;
   buscaTexto.value = '';
   triggerSearch();
 };
@@ -531,7 +539,7 @@ const getPageUrl = (page: number | string) => {
                 <div class="flex flex-1 flex-col gap-4 max-w-2xl">
                   <div class="flex flex-col sm:flex-row gap-3">
                     <!-- Filtro de data (Invisível apenas na aba 'gasto futuro') -->
-                    <div v-if="abaAtiva === 'todos' || abaAtiva === 'ganho' || abaAtiva === 'gasto'"
+                    <div v-if="!buscaNoHistorico && abaAtiva !== 'gasto futuro'"
                       class="space-y-2 sm:space-y-0 sm:flex sm:flex-1 sm:gap-2 relative">
                       <div class="flex">
                         <Input v-model="dataInicio" type="date" id="dataInicio" class="h-9 text-xs" 
@@ -544,7 +552,7 @@ const getPageUrl = (page: number | string) => {
                     </div>
 
                     <!-- Filtro mês/ano para gastos futuros -->
-                    <div v-if="abaAtiva === 'gasto futuro'" class="flex flex-1 gap-2">
+                    <div v-if="!buscaNoHistorico && abaAtiva === 'gasto futuro'" class="flex flex-1 gap-2">
                       <Select v-model="mesSelecionado">
                         <SelectTrigger class="h-9 text-xs">
                           <SelectValue placeholder="Mês" />
@@ -579,6 +587,14 @@ const getPageUrl = (page: number | string) => {
                         Limpar
                       </Button>
                     </div>
+                  </div>
+
+                  <!-- Busca em todo o histórico, ignorando o período -->
+                  <div class="flex items-center gap-2">
+                    <Checkbox id="buscaNoHistorico" v-model="buscaNoHistorico" />
+                    <Label for="buscaNoHistorico" class="text-xs font-normal text-gray-600 hover:cursor-pointer dark:text-gray-400">
+                      Buscar em todo o histórico (ignora o período)
+                    </Label>
                   </div>
 
                   <!-- Filtro de situação das parcelas (apenas na aba 'gasto futuro') -->
