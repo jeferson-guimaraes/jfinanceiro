@@ -7,6 +7,7 @@ export interface FiltrosMovimentacoes {
   busca: string;
   per_page: number | string;
   situacao?: string;
+  historico?: boolean;
 }
 
 export interface EstadoMovimentacoes {
@@ -32,7 +33,8 @@ const isFiltrosValidos = (filtros: any): filtros is FiltrosMovimentacoes =>
   TIPOS_VALIDOS.includes(filtros.tipo) &&
   ['data_inicio', 'data_fim', 'mes', 'ano', 'busca'].every(campo => isTexto(filtros[campo])) &&
   (typeof filtros.per_page === 'number' || isTexto(filtros.per_page)) &&
-  (filtros.situacao === undefined || SITUACOES_VALIDAS.includes(filtros.situacao));
+  (filtros.situacao === undefined || SITUACOES_VALIDAS.includes(filtros.situacao)) &&
+  (filtros.historico === undefined || typeof filtros.historico === 'boolean');
 
 /**
  * Data local no formato YYYY-MM-DD, usada para expirar o estado na virada do dia.
@@ -145,16 +147,20 @@ export function comPeriodoPadrao(filtros: FiltrosMovimentacoes): FiltrosMoviment
 
 /**
  * Indica se dois conjuntos de filtros mostram o mesmo recorte de dados (mesma aba e mesmo
- * período). Períodos vazios equivalem ao mês atual, como no backend. Busca, situação das
- * parcelas e itens por página só restringem o que é exibido dentro do recorte, então não
- * invalidam a seleção.
+ * período, ou ambos em todo o histórico). Períodos vazios equivalem ao mês atual, como no
+ * backend. Busca, situação das parcelas e itens por página só restringem o que é exibido
+ * dentro do recorte, então não invalidam a seleção.
  */
 export function isMesmoRecorte(a: FiltrosMovimentacoes, b: FiltrosMovimentacoes): boolean {
   const filtrosA = comPeriodoPadrao(a);
   const filtrosB = comPeriodoPadrao(b);
 
-  if (filtrosA.tipo !== filtrosB.tipo) {
+  if (filtrosA.tipo !== filtrosB.tipo || Boolean(filtrosA.historico) !== Boolean(filtrosB.historico)) {
     return false;
+  }
+
+  if (filtrosA.historico) {
+    return true;
   }
 
   if (filtrosA.tipo === 'gasto futuro') {

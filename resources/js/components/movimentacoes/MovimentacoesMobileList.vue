@@ -130,8 +130,8 @@ const getTipoColorClass = (tipo: string) => {
 <template>
   <div class="space-y-2">
     <!-- Header de Ações em Massa e Ordenação -->
-    <div class="flex items-center justify-between gap-2 px-1 mb-2">
-      <div v-if="props.selectedMovimentacoes.length === 0" class="flex-1 flex items-center gap-2">
+    <div class="flex flex-col gap-2 px-1 mb-2">
+      <div class="flex items-center gap-2">
         <div class="flex-1 max-w-[200px]">
           <Select v-model="sortKey">
             <SelectTrigger class="h-8 text-[10px] font-bold uppercase bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">
@@ -161,7 +161,7 @@ const getTipoColorClass = (tipo: string) => {
         </Button>
       </div>
 
-      <div v-if="props.selectedMovimentacoes.length > 0" class="flex-1 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm animate-in fade-in zoom-in-95">
+      <div v-if="props.selectedMovimentacoes.length > 0" class="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm animate-in fade-in zoom-in-95">
         <div class="flex flex-col ml-1">
           <span class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight">
             {{ props.selectedMovimentacoes.length }} selecionados

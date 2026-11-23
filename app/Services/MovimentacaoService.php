@@ -130,6 +130,7 @@ class MovimentacaoService
                 'per_page' => (int) request('per_page', 50),
                 'tipo' => $tipo,
                 'situacao' => SituacaoParcelaEnum::daRequisicao(request('situacao'))->value,
+                'historico' => $this->buscaEmTodoHistorico(),
             ],
         ];
     }
@@ -143,11 +144,6 @@ class MovimentacaoService
      */
     private function getGanhosGastosQuery(int $userId, ?string $tipo = null)
     {
-        $dataInicioReq = request('data_inicio');
-        $dataFimReq = request('data_fim');
-        $mes = request('mes');
-        $ano = request('ano');
-
         $query = Movimentacao::doUsuario($userId);
 
         if ($tipo === TipoMovimentacaoEnum::GANHO->value) {
@@ -161,19 +157,8 @@ class MovimentacaoService
             ]);
         }
 
-        if ($dataInicioReq || $dataFimReq) {
-            $dataInicio = $dataInicioReq ? Carbon::parse($dataInicioReq) : null;
-            $dataFim = $dataFimReq ? Carbon::parse($dataFimReq) : null;
-            if ($dataInicio) {
-                $query->whereDate('data', '>=', $dataInicio);
-            }
-            if ($dataFim) {
-                $query->whereDate('data', '<=', $dataFim);
-            }
-        } else {
-            $mes = $mes ?: Carbon::now()->month;
-            $ano = $ano ?: Carbon::now()->year;
-            $query->doMes($mes, $ano);
+        if (! $this->buscaEmTodoHistorico()) {
+            $this->filtraGanhosGastosPorPeriodo($query);
         }
 
         foreach ($this->palavrasDaBusca(request('busca')) as $palavra) {
@@ -184,11 +169,35 @@ class MovimentacaoService
     }
 
     /**
+     * Restringe ganhos e gastos ao período da requisição: datas inicial/final ou, sem elas,
+     * o mês/ano informado (padrão: mês atual).
+     */
+    private function filtraGanhosGastosPorPeriodo(Builder $query): void
+    {
+        $dataInicioReq = request('data_inicio');
+        $dataFimReq = request('data_fim');
+
+        if ($dataInicioReq || $dataFimReq) {
+            if ($dataInicioReq) {
+                $query->whereDate('data', '>=', Carbon::parse($dataInicioReq));
+            }
+            if ($dataFimReq) {
+                $query->whereDate('data', '<=', Carbon::parse($dataFimReq));
+            }
+
+            return;
+        }
+
+        $query->doMes(request('mes') ?: Carbon::now()->month, request('ano') ?: Carbon::now()->year);
+    }
+
+    /**
      * Retorna a query base para parcelas futuras.
      *
      * O filtro de situação (pagas ou não pagas) vale para a listagem, mas não para os totais:
      * os cards já separam o mês em pago e pendente, e filtrar por situação zeraria um deles.
      * A busca, por outro lado, vale para os dois: os cards resumem o que foi buscado no mês.
+     * Com "historico", o mês é ignorado e entram as parcelas de todos os vencimentos.
      *
      * @param  int  $userId  ID do usuário.
      * @param  bool  $aplicarSituacao  Se deve aplicar o filtro de situação da requisição.
@@ -204,7 +213,7 @@ class MovimentacaoService
         $fimMes = $inicioMes->copy()->endOfMonth();
 
         $query = Parcela::query()
-            ->whereBetween('data_vencimento', [$inicioMes, $fimMes])
+            ->unless($this->buscaEmTodoHistorico(), fn (Builder $q) => $q->whereBetween('data_vencimento', [$inicioMes, $fimMes]))
             ->whereHas('movimentacao', fn ($q) => $q->doUsuario($userId));
 
         if ($aplicarSituacao) {
@@ -228,6 +237,15 @@ class MovimentacaoService
         }
 
         return $query;
+    }
+
+    /**
+     * Indica se a listagem deve ignorar o período (datas e mês/ano) e buscar em todo o histórico
+     * do usuário. A aba (tipo), a busca e a situação das parcelas continuam valendo.
+     */
+    private function buscaEmTodoHistorico(): bool
+    {
+        return request()->boolean('historico');
     }
 
     /**
