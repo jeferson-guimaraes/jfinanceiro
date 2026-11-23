@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\TipoMovimentacaoEnum;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao whereValor($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao doUsuario($userId)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao doMes($mes, $ano)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao doPeriodo(\Carbon\Carbon $inicio, \Carbon\Carbon $fim)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao ganhos()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao gastos()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Movimentacao gastosFuturos()
@@ -86,6 +88,15 @@ class Movimentacao extends Model
     {
         return $query->whereMonth('data', $mes)
             ->whereYear('data', $ano);
+    }
+
+    /**
+     * Movimentações com data entre $inicio e $fim (inclusive).
+     */
+    public function scopeDoPeriodo(Builder $query, Carbon $inicio, Carbon $fim): Builder
+    {
+        return $query->whereDate('data', '>=', $inicio->toDateString())
+            ->whereDate('data', '<=', $fim->toDateString());
     }
 
     public function scopeGanhos(Builder $query)

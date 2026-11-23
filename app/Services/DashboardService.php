@@ -11,32 +11,55 @@ use Carbon\Carbon;
 class DashboardService
 {
     /**
-     * Obtém todos os dados necessários para o dashboard de um usuário.
+     * Dados do resumo de um período (seção do topo do dashboard).
      *
      * @param  User  $user  Usuário autenticado.
-     * @return array{stats: array, recentTransactions: array, categoriesSummary: array}
+     * @param  Carbon  $inicio  Primeiro dia do período.
+     * @param  Carbon  $fim  Último dia do período.
+     * @return array{periodo: array{data_inicio: string, data_fim: string}, stats: array, recentTransactions: array, categoriesSummary: array}
      */
-    public function getDashboardData(User $user): array
+    public function getDadosDoPeriodo(User $user, Carbon $inicio, Carbon $fim): array
     {
-        $now = Carbon::now();
-        $totais = $this->getTotaisDoMes($user, $now);
-
-        $stats = $this->getStats($user, $now, $totais);
-        $recentTransactions = $this->getRecentTransactions($user);
-        $categoriesSummary = $this->getCategoriesSummary($totais);
+        $totais = $this->getTotais($user, $inicio, $fim);
 
         return [
-            'stats' => $stats,
-            'recentTransactions' => $recentTransactions,
-            'categoriesSummary' => $categoriesSummary,
+            'periodo' => [
+                'data_inicio' => $inicio->toDateString(),
+                'data_fim' => $fim->toDateString(),
+            ],
+            'stats' => $this->getStatsDoPeriodo($totais),
+            'recentTransactions' => $this->getRecentTransactions($user, $inicio, $fim),
+            'categoriesSummary' => $this->getCategoriesSummary($totais['gastos_por_categoria']),
         ];
     }
 
     /**
-     * Totais financeiros de um mês, em números crus (fonte única para o dashboard e para a API do assistente).
+     * Visão geral do usuário desde o cadastro (seção permanente do dashboard).
      *
-     * "A pagar" considera só as parcelas pendentes de gasto futuro que vencem no mês (regra do "A Pagar" do
-     * dashboard). Gastos por categoria seguem a ordem de maior total.
+     * @param  User  $user  Usuário autenticado.
+     * @return array{desde: string, stats: array, categoriesSummary: array}
+     */
+    public function getVisaoGeral(User $user): array
+    {
+        $totais = $this->getTotais($user);
+        $proximoMes = Carbon::now()->addMonthNoOverflow();
+        $aPagarProximoMes = $this->getAPagarDoPeriodo($user, $proximoMes->copy()->startOfMonth(), $proximoMes->copy()->endOfMonth());
+
+        return [
+            'desde' => $user->created_at->format('d/m/Y'),
+            'stats' => [
+                $this->stat('Saldo Acumulado', $totais['saldo'], 'wallet', $totais['saldo'] >= 0 ? 'text-emerald-600' : 'text-rose-600', 'Ganhos menos gastos'),
+                $this->stat('Ganhos Totais', $totais['ganhos'], 'trendingUp', 'text-emerald-600', 'Total recebido'),
+                $this->stat('Gastos Totais', $totais['gastos'], 'trendingDown', 'text-rose-600', 'Total gasto'),
+                $this->stat('Total a Pagar', $totais['a_pagar'], 'creditCard', 'text-rose-600', 'Todas as parcelas pendentes'),
+                $this->stat('A Pagar (Próximo Mês)', $aPagarProximoMes, 'calendar', 'text-rose-600', 'Vencimentos de '.$proximoMes->translatedFormat('F')),
+            ],
+            'categoriesSummary' => $this->getCategoriesSummary($totais['gastos_por_categoria']),
+        ];
+    }
+
+    /**
+     * Totais financeiros de um mês, em números crus (usado pela API do assistente).
      *
      * @param  User  $user  Dono dos dados.
      * @param  Carbon  $mes  Qualquer data dentro do mês desejado.
@@ -44,21 +67,30 @@ class DashboardService
      */
     public function getTotaisDoMes(User $user, Carbon $mes): array
     {
-        $ganhos = (float) Movimentacao::doUsuario($user->id)
-            ->ganhos()
-            ->doMes($mes->month, $mes->year)
-            ->sum('valor');
+        return $this->getTotais($user, $mes->copy()->startOfMonth(), $mes->copy()->endOfMonth());
+    }
 
-        $gastos = (float) Movimentacao::doUsuario($user->id)
+    /**
+     * Totais financeiros em números crus: do período informado ou, sem período, de todo o histórico.
+     *
+     * "A pagar" considera as parcelas pendentes de gasto futuro que vencem no período (sem período, todas as
+     * pendentes). Gastos por categoria seguem a ordem de maior total.
+     *
+     * @param  User  $user  Dono dos dados.
+     * @param  Carbon|null  $inicio  Primeiro dia do período.
+     * @param  Carbon|null  $fim  Último dia do período.
+     * @return array{ganhos: float, gastos: float, saldo: float, a_pagar: float, gastos_por_categoria: list<array{categoria_id: int, categoria: string, total: float, percentual: int}>}
+     */
+    public function getTotais(User $user, ?Carbon $inicio = null, ?Carbon $fim = null): array
+    {
+        $query = fn () => Movimentacao::doUsuario($user->id)
+            ->when($inicio && $fim, fn ($q) => $q->doPeriodo($inicio, $fim));
+
+        $ganhos = (float) $query()->ganhos()->sum('valor');
+        $gastos = (float) $query()->gastos()->sum('valor');
+
+        $gastosPorCategoria = $query()
             ->gastos()
-            ->doMes($mes->month, $mes->year)
-            ->sum('valor');
-
-        $aPagar = $this->getAPagarDoMes($user, $mes);
-
-        $gastosPorCategoria = Movimentacao::doUsuario($user->id)
-            ->gastos()
-            ->doMes($mes->month, $mes->year)
             ->selectRaw('categoria_id, sum(valor) as total')
             ->groupBy('categoria_id')
             ->with('categoria')
@@ -77,60 +109,65 @@ class DashboardService
             'ganhos' => $ganhos,
             'gastos' => $gastos,
             'saldo' => $ganhos - $gastos,
-            'a_pagar' => $aPagar,
+            'a_pagar' => $this->getAPagarDoPeriodo($user, $inicio, $fim),
             'gastos_por_categoria' => $gastosPorCategoria,
         ];
     }
 
     /**
-     * Soma das parcelas pendentes de gasto futuro que vencem no mês.
+     * Soma das parcelas pendentes de gasto futuro que vencem no período (ou todas, sem período).
      */
-    private function getAPagarDoMes(User $user, Carbon $mes): float
+    private function getAPagarDoPeriodo(User $user, ?Carbon $inicio = null, ?Carbon $fim = null): float
     {
         return (float) Parcela::whereHas('movimentacao', function ($query) use ($user) {
             $query->doUsuario($user->id)->gastosFuturos();
         })
             ->where('pago', false)
-            ->whereMonth('data_vencimento', $mes->month)
-            ->whereYear('data_vencimento', $mes->year)
+            ->when($inicio && $fim, fn ($query) => $query
+                ->whereDate('data_vencimento', '>=', $inicio->toDateString())
+                ->whereDate('data_vencimento', '<=', $fim->toDateString()))
             ->sum('valor');
     }
 
     /**
-     * Calcula as estatísticas financeiras do mês.
+     * Estatísticas do período formatadas para o frontend.
      *
-     * @param  User  $user  Usuário autenticado.
-     * @param  Carbon  $now  Data atual para referência do mês/ano.
-     * @param  array  $totais  Totais do mês atual (getTotaisDoMes).
-     * @return array Lista de estatísticas formatada para o frontend.
+     * @param  array{ganhos: float, gastos: float, saldo: float, a_pagar: float}  $totais
+     * @return list<array{title: string, value: float, icon: string, color: string, description: string}>
      */
-    private function getStats(User $user, Carbon $now, array $totais): array
+    private function getStatsDoPeriodo(array $totais): array
     {
-        $proximoMes = $now->copy()->addMonth();
-        $aPagarProximoMes = $this->getAPagarDoMes($user, $proximoMes);
         $saldo = $totais['saldo'];
 
         return [
-            ['title' => 'Saldo Atual', 'value' => $saldo, 'icon' => 'wallet', 'color' => $saldo >= 0 ? 'text-emerald-600' : 'text-rose-600', 'description' => 'Saldo do mês'],
-            ['title' => 'Ganhos (Mês)', 'value' => $totais['ganhos'], 'icon' => 'trendingUp', 'color' => 'text-emerald-600', 'description' => 'Total recebido'],
-            ['title' => 'Gastos (Mês)', 'value' => $totais['gastos'], 'icon' => 'trendingDown', 'color' => 'text-rose-600', 'description' => 'Total gasto'],
-            ['title' => 'A Pagar (Mês Atual)', 'value' => $totais['a_pagar'], 'icon' => 'calendar', 'color' => 'text-rose-600', 'description' => 'Vencimentos de '.$now->translatedFormat('F')],
-            ['title' => 'A Pagar (Próximo Mês)', 'value' => $aPagarProximoMes, 'icon' => 'calendar', 'color' => 'text-rose-600', 'description' => 'Vencimentos de '.$proximoMes->translatedFormat('F')],
+            $this->stat('Saldo do Período', $saldo, 'wallet', $saldo >= 0 ? 'text-emerald-600' : 'text-rose-600', 'Ganhos menos gastos'),
+            $this->stat('Ganhos', $totais['ganhos'], 'trendingUp', 'text-emerald-600', 'Total recebido'),
+            $this->stat('Gastos', $totais['gastos'], 'trendingDown', 'text-rose-600', 'Total gasto'),
+            $this->stat('A Pagar', $totais['a_pagar'], 'calendar', 'text-rose-600', 'Parcelas pendentes que vencem no período'),
         ];
     }
 
     /**
-     * Busca as transações mais recentes.
-     *
-     * @param  User  $user  Usuário autenticado.
-     * @return array Lista de movimentações formatada para o frontend.
+     * @return array{title: string, value: float, icon: string, color: string, description: string}
      */
-    private function getRecentTransactions(User $user): array
+    private function stat(string $title, float $value, string $icon, string $color, string $description): array
+    {
+        return compact('title', 'value', 'icon', 'color', 'description');
+    }
+
+    /**
+     * Últimas movimentações (ganhos e gastos) do período.
+     *
+     * @return list<array{id: int, description: string, category: string, value: float, type: string, date: string, status: string}>
+     */
+    private function getRecentTransactions(User $user, Carbon $inicio, Carbon $fim): array
     {
         return Movimentacao::doUsuario($user->id)
             ->with('categoria')
             ->whereIn('tipo', [TipoMovimentacaoEnum::GANHO, TipoMovimentacaoEnum::GASTO])
+            ->doPeriodo($inicio, $fim)
             ->orderBy('data', 'desc')
+            ->orderBy('id', 'desc')
             ->limit(5)
             ->get()
             ->map(function ($m) {
@@ -146,24 +183,24 @@ class DashboardService
                     'status' => $isGanho ? 'Recebido' : 'Pago',
                 ];
             })
-            ->toArray();
+            ->all();
     }
 
     /**
-     * Gera um resumo de gastos por categoria no mês atual.
+     * Gastos por categoria formatados para o frontend.
      *
-     * @param  array  $totais  Totais do mês atual (getTotaisDoMes).
-     * @return array Resumo de gastos por categoria com porcentagem.
+     * @param  list<array{categoria: string, total: float, percentual: int}>  $gastosPorCategoria
+     * @return list<array{name: string, value: float, percentage: int, color: string}>
      */
-    private function getCategoriesSummary(array $totais): array
+    private function getCategoriesSummary(array $gastosPorCategoria): array
     {
-        return collect($totais['gastos_por_categoria'])
+        return collect($gastosPorCategoria)
             ->map(fn (array $c) => [
                 'name' => $c['categoria'],
                 'value' => $c['total'],
                 'percentage' => $c['percentual'],
                 'color' => 'bg-slate-500',
             ])
-            ->toArray();
+            ->all();
     }
 }
